@@ -12,18 +12,5 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
-import { AgentAvatar } from '@/components/Workspace/AgentAvatar';
-
-/**
- * Workspace single-agent mode placeholder (visual only until wired).
- */
-export function SingleAgentList() {
-  return (
-    <div
-      className="inline-flex size-10 shrink-0 overflow-hidden rounded-xl bg-ds-neutral-strong-default"
-      aria-hidden
-    >
-      <AgentAvatar agentType="single_agent" fullBleed />
-    </div>
-  );
-}
+/** Product name shown in the UI (a fork of Eigent). */
+export const APP_NAME = 'DingGouGEO';

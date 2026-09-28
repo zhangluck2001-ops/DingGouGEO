@@ -14,14 +14,15 @@
 
 import { AddWorker } from '@/components/AddWorker';
 import BottomBox, { type FileAttachment } from '@/components/ChatBox/BottomBox';
+import { useWorkbenchChatDraft } from '@/components/Workbench/useWorkbenchChatDraft';
 import { BASE_WORKFLOW_AGENTS } from '@/components/WorkFlow/baseWorkers';
 import { isBaseWorkflowAgent } from '@/components/Workspace/FoldedAgentCard';
-import { SingleAgentList } from '@/components/Workspace/SingleAgentList';
 import { WorkforceAgentList } from '@/components/Workspace/WorkforceAgentList';
 import useChatStoreAdapter from '@/hooks/useChatStoreAdapter';
 import { useModelConfigCheck } from '@/hooks/useModelConfigCheck';
 import { useUsageIncidentBanner } from '@/hooks/useUsageIncidentBanner';
 import { useHost } from '@/host';
+import { APP_NAME } from '@/lib/appName';
 import { notifyError } from '@/lib/notifyError';
 import { isLegacySpace, isLocalWorkspaceSpace } from '@/lib/spaceLabel';
 import { createSyncedProjectInSpace } from '@/lib/spaceProject';
@@ -96,6 +97,7 @@ export default function Workspace({
 
   const [message, setMessage] = useState('');
   const [draftFiles, setDraftFiles] = useState<FileAttachment[]>([]);
+  useWorkbenchChatDraft(setMessage);
   const directProjectStartRef = useRef(false);
   const mountedRef = useRef(false);
   const [isStartingDirectProject, setIsStartingDirectProject] = useState(false);
@@ -386,9 +388,7 @@ export default function Workspace({
     : undefined;
 
   const renderAgentList = () =>
-    effectiveSessionMode === SessionMode.SINGLE_AGENT ? (
-      <SingleAgentList />
-    ) : (
+    effectiveSessionMode === SessionMode.SINGLE_AGENT ? null : (
       <WorkforceAgentList
         sortedAgents={sortedAgents}
         activeAgentId={activeAgentId}
@@ -401,29 +401,34 @@ export default function Workspace({
       />
     );
 
-  const workspaceComposerTop = (
-    <div
-      data-workspace-cowork-row
-      className="mb-3 flex min-h-[46px] w-full min-w-0 items-center justify-start gap-3"
-    >
-      <span className={WORKSPACE_COWORK_TEXT_CLASS}>
-        {t('layout.cowork-with', { defaultValue: 'Cowork with' })}
-      </span>
-      <div
-        data-workspace-agent-list
-        className="flex h-[46px] min-h-[46px] min-w-0 flex-1 items-center justify-start gap-3 overflow-visible"
+  const workspaceComposerTop =
+    effectiveSessionMode === SessionMode.SINGLE_AGENT ? (
+      // One headline that wraps in a narrow chat column instead of clipping.
+      <h1
+        data-workspace-cowork-row
+        className="m-0 mb-3 flex min-h-[46px] w-full min-w-0 flex-wrap items-center gap-x-3"
       >
-        {renderAgentList()}
-        {effectiveSessionMode === SessionMode.SINGLE_AGENT ? (
-          <span className="sr-only">
-            {t('layout.workspace-session-single-agent', {
-              defaultValue: 'Single Agent',
-            })}
-          </span>
-        ) : null}
+        <span className={WORKSPACE_COWORK_TEXT_CLASS}>
+          {t('layout.cowork-with', { defaultValue: 'Cowork with' })}
+        </span>
+        <span className={WORKSPACE_COWORK_TEXT_CLASS}>{APP_NAME}</span>
+      </h1>
+    ) : (
+      <div
+        data-workspace-cowork-row
+        className="mb-3 flex min-h-[46px] w-full min-w-0 items-center justify-start gap-3"
+      >
+        <span className={WORKSPACE_COWORK_TEXT_CLASS}>
+          {t('layout.cowork-with', { defaultValue: 'Cowork with' })}
+        </span>
+        <div
+          data-workspace-agent-list
+          className="flex h-[46px] min-h-[46px] min-w-0 flex-1 items-center justify-start gap-3 overflow-visible"
+        >
+          {renderAgentList()}
+        </div>
       </div>
-    </div>
-  );
+    );
 
   const composerInput = (
     <>

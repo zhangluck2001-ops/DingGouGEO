@@ -229,21 +229,7 @@ export default function CDP() {
 
     try {
       if (electronAPI?.addCdpBrowser && isDesktopMode) {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-        const response = await fetch(
-          `http://localhost:${portNum}/json/version`,
-          {
-            signal: controller.signal,
-          }
-        );
-        clearTimeout(timeoutId);
-
-        if (!response.ok) {
-          setConnectError(t('layout.no-browser-on-port', { port: portNum }));
-          return;
-        }
-
+        // The main process probes the port (a renderer fetch is blocked by CORS).
         const addResult = await electronAPI.addCdpBrowser(
           portNum,
           true,
@@ -251,7 +237,9 @@ export default function CDP() {
         );
         if (!addResult?.success) {
           setConnectError(
-            addResult?.error || t('layout.failed-to-add-browser')
+            addResult?.error === 'NO_BROWSER_ON_PORT'
+              ? t('layout.no-browser-on-port', { port: portNum })
+              : addResult?.error || t('layout.failed-to-add-browser')
           );
           return;
         }

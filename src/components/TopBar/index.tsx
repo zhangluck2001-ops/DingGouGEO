@@ -13,10 +13,8 @@
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
 import { proxyFetchGet } from '@/api/http';
-import eigentAppIconBlack from '@/assets/logo/icon_black.svg';
-import eigentAppIconWhite from '@/assets/logo/icon_white.svg';
+import appLogo from '@/assets/logo/dinggou_logo.png';
 import NewSpaceDialog from '@/components/Home/NewSpaceDialog';
-import { useAppCommand } from '@/components/Layout/AppCommandProvider';
 import { SpaceSwitchDropdown } from '@/components/SpaceSidebar/SpaceSwitchDropdown';
 import {
   TOP_BAR_CONTROL_SELECTED_CLASS,
@@ -24,7 +22,6 @@ import {
   TOP_BAR_PILL_CLASS,
 } from '@/components/TopBar/controlStyles';
 import { TopBarPrimaryNavigation } from '@/components/TopBar/TopBarPrimaryNavigation';
-import UpdateButton from '@/components/TopBar/UpdateButton';
 import { UserMenu } from '@/components/TopBar/UserMenu';
 import AlertDialog from '@/components/ui/alertDialog';
 import { Button } from '@/components/ui/button';
@@ -52,7 +49,6 @@ import {
 import { resolveServerBackedSpaceId } from '@/lib/spaceProject';
 import { cn } from '@/lib/utils';
 import { runAfterWorkspaceConfigurationSave } from '@/lib/workspaceConfigurationNavigationGuard';
-import { APP_COMMAND } from '@/shared/appCommands';
 import { useAuthStore } from '@/store/authStore';
 import { useInstallationUI } from '@/store/installationStore';
 import { usePageTabStore } from '@/store/pageTabStore';
@@ -63,13 +59,14 @@ import {
   isDisposableBlankSpace,
   useSpaceStore,
 } from '@/store/spaceStore';
+import { useWorkbenchStore } from '@/store/workbenchStore';
 import {
   ChevronsUpDown,
-  CircleHelp,
   Folder,
   Minus,
   PanelLeft,
   PanelLeftOpen,
+  PanelRight,
   Square,
   X,
 } from 'lucide-react';
@@ -86,7 +83,6 @@ function HeaderWin() {
   const [platform, setPlatform] = useState<string>('');
   const navigate = useNavigate();
   const location = useLocation();
-  const executeAppCommand = useAppCommand();
   const [renameSpaceDialogOpen, setRenameSpaceDialogOpen] = useState(false);
   const [newSpaceDialogOpen, setNewSpaceDialogOpen] = useState(false);
   const [renameSpaceValue, setRenameSpaceValue] = useState('');
@@ -111,7 +107,6 @@ function HeaderWin() {
     (s) => s.requestWorkspaceChatFocus
   );
   const closeSettings = useSettingsStore((state) => state.closeSettings);
-  const appearance = useAuthStore((state) => state.appearance);
   const email = useAuthStore((s) => s.email);
   const userId = useAuthStore((s) => s.user_id);
   const { isInstalling, installationState } = useInstallationUI();
@@ -125,6 +120,11 @@ function HeaderWin() {
   }, [host]);
 
   const isWorkspacePage = location.pathname === '/';
+  const workbenchOpen = useWorkbenchStore((state) => state.open);
+  const toggleWorkbench = useWorkbenchStore((state) => state.toggleOpen);
+  const workbenchToggleLabel = workbenchOpen
+    ? t('layout.workbench-hide', { defaultValue: 'Hide workbench' })
+    : t('layout.workbench-show', { defaultValue: 'Show workbench' });
   const isHomePage = isSettingsRoutePath(location.pathname);
   const topBarLeadingInset = platform === 'darwin' ? 68 : 8;
 
@@ -577,11 +577,7 @@ function HeaderWin() {
                   )}
                 >
                   <img
-                    src={
-                      appearance === 'dark'
-                        ? eigentAppIconWhite
-                        : eigentAppIconBlack
-                    }
+                    src={appLogo}
                     alt=""
                     className="mt-[1px] h-[22px] w-[22px] shrink-0 select-none"
                     width={16}
@@ -686,28 +682,31 @@ function HeaderWin() {
             platform === 'darwin' && 'px-0'
           )}
         >
-          <UpdateButton />
-          <TooltipSimple
-            content={t('layout.support')}
-            side="bottom"
-            align="center"
-            variant="instant"
-          >
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className={cn(
-                'no-drag rounded-full',
-                TOP_BAR_CONTROL_STATE_CLASS
-              )}
-              aria-label={t('layout.support')}
-              onClick={() => executeAppCommand(APP_COMMAND.reportBug)}
-              buttonContent="icon-only"
+          {isWorkspacePage ? (
+            <TooltipSimple
+              content={workbenchToggleLabel}
+              side="bottom"
+              align="center"
+              variant="instant"
             >
-              <CircleHelp aria-hidden />
-            </Button>
-          </TooltipSimple>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  'no-drag rounded-full',
+                  TOP_BAR_CONTROL_STATE_CLASS,
+                  'aria-pressed:!bg-transparent'
+                )}
+                aria-label={workbenchToggleLabel}
+                aria-pressed={workbenchOpen}
+                onClick={toggleWorkbench}
+                buttonContent="icon-only"
+              >
+                <PanelRight aria-hidden />
+              </Button>
+            </TooltipSimple>
+          ) : null}
           <UserMenu />
         </div>
       </div>

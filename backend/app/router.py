@@ -25,6 +25,7 @@ from app.auth import get_brain_auth_context
 from app.controller import (
     chat_controller,
     file_controller,
+    geo_controller,
     health_controller,
     mcp_controller,
     memory_controller,
@@ -69,6 +70,11 @@ def register_routers(app: FastAPI, prefix: str = "") -> None:
             "router": file_controller.router,
             "tags": ["Files"],
             "description": "File upload for Web/Channel clients",
+        },
+        {
+            "router": geo_controller.router,
+            "tags": ["GEO"],
+            "description": "Local GEO capture data and content boards",
         },
         {
             "router": mcp_controller.router,

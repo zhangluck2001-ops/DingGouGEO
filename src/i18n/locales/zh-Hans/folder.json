@@ -16,7 +16,7 @@
   "open-in-browser": "在浏览器中打开",
   "preview-file-size": "文件大小：{{size}}{{limit}}",
   "preview-limit": " · 预览上限：{{size}}",
-  "preview-metadata-unavailable": "Eigent 无法验证文件大小，因此已阻止自动预览。",
+  "preview-metadata-unavailable": "DingGouGEO 无法验证文件大小，因此已阻止自动预览。",
   "preview-not-loaded": "未加载预览",
   "preview-too-large": "此文件超过应用内安全预览的大小上限。",
   "preview-total-size": "，共 {{size}}",

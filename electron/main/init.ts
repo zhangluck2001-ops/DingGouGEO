@@ -22,7 +22,11 @@ import os from 'os';
 import path from 'path';
 import { promisify } from 'util';
 import { PromiseReturnType } from './install-deps';
-import { maskProxyUrl, readGlobalEnvKey } from './utils/envUtil';
+import {
+  DEFAULT_NO_PROXY,
+  maskProxyUrl,
+  readGlobalEnvKey,
+} from './utils/envUtil';
 import {
   ensureTerminalVenvAtUserPath,
   findNodejsWheelBinPath,
@@ -246,12 +250,18 @@ export async function startBackend(
   const proxyUrl = readGlobalEnvKey('HTTP_PROXY');
 
   // Build proxy env vars if configured
+  // Local services (Brain, the local server, CDP) and domestic model/data
+  // endpoints must not go through the proxy; NO_PROXY in ~/.eigent/.env
+  // replaces this default.
+  const noProxy = readGlobalEnvKey('NO_PROXY') ?? DEFAULT_NO_PROXY;
   const proxyEnv = proxyUrl
     ? {
         HTTP_PROXY: proxyUrl,
         HTTPS_PROXY: proxyUrl,
         http_proxy: proxyUrl,
         https_proxy: proxyUrl,
+        NO_PROXY: noProxy,
+        no_proxy: noProxy,
       }
     : {};
 

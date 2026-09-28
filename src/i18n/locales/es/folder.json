@@ -16,7 +16,7 @@
   "open-in-browser": "Abrir en el navegador",
   "preview-file-size": "Tamaño del archivo: {{size}}{{limit}}",
   "preview-limit": " · Límite de vista previa: {{size}}",
-  "preview-metadata-unavailable": "Eigent no pudo verificar el tamaño del archivo, por lo que se bloqueó la vista previa automática.",
+  "preview-metadata-unavailable": "DingGouGEO no pudo verificar el tamaño del archivo, por lo que se bloqueó la vista previa automática.",
   "preview-not-loaded": "Vista previa no cargada",
   "preview-too-large": "Este archivo supera el límite seguro de vista previa en la aplicación.",
   "preview-total-size": " de {{size}}",

@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "productName": "Eigent",
+  "productName": "DingGouGEO",
   "appId": "com.eigent.app",
   "asar": true,
   "electronLanguages": [

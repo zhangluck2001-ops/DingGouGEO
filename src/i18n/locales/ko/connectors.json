@@ -124,7 +124,7 @@
   "complete-authorization": "제공업체 창에서 인증을 완료하세요.",
   "refresh-status": "상태 새로 고침",
   "built-in-auth-desc": "설치하면 별도 창에서 제공업체 인증 절차가 열립니다.",
-  "built-in-generic-desc": "Eigent 로컬 통합입니다.",
+  "built-in-generic-desc": "DingGouGEO 로컬 통합입니다.",
   "cancel": "취소",
   "install": "설치",
   "installing": "설치 중…",

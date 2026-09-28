@@ -59,6 +59,7 @@ const expectedResourceFiles = [
   'connectors.json',
   'dashboard.json',
   'folder.json',
+  'geo.json',
   'layout.json',
   'markdown.json',
   'setting.json',

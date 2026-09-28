@@ -21,6 +21,7 @@ import {
   uploadFileToBrain,
 } from '@/api/http';
 import { isWeb } from '@/client/platform';
+import { useWorkbenchChatDraft } from '@/components/Workbench/useWorkbenchChatDraft';
 import useChatStoreAdapter from '@/hooks/useChatStoreAdapter';
 import { useInterruptedRunStatus } from '@/hooks/useInterruptedRunStatus';
 import { useModelConfigCheck } from '@/hooks/useModelConfigCheck';
@@ -363,7 +364,10 @@ export default function ChatBox(): JSX.Element {
   );
   const activeProjectId = projectStore.activeProjectId;
   const composerProjectRef = useRef(activeProjectId);
-  composerProjectRef.current = activeProjectId;
+  // Async send handlers compare against the latest Session after awaits.
+  useLayoutEffect(() => {
+    composerProjectRef.current = activeProjectId;
+  }, [activeProjectId]);
   const eventNativeTimelineEnabled = isChatEventTimelineEnabled();
   const {
     projectId: projectEventRuntimeProjectId,
@@ -538,6 +542,11 @@ export default function ChatBox(): JSX.Element {
     workspaceChatDraftRequest,
     setMessage,
   ]);
+
+  const requestWorkspaceChatFocus = usePageTabStore(
+    (s) => s.requestWorkspaceChatFocus
+  );
+  useWorkbenchChatDraft(setMessage, requestWorkspaceChatFocus);
 
   useEffect(() => {
     proxyFetchGet('/api/v1/configs').catch((err) =>

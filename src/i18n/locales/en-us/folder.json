@@ -16,7 +16,7 @@
   "open-in-browser": "Open in browser",
   "preview-file-size": "File size: {{size}}{{limit}}",
   "preview-limit": " · Preview limit: {{size}}",
-  "preview-metadata-unavailable": "Eigent could not verify the file size, so automatic preview was blocked.",
+  "preview-metadata-unavailable": "DingGouGEO could not verify the file size, so automatic preview was blocked.",
   "preview-not-loaded": "Preview not loaded",
   "preview-too-large": "This file exceeds the safe in-app preview limit.",
   "preview-total-size": " of {{size}}",

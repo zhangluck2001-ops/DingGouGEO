@@ -16,7 +16,7 @@
   "open-in-browser": "Visualizza in browser",
   "preview-file-size": "Dimensione del file: {{size}}{{limit}}",
   "preview-limit": " Limita la prevedibilità: {{size}}",
-  "preview-metadata-unavailable": "Eigent non può verificare la dimensione del file, quindi viene bloccato il prevedimento automatico",
+  "preview-metadata-unavailable": "DingGouGEO non può verificare la dimensione del file, quindi viene bloccato il prevedimento automatico",
   "preview-not-loaded": "Prevedimento non caricato",
   "preview-too-large": "Il file supera il limite di prevedibilità sicura all'interno dell'applicazione",
   "preview-total-size": " di {{size}}",

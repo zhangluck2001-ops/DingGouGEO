@@ -38,12 +38,7 @@ const LEGACY_DEFAULT_CLOUD_MODEL_ID = 'gpt-5.5';
 
 /** Main workspace panel background (Workforce + Session tabs only). */
 export type WorkspaceMainBackground =
-  | 'empty'
-  | 'dots'
-  | 'blocks'
-  | 'ruled'
-  | 'dotted'
-  | 'dashed';
+  'empty' | 'dots' | 'blocks' | 'ruled' | 'dotted' | 'dashed';
 export type CloudModelType = string;
 export type CodexSubscriptionModelType = string;
 

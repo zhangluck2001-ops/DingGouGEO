@@ -56,7 +56,7 @@
   "create-skill-default-description": "Beschreiben Sie, was dieser Skill tut.",
   "save-skill": "Fähigkeit speichern",
   "compose-skill-hint": "Bearbeiten Sie SKILL.md (YAML-Frontmatter mit Namen und Beschreibung ist erforderlich), dann speichern.",
-  "try-skill-prompt": "Ich habe gerade die {{name}}-Fähigkeit für Eigent hinzugefügt. Können Sie etwas Meisterwerk damit machen?",
+  "try-skill-prompt": "Ich habe gerade die {{name}}-Fähigkeit für DingGouGEO hinzugefügt. Können Sie etwas Meisterwerk damit machen?",
   "select-agent-access": "Agentenzugriff auswählen",
   "all-agents": "Alle Agenten",
   "replace-skill-title": "Ersetzen Sie die {{name}}-Fähigkeit?",

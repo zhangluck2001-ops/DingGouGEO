@@ -32,6 +32,11 @@ import {
 } from '@/components/Settings';
 import ConnectorDetailSidebar from '@/components/Settings/Connectors/components/ConnectorDetailSidebar';
 import { ConnectorsNavigationProvider } from '@/components/Settings/Connectors/ConnectorsNavigationContext';
+import { visibleSettingsSection } from '@/components/Settings/settingsNavigation';
+import {
+  getSettingsSectionLayout,
+  settingsSectionOwnsHeader,
+} from '@/components/Settings/SettingsSectionContent';
 import SkillDetail from '@/components/Settings/Skills/components/SkillDetail';
 import SkillDetailSidebar from '@/components/Settings/Skills/components/SkillDetailSidebar';
 import { SkillsProvider } from '@/components/Settings/Skills/SkillsProvider';
@@ -294,9 +299,12 @@ function HomeSettingsPageContent() {
   const legacySection = isSettingsSection(sectionFromUrl)
     ? sectionFromUrl
     : null;
-  const activeSection = isSettingsSection(tabFromUrl)
-    ? tabFromUrl
-    : (legacySection ?? storedActiveSection);
+  const activeSection = visibleSettingsSection(
+    isSettingsSection(tabFromUrl)
+      ? tabFromUrl
+      : (legacySection ?? storedActiveSection),
+    'models'
+  );
   const spaceTabFromUrl = searchParams.get('spaceTab');
   const activeSpaceTab: SpaceDetailTab = isSpaceDetailTab(spaceTabFromUrl)
     ? spaceTabFromUrl
@@ -561,18 +569,15 @@ function HomeSettingsPageContent() {
     </div>
   ) : (
     <SettingsHeaderProvider activeSection={activeSection}>
-      {activeSection !== 'skills' && activeSection !== 'connectors' && (
+      {!settingsSectionOwnsHeader(activeSection) && (
         <SettingsHeader activeSection={activeSection} />
       )}
       <SettingsSectionContent
         activeSection={activeSection}
         contentClassName={isConnectorSubpage ? 'max-w-none px-0' : undefined}
-        layout={
-          activeSection === 'skills' ||
-          (activeSection === 'connectors' && !isConnectorSubpage)
-            ? 'collection'
-            : 'content'
-        }
+        layout={getSettingsSectionLayout(activeSection, {
+          connectorSubpage: isConnectorSubpage,
+        })}
       />
     </SettingsHeaderProvider>
   );

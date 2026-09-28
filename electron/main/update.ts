@@ -28,7 +28,16 @@ import {
 
 const { autoUpdater } = createRequire(import.meta.url)('electron-updater');
 
+const AUTO_UPDATE_ENABLED = process.env.DINGGOU_ENABLE_AUTO_UPDATE === 'true';
+
 export function update(win: Electron.BrowserWindow) {
+  // DingGouGEO is a fork: the upstream feed below ships official Eigent
+  // releases, which would replace this app. Keep auto-update off until the
+  // fork has its own release feed.
+  if (!AUTO_UPDATE_ENABLED) {
+    console.log('[AutoUpdater] Disabled for DingGouGEO');
+    return;
+  }
   // When set to false, the update download will be triggered through the API
   autoUpdater.verifyUpdateCodeSignature = false;
   autoUpdater.autoDownload = false;
@@ -121,6 +130,7 @@ export function update(win: Electron.BrowserWindow) {
 export function registerUpdateIpcHandlers(beforeQuitAndInstall?: () => void) {
   // Checking for updates - errors are silent since users can't act on them
   ipcMain.handle('check-update', async () => {
+    if (!AUTO_UPDATE_ENABLED) return null;
     try {
       return await autoUpdater.checkForUpdatesAndNotify();
     } catch (error) {

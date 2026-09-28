@@ -109,6 +109,7 @@ import {
 import { disposeAllTerminals, registerTerminalIpcHandlers } from './terminal';
 import { registerUpdateIpcHandlers, update } from './update';
 import {
+  DEFAULT_NO_PROXY,
   getEmailFolderPath,
   getEnvPath,
   maskProxyUrl,
@@ -1102,7 +1103,7 @@ function registerIpcHandlers() {
   // Add browser to pool
   ipcMain.handle(
     'add-cdp-browser',
-    (event, port: number, isExternal: boolean, name?: string) => {
+    async (event, port: number, isExternal: boolean, name?: string) => {
       const existing = cdp_browser_pool.find((b) => b.port === port);
       if (existing) {
         log.warn(
@@ -1112,6 +1113,20 @@ function registerIpcHandlers() {
           success: false,
           error: 'Browser with this port already exists',
         };
+      }
+
+      // Probe external browsers from the main process: Chrome's /json/version
+      // sends no CORS headers, so a renderer-side fetch always fails.
+      if (isExternal) {
+        try {
+          const res = await fetch(`http://127.0.0.1:${port}/json/version`, {
+            signal: AbortSignal.timeout(3000),
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        } catch (e) {
+          log.warn(`[CDP POOL] ADD rejected: no browser on port ${port}: ${e}`);
+          return { success: false, error: 'NO_BROWSER_ON_PORT' };
+        }
       }
 
       const newBrowser: CdpBrowser = {
@@ -3109,7 +3124,7 @@ async function createWindowInternal() {
   appShellReadinessGate.markDocumentLoading();
   rendererAppCommands.markNotReady('window-created');
   win = new BrowserWindow({
-    title: 'Eigent',
+    title: 'DingGouGEO',
     ...startupWindowState.bounds,
     minWidth: startupWindowState.minimumSize.width,
     minHeight: startupWindowState.minimumSize.height,
@@ -3854,6 +3869,16 @@ const handleBeforeClose = () => {
 
 // ==================== app event handle ====================
 app.whenReady().then(async () => {
+  // Dev runs inside the stock Electron.app bundle, so the Dock would show the
+  // Electron icon; packaged builds get build/icon.icns instead.
+  if (VITE_DEV_SERVER_URL && process.platform === 'darwin' && app.dock) {
+    try {
+      app.dock.setIcon(path.join(MAIN_DIST, 'build', 'icon.png'));
+    } catch (error) {
+      log.warn('[MAIN] Failed to set dev Dock icon:', error);
+    }
+  }
+
   // Wait for profile initialization to complete
   log.info('[MAIN] Waiting for profile initialization...');
   try {
@@ -3892,7 +3917,16 @@ app.whenReady().then(async () => {
 
   // ==================== Apply proxy to Electron sessions ====================
   if (proxyUrl) {
-    const proxyConfig = { proxyRules: proxyUrl };
+    const proxyConfig = {
+      proxyRules: proxyUrl,
+      // Same direct-connect list the backend gets (see DEFAULT_NO_PROXY).
+      proxyBypassRules: [
+        '<local>',
+        ...(readGlobalEnvKey('NO_PROXY') ?? DEFAULT_NO_PROXY)
+          .split(',')
+          .map((host) => (host.startsWith('.') ? `*${host}` : host)),
+      ].join(','),
+    };
     await session.defaultSession.setProxy(proxyConfig);
     await session.fromPartition('persist:user_login').setProxy(proxyConfig);
     await session.fromPartition('persist:main_window').setProxy(proxyConfig);

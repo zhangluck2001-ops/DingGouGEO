@@ -16,7 +16,7 @@
   "open-in-browser": "فتح في المتصفح",
   "preview-file-size": "حجم الملف: {{size}}{{limit}}",
   "preview-limit": " · حد المعاينة: {{size}}",
-  "preview-metadata-unavailable": "تعذّر على Eigent التحقق من حجم الملف، لذلك مُنعت المعاينة التلقائية.",
+  "preview-metadata-unavailable": "تعذّر على DingGouGEO التحقق من حجم الملف، لذلك مُنعت المعاينة التلقائية.",
   "preview-not-loaded": "لم تُحمّل المعاينة",
   "preview-too-large": "يتجاوز هذا الملف حد المعاينة الآمنة داخل التطبيق.",
   "preview-total-size": " من {{size}}",

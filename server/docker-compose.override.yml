@@ -1,0 +1,7 @@
+# 本机覆盖配置：docker compose 会自动叠加读取本文件
+# 本机已有系统级 PostgreSQL 18 占用 5432，Eigent 的库改映射到宿主机 5433
+# 容器之间仍走内部网络 postgres:5432，不受影响
+services:
+  postgres:
+    ports: !override
+      - '5433:5432'

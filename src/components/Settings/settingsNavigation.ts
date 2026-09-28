@@ -15,13 +15,19 @@
 import type { SettingsScope, SettingsSectionId } from '@/store/settingsStore';
 import type { LucideIcon } from 'lucide-react';
 import {
+  BookOpen,
   Bot,
   Brain,
   Cable,
   Cookie,
   Globe,
+  LayoutDashboard,
+  Link2,
+  MessageCircleQuestion,
+  PenLine,
   Puzzle,
-  Radio,
+  ScanSearch,
+  Send,
   Settings,
   Sparkles,
   WandSparkles,
@@ -43,10 +49,16 @@ export interface SettingsNavigationGroup {
 
 export const SETTINGS_NAVIGATION: SettingsNavigationGroup[] = [
   {
-    scope: 'global',
-    labelKey: 'layout.global-setting',
-    defaultLabel: 'Global Settings',
+    scope: 'settings',
+    labelKey: 'layout.settings',
+    defaultLabel: 'Settings',
     items: [
+      {
+        id: 'settings',
+        labelKey: 'setting.general',
+        defaultLabel: 'General',
+        icon: Settings,
+      },
       {
         id: 'models',
         labelKey: 'setting.models',
@@ -70,12 +82,6 @@ export const SETTINGS_NAVIGATION: SettingsNavigationGroup[] = [
         labelKey: 'layout.connectors',
         defaultLabel: 'Connectors',
         icon: Cable,
-      },
-      {
-        id: 'channels',
-        labelKey: 'layout.channels',
-        defaultLabel: 'Channels',
-        icon: Radio,
       },
       {
         id: 'memory',
@@ -110,22 +116,84 @@ export const SETTINGS_NAVIGATION: SettingsNavigationGroup[] = [
       },
     ],
   },
+];
+
+/**
+ * The GEO pipeline, in order. Lives in the Workspace sidebar and opens in
+ * the GEO panel beside the chat — not in Settings.
+ */
+export const GEO_NAVIGATION: SettingsNavigationItem[] = [
   {
-    scope: 'settings',
-    labelKey: 'layout.settings',
-    defaultLabel: 'Settings',
-    items: [
-      {
-        id: 'settings',
-        labelKey: 'layout.settings',
-        defaultLabel: 'Settings',
-        icon: Settings,
-      },
-    ],
+    id: 'geo-overview',
+    labelKey: 'layout.geo-overview',
+    defaultLabel: 'Overview',
+    icon: LayoutDashboard,
+  },
+  {
+    id: 'geo-knowledge',
+    labelKey: 'layout.geo-knowledge',
+    defaultLabel: 'Brand knowledge base',
+    icon: BookOpen,
+  },
+  {
+    id: 'geo-probes',
+    labelKey: 'layout.geo-probes',
+    defaultLabel: 'Intent probes',
+    icon: MessageCircleQuestion,
+  },
+  {
+    id: 'geo-answers',
+    labelKey: 'layout.geo-answers',
+    defaultLabel: 'AI capture',
+    icon: ScanSearch,
+  },
+  {
+    id: 'geo-citations',
+    labelKey: 'layout.geo-citations',
+    defaultLabel: 'Cited sources',
+    icon: Link2,
+  },
+  {
+    id: 'geo-drafts',
+    labelKey: 'layout.geo-drafts',
+    defaultLabel: 'Content production',
+    icon: PenLine,
+  },
+  {
+    id: 'geo-published',
+    labelKey: 'layout.geo-published',
+    defaultLabel: 'Publishing and tracking',
+    icon: Send,
   },
 ];
 
+export function isGeoSection(section: SettingsSectionId) {
+  return GEO_NAVIGATION.some((item) => item.id === section);
+}
+
+/**
+ * Sections DingGouGEO no longer shows. Their ids stay valid for old links and
+ * stored state, which fall back to a visible section instead.
+ */
+const RETIRED_SETTINGS_SECTIONS: Partial<
+  Record<SettingsSectionId, SettingsSectionId | null>
+> = {
+  channels: null,
+  'geo-data': 'geo-answers',
+  'geo-content': 'geo-drafts',
+};
+
+export function visibleSettingsSection(
+  section: SettingsSectionId,
+  fallback: SettingsSectionId
+): SettingsSectionId {
+  if (!(section in RETIRED_SETTINGS_SECTIONS)) return section;
+  return RETIRED_SETTINGS_SECTIONS[section] ?? fallback;
+}
+
 export function getSettingsNavigationItem(section: SettingsSectionId) {
+  const geoItem = GEO_NAVIGATION.find((item) => item.id === section);
+  if (geoItem) return geoItem;
   for (const group of SETTINGS_NAVIGATION) {
     const item = group.items.find((candidate) => candidate.id === section);
     if (item) return item;

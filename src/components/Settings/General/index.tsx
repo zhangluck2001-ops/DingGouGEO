@@ -16,10 +16,9 @@ import { Button } from '@/components/ui/button';
 import { DsText } from '@/components/ui/ds-text';
 import { Input } from '@/components/ui/input';
 import { LocaleEnum, switchLanguage } from '@/i18n';
-import { SITE_URL } from '@/lib';
 import { useAuthStore } from '@/store/authStore';
 import { useInstallationStore } from '@/store/installationStore';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { createRef, RefObject, useEffect, useId, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -226,20 +225,6 @@ export default function SettingGeneral({
             }
             action={
               <div className="flex items-center gap-sm">
-                <Button
-                  onClick={() => {
-                    window.location.href = `${SITE_URL}/dashboard?email=${authStore.email}`;
-                  }}
-                  variant="primary"
-                  textWeight="semibold"
-                  buttonContent="text"
-                  buttonRadius="full"
-                  tone="neutral"
-                  size="sm"
-                >
-                  <Settings />
-                  {t('setting.manage')}
-                </Button>
                 <Button
                   variant="outline"
                   textWeight="semibold"

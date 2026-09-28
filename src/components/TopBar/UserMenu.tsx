@@ -12,7 +12,6 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
-import InviteCodeDialog from '@/components/Dialog/InviteCodeDialog';
 import { useAppCommand } from '@/components/Layout/AppCommandProvider';
 import {
   TOP_BAR_CONTROL_SELECTED_CLASS,
@@ -46,7 +45,6 @@ import {
   ArrowUpRight,
   Check,
   Gem,
-  Gift,
   Keyboard,
   Languages,
   Loader2,
@@ -107,7 +105,6 @@ export function UserMenu() {
   const executeAppCommand = useAppCommand();
   const [open, setOpen] = useState(false);
   const [languageSubOpen, setLanguageSubOpen] = useState(false);
-  const [inviteCodeDialogOpen, setInviteCodeDialogOpen] = useState(false);
   const usage = useUsageNoticeStore();
   const planName = usage.subscription
     ? formatPlanName(usage.subscription.plan_key)
@@ -260,15 +257,6 @@ export function UserMenu() {
             </DropdownMenuItem>
           ) : null}
 
-          <DropdownMenuItem
-            className="gap-2"
-            onPointerEnter={closeLanguageSub}
-            onSelect={() => setInviteCodeDialogOpen(true)}
-          >
-            <Gift className="h-4 w-4" aria-hidden />
-            {t('layout.refer-friends')}
-          </DropdownMenuItem>
-
           <DropdownMenuSeparator />
 
           <div
@@ -366,10 +354,6 @@ export function UserMenu() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <InviteCodeDialog
-        open={inviteCodeDialogOpen}
-        onOpenChange={setInviteCodeDialogOpen}
-      />
     </>
   );
 }

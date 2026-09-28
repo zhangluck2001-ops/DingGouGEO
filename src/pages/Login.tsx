@@ -30,7 +30,7 @@ import {
 import { useTranslation } from 'react-i18next';
 
 import background from '@/assets/custom/background.png';
-import eigentLogo from '@/assets/logo/eigent_icon.png';
+import eigentLogo from '@/assets/logo/dinggou_logo.png';
 
 const IS_LOCAL_MODE = import.meta.env.VITE_USE_LOCAL_PROXY === 'true';
 let lock = false;

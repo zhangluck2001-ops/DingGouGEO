@@ -35,10 +35,7 @@ export interface WebSocketEvent {
 }
 
 export type WebSocketConnectionStatus =
-  | 'disconnected'
-  | 'connecting'
-  | 'connected'
-  | 'unhealthy';
+  'disconnected' | 'connecting' | 'connected' | 'unhealthy';
 
 export interface RemoteControlSession {
   sessionId: string;

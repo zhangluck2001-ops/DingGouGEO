@@ -18,6 +18,7 @@ import common from './common.json';
 import connectors from './connectors.json';
 import dashboard from './dashboard.json';
 import folder from './folder.json';
+import geo from './geo.json';
 import layout from './layout.json';
 import markdown from './markdown.json';
 import setting from './setting.json';
@@ -33,6 +34,7 @@ export default {
   common,
   connectors,
   folder,
+  geo,
   markdown,
   setting,
   update,

@@ -20,7 +20,7 @@
   "no-search-results": "Aucun fichier ne correspond à votre recherche.",
   "preview-file-size": "Taille du fichier : {{size}}{{limit}}",
   "preview-limit": " · Limite de l’aperçu : {{size}}",
-  "preview-metadata-unavailable": "Eigent n’a pas pu vérifier la taille du fichier ; l’aperçu automatique a donc été bloqué.",
+  "preview-metadata-unavailable": "DingGouGEO n’a pas pu vérifier la taille du fichier ; l’aperçu automatique a donc été bloqué.",
   "preview-not-loaded": "Aperçu non chargé",
   "preview-too-large": "Ce fichier dépasse la limite d’aperçu sécurisé dans l’application.",
   "preview-total-size": " sur {{size}}",

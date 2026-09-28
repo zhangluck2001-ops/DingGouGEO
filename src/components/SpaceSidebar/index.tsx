@@ -63,6 +63,7 @@ import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { GeoNavGroup } from './GeoNavGroup';
 import { SessionNavList } from './SessionNavList';
 import {
   NavTabReconnectSuffix,
@@ -858,6 +859,12 @@ export default function SpaceSidebar({
                 ariaCurrentPage={isConfigurationActive}
               />
             </SidebarNavGroup>
+          </SidebarSection>
+
+          <SidebarSeparator />
+
+          <SidebarSection>
+            <GeoNavGroup />
           </SidebarSection>
 
           <SidebarSeparator />

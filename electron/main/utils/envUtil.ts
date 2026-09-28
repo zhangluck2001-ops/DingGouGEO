@@ -143,6 +143,21 @@ export function removeEnvKey(lines: string[], key: string) {
 /**
  * Read the value of a key from the global ~/.eigent/.env file.
  */
+/** Hosts the backend reaches directly even when a proxy is configured. */
+export const DEFAULT_NO_PROXY = [
+  'localhost',
+  '127.0.0.1',
+  '::1',
+  '.deepseek.com',
+  '.feishu.cn',
+  '.larksuite.com',
+  '.aliyuncs.com',
+  '.volces.com',
+  '.moonshot.cn',
+  '.bigmodel.cn',
+  '.minimaxi.com',
+].join(',');
+
 export function readGlobalEnvKey(key: string): string | null {
   try {
     const globalEnvPath = path.join(os.homedir(), '.eigent', '.env');

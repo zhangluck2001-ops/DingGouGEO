@@ -18,7 +18,7 @@
   "open-in-browser": "Открыть в браузере",
   "preview-file-size": "Размер файла: {{size}}{{limit}}",
   "preview-limit": " · Ограничение предпросмотра: {{size}}",
-  "preview-metadata-unavailable": "Eigent не удалось проверить размер файла, поэтому автоматический предпросмотр был заблокирован.",
+  "preview-metadata-unavailable": "DingGouGEO не удалось проверить размер файла, поэтому автоматический предпросмотр был заблокирован.",
   "preview-not-loaded": "Предпросмотр не загружен",
   "preview-too-large": "Файл превышает допустимый размер для безопасного предпросмотра в приложении.",
   "preview-total-size": " из {{size}}",

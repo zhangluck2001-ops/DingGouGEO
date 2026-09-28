@@ -76,7 +76,6 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import eigentImage from '@/assets/model/eigent.svg';
 import {
   getModelImage,
   needsInvertModelImage,
@@ -245,8 +244,11 @@ export default function SettingModels() {
   );
   const [_collapsed, _setCollapsed] = useState(false);
 
-  // Sidebar selected tab - default to cloud
-  const [selectedTab, setSelectedTab] = useState<SidebarTab>('cloud');
+  // Sidebar selected tab - DingGouGEO has no hosted models, so start on the
+  // first provider people configure themselves.
+  const [selectedTab, setSelectedTab] = useState<SidebarTab>(() =>
+    items[0] ? (`byok-${items[0].id}` as SidebarTab) : 'cloud'
+  );
 
   // Subscription sub-accordion state (nested inside Custom Model)
   const [subscriptionCollapsed, setSubscriptionCollapsed] = useState(false);
@@ -2680,35 +2682,6 @@ export default function SettingModels() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[180px]">
-            {/* Cloud Category */}
-            {import.meta.env.VITE_USE_LOCAL_PROXY !== 'true' && (
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger className="gap-2">
-                  <img src={eigentImage} alt="" className="h-5 w-5" />
-                  <span className="text-ds-text-base">
-                    {t('setting.eigent-cloud')}
-                  </span>
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent className="scrollbar-always-visible max-h-[300px] w-[200px] overflow-y-auto">
-                  {cloudModelOptions.map((model) => (
-                    <DefaultModelMenuItem
-                      key={model.id}
-                      configured
-                      selected={
-                        cloudPrefer && effectiveCloudModelId === model.id
-                      }
-                      statusLabel={t('setting.configured')}
-                      onSelect={() =>
-                        handleDefaultModelSelect('cloud', model.id)
-                      }
-                    >
-                      {model.name}
-                    </DefaultModelMenuItem>
-                  ))}
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-            )}
-
             {/* Custom Model Category */}
             <DropdownMenuSub>
               <DropdownMenuSubTrigger className="gap-2">
@@ -2803,26 +2776,6 @@ export default function SettingModels() {
           {/* Sidebar */}
           <div className="mr-4 -ml-2 h-full w-[240px] rounded-2xl bg-ds-neutral-default-default">
             <div className="flex flex-col gap-4">
-              {/* Eigent Cloud Section */}
-              <div className="flex flex-col gap-1">
-                <div className="px-3 py-2 text-ds-text-base font-bold text-ds-ink-default-default">
-                  {t('setting.eigent-cloud')}
-                </div>
-                {import.meta.env.VITE_USE_LOCAL_PROXY !== 'true' &&
-                  renderSidebarItem(
-                    'cloud',
-                    t('setting.eigent-cloud'),
-                    'cloud',
-                    selectedTab === 'cloud',
-                    false,
-                    cloudPrefer,
-                    creditsError
-                      ? 'muted'
-                      : Number(credits) > 0
-                        ? 'success'
-                        : 'error'
-                  )}
-              </div>
               {/* Custom Model Section */}
               <div className="flex flex-col gap-1">
                 <div className="px-3 py-2 text-ds-text-base font-bold text-ds-ink-default-default">

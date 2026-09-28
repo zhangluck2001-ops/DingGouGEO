@@ -27,7 +27,7 @@ import { proxyFetchPost } from '@/api/http';
 import background from '@/assets/custom/background.png';
 import github2 from '@/assets/icon/github.svg';
 import google from '@/assets/icon/google.svg';
-import eigentLogo from '@/assets/logo/eigent_icon.png';
+import eigentLogo from '@/assets/logo/dinggou_logo.png';
 import WindowControls from '@/components/WindowControls';
 import { useHost } from '@/host';
 import { hasStackKeys } from '@/lib';

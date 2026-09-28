@@ -30,6 +30,13 @@ const sectionLoaders = {
   'browser-connections': () => import('./Browser'),
   'browser-plugins': () => import('./Extension'),
   cookies: () => import('./Cookies'),
+  'geo-overview': () => import('@/components/Geo/stages/Overview'),
+  'geo-knowledge': () => import('@/components/Geo/stages/Knowledge'),
+  'geo-probes': () => import('@/components/Geo/stages/Probes'),
+  'geo-answers': () => import('@/components/Geo/stages/Answers'),
+  'geo-citations': () => import('@/components/Geo/stages/Citations'),
+  'geo-drafts': () => import('@/components/Geo/stages/Drafts'),
+  'geo-published': () => import('@/components/Geo/stages/Published'),
   settings: () => import('./SettingsOverview'),
 } satisfies Partial<
   Record<SettingsSectionId, () => Promise<{ default: React.ComponentType }>>
@@ -44,12 +51,46 @@ const Channels = lazy(sectionLoaders.channels);
 const BrowserConnections = lazy(sectionLoaders['browser-connections']);
 const BrowserPlugins = lazy(sectionLoaders['browser-plugins']);
 const Cookies = lazy(sectionLoaders.cookies);
+const GeoOverview = lazy(sectionLoaders['geo-overview']);
+const GeoKnowledge = lazy(sectionLoaders['geo-knowledge']);
+const GeoProbes = lazy(sectionLoaders['geo-probes']);
+const GeoAnswers = lazy(sectionLoaders['geo-answers']);
+const GeoCitations = lazy(sectionLoaders['geo-citations']);
+const GeoDrafts = lazy(sectionLoaders['geo-drafts']);
+const GeoPublished = lazy(sectionLoaders['geo-published']);
 const SettingsOverview = lazy(sectionLoaders.settings);
 
 export function preloadSettingsSection(section: SettingsSectionId) {
   void sectionLoaders[section as keyof typeof sectionLoaders]?.().catch(
     () => undefined
   );
+}
+
+/** Sections that render their own collection toolbar instead of the shared header. */
+const SELF_HEADED_SECTIONS: ReadonlySet<SettingsSectionId> = new Set([
+  'skills',
+  'connectors',
+  'geo-overview',
+  'geo-knowledge',
+  'geo-probes',
+  'geo-answers',
+  'geo-citations',
+  'geo-drafts',
+  'geo-published',
+]);
+
+export function settingsSectionOwnsHeader(section: SettingsSectionId) {
+  return SELF_HEADED_SECTIONS.has(section);
+}
+
+export function getSettingsSectionLayout(
+  section: SettingsSectionId,
+  { connectorSubpage = false }: { connectorSubpage?: boolean } = {}
+): 'content' | 'collection' {
+  if (section === 'connectors') {
+    return connectorSubpage ? 'content' : 'collection';
+  }
+  return SELF_HEADED_SECTIONS.has(section) ? 'collection' : 'content';
 }
 
 interface SettingsSectionContentProps {
@@ -95,6 +136,22 @@ function SettingsSection({ section }: { section: SettingsSectionId }) {
       return <BrowserPlugins />;
     case 'cookies':
       return <Cookies />;
+    case 'geo-overview':
+      return <GeoOverview />;
+    case 'geo-knowledge':
+      return <GeoKnowledge />;
+    case 'geo-probes':
+      return <GeoProbes />;
+    case 'geo-answers':
+      return <GeoAnswers />;
+    case 'geo-citations':
+      return <GeoCitations />;
+    case 'geo-drafts':
+      return <GeoDrafts />;
+    case 'geo-published':
+      return <GeoPublished />;
+    default:
+      return null;
     case 'settings':
       return <SettingsOverview />;
   }

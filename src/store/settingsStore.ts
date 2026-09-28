@@ -24,11 +24,21 @@ export const SETTINGS_SECTIONS = [
   'browser-connections',
   'browser-plugins',
   'cookies',
+  'geo-overview',
+  'geo-knowledge',
+  'geo-probes',
+  'geo-answers',
+  'geo-citations',
+  'geo-drafts',
+  'geo-published',
+  // Replaced by the per-stage sections above; kept so old links resolve.
+  'geo-content',
+  'geo-data',
   'settings',
 ] as const;
 
 export type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number];
-export type SettingsScope = 'global' | 'device' | 'settings';
+export type SettingsScope = 'global' | 'device' | 'geo' | 'settings';
 
 type SettingsOpenOptions = { modelProvider?: string };
 

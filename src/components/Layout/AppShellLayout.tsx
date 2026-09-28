@@ -40,6 +40,13 @@ export interface AppShellLayoutProps {
   /** Rendered after the columns (e.g. always-mounted webview layers). */
   overlay?: ReactNode;
   /**
+   * Optional column placed before the rail, inside the same rounded frame
+   * (the Workspace workbench).
+   */
+  leading?: ReactNode;
+  /** Optional column after the content pane (the Workspace GEO panel). */
+  trailing?: ReactNode;
+  /**
    * Collapse the destination rail away. The shared top-bar control drives this
    * on both Workspace and Home.
    */
@@ -62,6 +69,8 @@ export default function AppShellLayout({
   sidebar,
   children,
   overlay,
+  leading,
+  trailing,
   sidebarHidden = false,
   contentSurface = true,
   className,
@@ -95,6 +104,7 @@ export default function AppShellLayout({
       )}
     >
       <div className="flex h-full min-h-0 min-w-0 flex-1 flex-row overflow-hidden rounded-2xl bg-ds-neutral-default-default">
+        {leading}
         <motion.div
           ref={sidebarRailRef}
           className="h-full min-h-0 shrink-0 overflow-hidden"
@@ -129,6 +139,7 @@ export default function AppShellLayout({
             children
           )}
         </div>
+        {trailing}
       </div>
       {overlay}
     </div>

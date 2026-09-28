@@ -28,6 +28,7 @@ import AppShellLayout, {
 import SessionGroup from '@/components/Session/SidePanel/components/SessionGroup';
 import SpaceSidebar from '@/components/SpaceSidebar';
 import TriggerPanel from '@/components/Trigger';
+import WorkbenchPane from '@/components/Workbench/WorkbenchPane';
 import Workspace from '@/components/Workspace';
 import useChatStoreAdapter from '@/hooks/useChatStoreAdapter';
 import { useHost } from '@/host';
@@ -484,6 +485,7 @@ export default function WorkspacePage() {
            history survive panel close, workspace-tab hops, and project
            switches. Renders nothing on the web host. */
         overlay={<PreviewBrowserLayer />}
+        trailing={<WorkbenchPane />}
       >
         {renderActiveWorkspaceTab()}
       </AppShellLayout>

@@ -16,7 +16,7 @@
   "open-in-browser": "Im Browser öffnen",
   "preview-file-size": "Dateigröße: {{size}}{{limit}}",
   "preview-limit": " · Vorschaulimit: {{size}}",
-  "preview-metadata-unavailable": "Eigent konnte die Dateigröße nicht überprüfen. Daher wurde die automatische Vorschau blockiert.",
+  "preview-metadata-unavailable": "DingGouGEO konnte die Dateigröße nicht überprüfen. Daher wurde die automatische Vorschau blockiert.",
   "preview-not-loaded": "Vorschau nicht geladen",
   "preview-too-large": "Diese Datei überschreitet das sichere Limit für die Vorschau in der App.",
   "preview-total-size": " von {{size}}",
