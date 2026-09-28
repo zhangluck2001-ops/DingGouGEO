@@ -182,7 +182,7 @@
     "prettier-plugin-tailwindcss": "0.6.14",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-i18next": "^15.7.3",
+    "react-i18next": "^17.0.15",
     "rimraf": "^6.0.1",
     "shadow-plugin": "2.1.0",
     "storybook": "^10.1.11",
