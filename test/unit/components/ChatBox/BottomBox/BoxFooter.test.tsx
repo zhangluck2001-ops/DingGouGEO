@@ -18,15 +18,6 @@ import { SessionMode, ThinkingEffort } from '@/types/constants';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/components/Workspace/ProjectModeToggle', () => ({
-  ProjectModeToggle: ({ readOnly }: { readOnly?: boolean }) => (
-    <div
-      data-testid="session-mode-toggle"
-      data-readonly={String(Boolean(readOnly))}
-    />
-  ),
-}));
-
 vi.mock('@/components/ChatBox/BottomBox/ApprovalModeSelect', () => ({
   ApprovalModeSelect: ({ disabled }: { disabled?: boolean }) => (
     <button data-testid="approval-mode-select" disabled={disabled} />

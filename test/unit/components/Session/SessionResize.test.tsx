@@ -70,9 +70,6 @@ vi.mock('@/components/Session/HeaderBox', () => ({
 vi.mock('@/components/Session/PreviewPanel', () => ({
   PreviewPanel: () => <div data-testid="preview-panel" />,
 }));
-vi.mock('@/components/Session/SidePanel', () => ({
-  SessionSidePanel: () => <div data-testid="session-side-panel-content" />,
-}));
 vi.mock('@/hooks/useChatStoreAdapter', () => ({
   default: () => ({
     chatStore: mocks.chatState,

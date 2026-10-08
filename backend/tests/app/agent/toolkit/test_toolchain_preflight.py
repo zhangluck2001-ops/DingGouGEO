@@ -1,9 +1,22 @@
+# ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
+
 """Read-only preflight regressions; only stdlib and synthetic files are used."""
 
 import importlib.util
 import json
 import os
-import runpy
 import tempfile
 import unittest
 from pathlib import Path
@@ -355,45 +368,19 @@ class ToolchainPreflightTests(unittest.TestCase):
 
 
 class PreflightPromptTests(unittest.TestCase):
-    def test_terminal_agents_are_guided_to_preflight_and_confirm_changes(self):
-        prompts = runpy.run_path(
-            str(Path(__file__).resolve().parents[4] / "app/agent/prompt.py")
+    def test_geo_agent_is_guided_to_preflight_and_confirm_changes(self):
+        from app.geo.agent_prompt import build_system_prompt
+
+        prompt = " ".join(
+            build_system_prompt(
+                platform_system="Darwin",
+                platform_machine="arm64",
+                working_directory="/isolated/Space with spaces",
+                now_str="2026-09-12",
+            ).split()
         )
-        for name in (
-            "SINGLE_AGENT_SYS_PROMPT",
-            "DEVELOPER_SYS_PROMPT",
-            "MULTI_MODAL_SYS_PROMPT",
-            "DOCUMENT_SYS_PROMPT",
-            "SOCIAL_MEDIA_SYS_PROMPT",
-        ):
-            with self.subTest(name=name):
-                prompt = " ".join(prompts[name].split())
-                self.assertIn("terminal_preflight", prompt)
-                self.assertIn("explicit user confirmation", prompt)
-                self.assertIn("EIGENT_INTERMEDIATE_DIR", prompt)
-                self.assertIn("output/resume_frames", prompt)
-                self.assertNotIn("access files from any place", prompt)
-                prompts[name].format(
-                    working_directory="/isolated/Space with spaces",
-                    platform_system="Darwin",
-                    platform_machine="arm64",
-                    now_str="2026-09-12",
-                )
-
-    def test_developer_does_not_claim_root_or_mandate_installs(self):
-        prompts = runpy.run_path(
-            str(Path(__file__).resolve().parents[4] / "app/agent/prompt.py")
-        )
-        prompt = prompts["DEVELOPER_SYS_PROMPT"]
-        for unsafe in (
-            "root-level access",
-            "MUST install",
-            "If a tool is missing, install it",
-            "Automate Confirmation",
-            "access files from any place",
-        ):
-            self.assertNotIn(unsafe, prompt)
-
-
-if __name__ == "__main__":
-    unittest.main()
+        self.assertIn("terminal_preflight", prompt)
+        self.assertIn("explicit user confirmation", prompt)
+        self.assertIn("EIGENT_INTERMEDIATE_DIR", prompt)
+        self.assertIn("output/resume_frames", prompt)
+        self.assertNotIn("access files from any place", prompt)

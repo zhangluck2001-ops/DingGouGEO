@@ -12,13 +12,8 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
-import { AddWorker } from '@/components/AddWorker';
 import BottomBox, { type FileAttachment } from '@/components/ChatBox/BottomBox';
 import { useWorkbenchChatDraft } from '@/components/Workbench/useWorkbenchChatDraft';
-import { BASE_WORKFLOW_AGENTS } from '@/components/WorkFlow/baseWorkers';
-import { isBaseWorkflowAgent } from '@/components/Workspace/FoldedAgentCard';
-import { WorkforceAgentList } from '@/components/Workspace/WorkforceAgentList';
-import useChatStoreAdapter from '@/hooks/useChatStoreAdapter';
 import { useModelConfigCheck } from '@/hooks/useModelConfigCheck';
 import { useUsageIncidentBanner } from '@/hooks/useUsageIncidentBanner';
 import { useHost } from '@/host';
@@ -26,17 +21,16 @@ import { APP_NAME } from '@/lib/appName';
 import { notifyError } from '@/lib/notifyError';
 import { isLegacySpace, isLocalWorkspaceSpace } from '@/lib/spaceLabel';
 import { createSyncedProjectInSpace } from '@/lib/spaceProject';
-import { getAuthStore, useAuthStore, useWorkerList } from '@/store/authStore';
+import { getAuthStore, useAuthStore } from '@/store/authStore';
 import { usePageTabStore } from '@/store/pageTabStore';
 import { useProjectRuntimeStore } from '@/store/projectRuntimeStore';
 import { openSettings } from '@/store/settingsStore';
 import { useSpaceStore } from '@/store/spaceStore';
 import { SessionMode, type SessionModeType } from '@/types/constants';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
-const EMPTY_TASK_ASSIGNING: Agent[] = [];
 const WORKSPACE_COWORK_TEXT_CLASS =
   'inline-flex shrink-0 items-center font-display text-ds-text-display font-semibold text-ds-ink-default-default';
 
@@ -65,7 +59,6 @@ export default function Workspace({
 }: WorkspaceProps) {
   const { t } = useTranslation();
   const host = useHost();
-  const { chatStore } = useChatStoreAdapter();
   const activeSpaceId = useSpaceStore((s) => s.activeSpaceId);
   const activeSpace = useSpaceStore((s) =>
     s.activeSpaceId ? s.spaces[s.activeSpaceId] : null
@@ -77,8 +70,7 @@ export default function Workspace({
   const workspaceChatFocusRequestId = usePageTabStore(
     (s) => s.workspaceChatFocusRequestId
   );
-  const workerList = useWorkerList();
-  const { modelType, setWorkerList } = useAuthStore();
+  const { modelType } = useAuthStore();
   const [draftSessionMode, setDraftSessionMode] = useState<SessionModeType>(
     SessionMode.SINGLE_AGENT
   );
@@ -105,10 +97,6 @@ export default function Workspace({
   const isCloudUsageLimited = modelType === 'cloud' && cloudUsageLimitReached;
   const usageLimitBanner = useUsageIncidentBanner(modelType);
   const [useCloudModelInDev, setUseCloudModelInDev] = useState(false);
-  const [addWorkerDialogOpen, setAddWorkerDialogOpen] = useState(false);
-  const [editingWorkerAgent, setEditingWorkerAgent] = useState<Agent | null>(
-    null
-  );
 
   const textareaRef = useRef<HTMLDivElement>(null);
 
@@ -310,125 +298,18 @@ export default function Workspace({
       : t('layout.project-task-placeholder'),
   };
 
-  const taskAssigning =
-    chatStore?.activeTaskId != null
-      ? (chatStore.tasks[chatStore.activeTaskId]?.taskAssigning ??
-        EMPTY_TASK_ASSIGNING)
-      : EMPTY_TASK_ASSIGNING;
-
-  const sortedAgents = useMemo(() => {
-    const base = [...BASE_WORKFLOW_AGENTS, ...workerList].filter(
-      (worker) => !taskAssigning.find((a) => a.type === worker.type)
-    );
-    const allAgents = [...taskAssigning, ...base];
-    return [...allAgents].sort((a, b) => {
-      const aHas = a.tasks && a.tasks.length > 0;
-      const bHas = b.tasks && b.tasks.length > 0;
-      if (aHas && !bHas) return -1;
-      if (!aHas && bHas) return 1;
-      return 0;
-    });
-  }, [taskAssigning, workerList]);
-
-  const onSelectAgent = useCallback(
-    (agentId: string) => {
-      if (!chatStore?.activeTaskId) return;
-      chatStore.setActiveWorkspace(chatStore.activeTaskId, agentId);
-      chatStore.setActiveAgent(chatStore.activeTaskId, agentId);
-      host?.electronAPI?.hideAllWebview?.();
-    },
-    [chatStore, host]
+  // One headline that wraps in a narrow chat column instead of clipping.
+  const workspaceComposerTop = (
+    <h1
+      data-workspace-cowork-row
+      className="m-0 mb-3 flex min-h-[46px] w-full min-w-0 flex-wrap items-center gap-x-3"
+    >
+      <span className={WORKSPACE_COWORK_TEXT_CLASS}>
+        {t('layout.cowork-with', { defaultValue: 'Cowork with' })}
+      </span>
+      <span className={WORKSPACE_COWORK_TEXT_CLASS}>{APP_NAME}</span>
+    </h1>
   );
-
-  const onEditWorkerFromMenu = (agent: Agent) => {
-    setEditingWorkerAgent(agent);
-  };
-
-  const onDuplicateUserAgent = useCallback(
-    (agent: Agent) => {
-      if (isBaseWorkflowAgent(agent)) return;
-      const baseName = agent.workerInfo?.name ?? agent.name;
-      const taken = new Set<string>();
-      workerList.forEach((w) => {
-        taken.add(w.agent_id);
-        taken.add(w.name);
-      });
-      let newName = `${baseName} copy`;
-      let n = 2;
-      while (taken.has(newName)) {
-        newName = `${baseName} copy ${n++}`;
-      }
-      const raw = JSON.parse(JSON.stringify(agent)) as Agent;
-      const duplicate: Agent = {
-        ...raw,
-        agent_id: newName,
-        name: newName,
-        type: newName as AgentNameType,
-        tasks: [],
-        log: [],
-        activeWebviewIds: [],
-        workerInfo: raw.workerInfo
-          ? { ...raw.workerInfo, name: newName }
-          : undefined,
-      };
-      setWorkerList([...workerList, duplicate]);
-    },
-    [workerList, setWorkerList]
-  );
-
-  const onDeleteUserAgent = useCallback(
-    (agentId: string) => {
-      setWorkerList(workerList.filter((w) => w.agent_id !== agentId));
-    },
-    [workerList, setWorkerList]
-  );
-
-  const activeAgentId = chatStore?.activeTaskId
-    ? chatStore.tasks[chatStore.activeTaskId]?.activeAgent
-    : undefined;
-
-  const renderAgentList = () =>
-    effectiveSessionMode === SessionMode.SINGLE_AGENT ? null : (
-      <WorkforceAgentList
-        sortedAgents={sortedAgents}
-        activeAgentId={activeAgentId}
-        onSelectAgent={onSelectAgent}
-        onEditWorkerFromMenu={onEditWorkerFromMenu}
-        onDuplicateUserAgent={onDuplicateUserAgent}
-        onDeleteUserAgent={onDeleteUserAgent}
-        onAddWorker={() => setAddWorkerDialogOpen(true)}
-        alignment="start"
-      />
-    );
-
-  const workspaceComposerTop =
-    effectiveSessionMode === SessionMode.SINGLE_AGENT ? (
-      // One headline that wraps in a narrow chat column instead of clipping.
-      <h1
-        data-workspace-cowork-row
-        className="m-0 mb-3 flex min-h-[46px] w-full min-w-0 flex-wrap items-center gap-x-3"
-      >
-        <span className={WORKSPACE_COWORK_TEXT_CLASS}>
-          {t('layout.cowork-with', { defaultValue: 'Cowork with' })}
-        </span>
-        <span className={WORKSPACE_COWORK_TEXT_CLASS}>{APP_NAME}</span>
-      </h1>
-    ) : (
-      <div
-        data-workspace-cowork-row
-        className="mb-3 flex min-h-[46px] w-full min-w-0 items-center justify-start gap-3"
-      >
-        <span className={WORKSPACE_COWORK_TEXT_CLASS}>
-          {t('layout.cowork-with', { defaultValue: 'Cowork with' })}
-        </span>
-        <div
-          data-workspace-agent-list
-          className="flex h-[46px] min-h-[46px] min-w-0 flex-1 items-center justify-start gap-3 overflow-visible"
-        >
-          {renderAgentList()}
-        </div>
-      </div>
-    );
 
   const composerInput = (
     <>
@@ -447,20 +328,6 @@ export default function Workspace({
           modelSelectDisabled={isStartingDirectProject || isLegacyActiveSpace}
         />
       </div>
-      <AddWorker
-        isOpen={addWorkerDialogOpen}
-        onOpenChange={setAddWorkerDialogOpen}
-      />
-      {editingWorkerAgent && (
-        <AddWorker
-          edit
-          workerInfo={editingWorkerAgent}
-          isOpen={true}
-          onOpenChange={(open) => {
-            if (!open) setEditingWorkerAgent(null);
-          }}
-        />
-      )}
     </>
   );
 

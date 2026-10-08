@@ -256,41 +256,6 @@ def mock_task_lock():
     return task_lock
 
 
-@pytest.fixture
-def mock_workforce():
-    """Mock Workforce for testing."""
-    workforce = MagicMock()
-    workforce._running = False
-    workforce.eigent_make_sub_tasks = MagicMock(return_value=[])
-    workforce.eigent_start = AsyncMock()
-    workforce.add_single_agent_worker = MagicMock()
-    workforce.pause = MagicMock()
-    workforce.resume = MagicMock()
-    workforce.stop = MagicMock()
-    workforce.stop_gracefully = MagicMock()
-    return workforce
-
-
-@pytest.fixture
-def mock_worker_with_agent():
-    """Mock worker with agent_id for SingleAgentWorker tests."""
-    worker = MagicMock()
-    worker.agent_id = "test_agent_123"
-    worker.astep = AsyncMock()
-    worker.step = MagicMock()
-
-    # Mock response structure
-    mock_response = MagicMock()
-    mock_response.msg = MagicMock()
-    mock_response.msg.content = "Test worker response"
-    mock_response.msg.parsed = {"result": "test"}
-    mock_response.info = {"usage": {"total_tokens": 50}}
-
-    worker.astep.return_value = mock_response
-    worker.step.return_value = mock_response
-    return worker
-
-
 @pytest.fixture(scope="function")
 def event_loop():
     """Create an instance of the default event loop for the test session."""

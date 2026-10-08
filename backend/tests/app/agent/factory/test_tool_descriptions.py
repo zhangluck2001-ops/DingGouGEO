@@ -13,10 +13,8 @@
 # ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
 import asyncio
-import importlib
-import inspect
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -383,57 +381,3 @@ async def test_active_bundle_runtime_inputs_override_request_toolkit_config(
         )
     denied_hands.can_use_mcp.assert_called_once_with("bundle-local")
     denied_hands.can_use_browser.assert_not_called()
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    ("module_name", "factory_name"),
-    [
-        ("app.agent.factory.browser", "browser_agent"),
-        ("app.agent.factory.developer", "developer_agent"),
-        ("app.agent.factory.document", "document_agent"),
-        ("app.agent.factory.multi_modal", "multi_modal_agent"),
-    ],
-)
-async def test_default_workforce_worker_tools_have_descriptions(
-    module_name,
-    factory_name,
-    sample_chat_data,
-    monkeypatch,
-    tmp_path,
-):
-    options = _bedrock_chat(sample_chat_data)
-    _patch_toolkit_creation_side_effects(
-        monkeypatch, tmp_path, options.project_id
-    )
-    module = importlib.import_module(module_name)
-    captured_tools = []
-
-    def fake_agent_model(
-        agent_name, system_message, options, tools, *args, **kwargs
-    ):
-        captured_tools.extend(tools)
-        agent = MagicMock()
-        agent.agent_id = f"{agent_name}_id"
-        agent.agent_name = agent_name
-        return agent
-
-    monkeypatch.setattr(module, "agent_model", fake_agent_model)
-    monkeypatch.setattr(
-        module, "get_working_directory", lambda options: str(tmp_path)
-    )
-    if module_name == "app.agent.factory.document":
-        monkeypatch.setattr(
-            module.GoogleDriveMCPToolkit,
-            "get_can_use_tools",
-            AsyncMock(return_value=[]),
-        )
-
-    result = getattr(module, factory_name)(options, hands=None)
-    if inspect.isawaitable(result):
-        await result
-
-    assert captured_tools
-    _assert_tool_descriptions_are_non_empty(
-        captured_tools, f"{factory_name} default toolkit assembly"
-    )

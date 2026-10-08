@@ -16,7 +16,6 @@ import {
   AgentAvatar,
   resolveAgentAvatarKind,
 } from '@/components/Workspace/AgentAvatar';
-import { FoldedAgentCard } from '@/components/Workspace/FoldedAgentCard';
 import { SingleAgentList } from '@/components/Workspace/SingleAgentList';
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
@@ -91,32 +90,5 @@ describe('AgentAvatar', () => {
       'size-full',
       'object-cover'
     );
-  });
-
-  it('uses a full-bleed workforce image in the compact agent card', () => {
-    const browserAgent = {
-      agent_id: 'browser_agent',
-      name: 'Browser Agent',
-      type: 'browser_agent',
-      tasks: [],
-      log: [],
-    } as Agent;
-    const { container } = render(
-      <FoldedAgentCard
-        agent={browserAgent}
-        isActive={false}
-        dimmed={false}
-        compactMode
-        borderless
-        onSelect={() => undefined}
-      />
-    );
-
-    const button = container.querySelector('button');
-    expect(button).toHaveClass('size-10');
-    expect(button).not.toHaveClass('p-2');
-    expect(
-      container.querySelector('[data-agent-avatar="browser"]')
-    ).toHaveClass('size-full', 'object-cover');
   });
 });

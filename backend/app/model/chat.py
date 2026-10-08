@@ -26,7 +26,6 @@ from app.model.model_platform import (
     NormalizedModelPlatform,
     NormalizedOptionalModelPlatform,
 )
-from app.remote_sub_agent.config import RemoteSubAgentConfig
 from app.utils.workspace_paths import task_dir_name
 from app.workspace_config import ThinkingEffort, normalize_thinking_effort
 
@@ -122,7 +121,6 @@ class Chat(BaseModel):
     server_url: str | None = None
     session_mode: Literal["workforce", "single-agent"] = "workforce"
     toolkit_config: dict[str, Any] | None = None
-    remote_sub_agent_config: RemoteSubAgentConfig | None = None
     # Durable Project context reconstructed from persisted runs after restart.
     # In-process follow-ups still prefer TaskLock.conversation_history.
     project_context: str | None = None

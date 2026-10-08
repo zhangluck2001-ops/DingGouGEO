@@ -12,22 +12,9 @@
 # limitations under the License.
 # ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
-from app.agent.factory.browser import browser_agent
-from app.agent.factory.developer import developer_agent
-from app.agent.factory.document import document_agent
-from app.agent.factory.mcp import mcp_agent
-from app.agent.factory.multi_modal import multi_modal_agent
-from app.agent.factory.question_confirm import question_confirm_agent
-from app.agent.factory.social_media import social_media_agent
-from app.agent.factory.task_summary import task_summary_agent
+"""Agent factories. DingGouGEO builds one agent: the GEO Agent
+(``single_agent``); ``browser`` keeps the shared CDP browser pool."""
 
-__all__ = [
-    "browser_agent",
-    "developer_agent",
-    "document_agent",
-    "mcp_agent",
-    "multi_modal_agent",
-    "question_confirm_agent",
-    "social_media_agent",
-    "task_summary_agent",
-]
+from app.agent.factory.single_agent import session_title_agent, single_agent
+
+__all__ = ["session_title_agent", "single_agent"]

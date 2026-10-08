@@ -259,14 +259,6 @@ async def startup_event():
     hands = init_environment_hands()
     app_logger.info(f"EnvironmentHands initialized: mode={hands.mode}")
 
-    # Initialize telemetry tracer provider
-    from app.utils.telemetry.workforce_metrics import (
-        initialize_tracer_provider,
-    )
-
-    initialize_tracer_provider()
-    app_logger.info("Telemetry tracer provider initialized")
-
 
 @api.on_event("shutdown")
 async def shutdown_event_handler():
@@ -324,16 +316,6 @@ async def cleanup_resources():
     pid_file = dir / "run.pid"
     if pid_file.exists():
         pid_file.unlink()
-
-    # Shutdown OpenTelemetry tracer (releases BatchSpanProcessor worker threads)
-    try:
-        from app.utils.telemetry.workforce_metrics import (
-            shutdown_tracer_provider,
-        )
-
-        shutdown_tracer_provider()
-    except Exception as e:
-        app_logger.warning(f"Telemetry shutdown failed: {e}")
 
     # Shutdown TerminalToolkit thread pool (prevents non-daemon threads blocking exit)
     try:

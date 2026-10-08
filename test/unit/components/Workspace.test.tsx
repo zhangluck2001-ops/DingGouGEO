@@ -236,14 +236,8 @@ vi.mock('@/components/ChatBox/BottomBox', () => ({
   ),
 }));
 
-vi.mock('@/components/AddWorker', () => ({
-  AddWorker: () => null,
-}));
 vi.mock('@/components/Workspace/SingleAgentList', () => ({
   SingleAgentList: () => null,
-}));
-vi.mock('@/components/Workspace/WorkforceAgentList', () => ({
-  WorkforceAgentList: () => null,
 }));
 vi.mock('@/components/Workspace/WorkspaceProjectPicker', () => ({
   WorkspaceProjectPicker: () => <div>Space switch</div>,
