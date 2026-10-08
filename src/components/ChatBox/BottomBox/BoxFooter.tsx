@@ -12,7 +12,6 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
-import { ProjectModeToggle } from '@/components/Workspace/ProjectModeToggle';
 import { useIsCompactWidth } from '@/hooks/useIsCompactWidth';
 import { useProjectRuntimeStore } from '@/store/projectRuntimeStore';
 import { useSpaceStore } from '@/store/spaceStore';
@@ -24,21 +23,24 @@ import { ApprovalModeSelect } from './ApprovalModeSelect';
 import { ModelAndThinkingEffortSelect } from './ModelAndThinkingEffortSelect';
 
 /**
- * Below this footer width the session mode control collapses to icon-only so
+ * Below this footer width the approval control collapses to icon-only so
  * everything stays on a single row.
  */
 const COMPACT_WIDTH_THRESHOLD = 460;
 
 export interface BoxFooterProps {
-  /** Left side: single-agent / multi-agent mode control. */
+  /**
+   * DingGouGEO runs every session on the GEO Agent, so there is no mode to
+   * pick; BottomBox still uses the session mode to decide whether to show
+   * this row.
+   */
   sessionMode: SessionModeType;
   onSessionModeChange?: (mode: SessionModeType) => void;
   /** Project whose pinned model and thinking effort the selectors read and write. */
   projectId?: string | null;
   /**
-   * When true, the session-mode control is interactive (Workspace / New session).
-   * On a running Session the mode is locked; approval, thinking effort, and
-   * model stay selectable for later tasks.
+   * True on Workspace / New session, where there is no project yet and the
+   * thinking effort and model are chosen for the composer.
    */
   interactive?: boolean;
   disabled?: boolean;
@@ -48,13 +50,11 @@ export interface BoxFooterProps {
 
 /**
  * BoxFooter — project-setup row under BoxMain in the BottomBox shell.
- * Left: session mode + approval. Right: one thinking-effort and model menu.
+ * Left: approval. Right: one thinking-effort and model menu.
  * Stays on a single row; the left controls collapse to icon-only when the
  * footer gets narrow.
  */
 export function BoxFooter({
-  sessionMode,
-  onSessionModeChange,
   projectId,
   interactive = false,
   disabled = false,
@@ -99,13 +99,6 @@ export function BoxFooter({
       className="flex w-full items-center justify-between gap-2 px-3 py-1"
     >
       <div className="flex min-w-0 shrink items-center gap-1">
-        <ProjectModeToggle
-          value={sessionMode}
-          onValueChange={onSessionModeChange ?? (() => {})}
-          readOnly={!interactive}
-          compact={compact}
-          className="shrink-0"
-        />
         <ApprovalModeSelect
           spaceId={spaceId}
           disabled={disabled}

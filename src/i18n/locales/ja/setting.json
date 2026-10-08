@@ -226,7 +226,7 @@
   "models-default-setting-title": "デフォルト設定",
   "models-default-setting-description": "設定済みモデルの中から、DingGouGEO のデフォルトモデルを1つ選択します。ワークスペース全体にグローバルに適用されます。",
   "models-configuration": "構成",
-  "sub-agents": "サブエージェント",
+  "sub-agents": "GEO agents",
   "gemini-agent": "Gemini Agents API",
   "gemini-remote-sub-agent": "Gemini Agents API",
   "remote-sub-agent-description": "適したタスクを管理されたリモートエージェントのサンドボックスに委任します。",

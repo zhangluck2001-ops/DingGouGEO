@@ -226,7 +226,7 @@
   "models-default-setting-title": "Настройка по умолчанию",
   "models-default-setting-description": "Выберите одну из настроенных моделей как модель по умолчанию для Eigent. Она будет применяться глобально во всём рабочем пространстве.",
   "models-configuration": "Конфигурация",
-  "sub-agents": "Суб-агенты",
+  "sub-agents": "GEO agents",
   "gemini-agent": "API Gemini Agents",
   "gemini-remote-sub-agent": "API Gemini Agents",
   "remote-sub-agent-description": "Делегируйте подходящие задачи управляемой песочнице удалённого агента.",

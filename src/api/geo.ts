@@ -169,6 +169,23 @@ export interface GeoRoundComparison {
   cited_contents: number;
 }
 
+/** One link of the GEO pipeline and the agent the GEO Agent hands it to. */
+export interface GeoStageAgent {
+  seq: number;
+  key: string;
+  name: string;
+  folder: string;
+  duty: string;
+  writes: string;
+  subagent_type: string;
+  skills: string[];
+}
+
+export interface GeoAgents {
+  root: { name: string; tools: string[] };
+  stages: GeoStageAgent[];
+}
+
 export type GeoQuery = Record<string, string | number | undefined>;
 
 function clean(params: GeoQuery) {
@@ -181,6 +198,7 @@ function clean(params: GeoQuery) {
 
 export const geoApi = {
   projects: (): Promise<{ items: GeoProject[] }> => fetchGet('/geo/projects'),
+  agents: (): Promise<GeoAgents> => fetchGet('/geo/agents'),
   ensureSpace: (body: {
     space_id: string;
     name: string;

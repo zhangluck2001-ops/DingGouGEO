@@ -16,7 +16,14 @@
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from app.geo import feishu_import, knowledge, queries, rounds, space_bootstrap
+from app.geo import (
+    feishu_import,
+    harness,
+    knowledge,
+    queries,
+    rounds,
+    space_bootstrap,
+)
 from app.utils.workspace_resolver import get_workspace_resolver
 
 router = APIRouter(prefix="/geo", tags=["GEO"])
@@ -70,6 +77,11 @@ def _dataset(name: str) -> str:
 @router.get("/projects")
 def list_projects():
     return {"items": queries.list_projects()}
+
+
+@router.get("/agents")
+def list_agents():
+    return harness.agents_overview()
 
 
 @router.post("/spaces/ensure")

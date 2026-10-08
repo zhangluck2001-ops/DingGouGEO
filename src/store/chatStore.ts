@@ -36,7 +36,6 @@ import {
   classifyTaskCategory,
 } from '@/lib/events/appEventClassifiers';
 import {
-  recordFeatureUsed,
   recordTaskCompleted,
   recordTaskFailed,
   recordTaskStopped,
@@ -52,11 +51,6 @@ import {
   splitProviderConfig,
 } from '@/lib/modelConfig';
 import { reportError } from '@/lib/notifyError';
-import {
-  normalizeRemoteSubAgentProvider,
-  REMOTE_SUB_AGENT_PROVIDER_ID,
-  toRemoteSubAgentRuntimeConfig,
-} from '@/lib/remoteSubAgent';
 import {
   runDomainEventHub,
   runEventIngressRegistry,
@@ -2656,8 +2650,9 @@ const chatStore = (initial?: Partial<ChatStore>) =>
           })
         );
       }
-      const sessionModeForRequest =
-        sessionMode || project?.mode || SessionMode.SINGLE_AGENT;
+      // DingGouGEO runs every session on the GEO Agent; projects created
+      // before the Workforce mode was switched off may still record it.
+      const sessionModeForRequest: SessionModeType = SessionMode.SINGLE_AGENT;
       // Track genuine, user-facing task starts (skip replay/share playback).
       // Powers the "time to first task" lifecycle event.
       if (isLiveTask) {
@@ -2671,11 +2666,6 @@ const chatStore = (initial?: Partial<ChatStore>) =>
           agent_count: submitWorkers.length,
           has_mcp: submitHasMcp,
         });
-        if (sessionModeForRequest === SessionMode.WORKFORCE) {
-          recordFeatureUsed('multi_agent', {
-            session_mode: sessionModeForRequest,
-          });
-        }
       }
       if (project_id && !project?.mode) {
         useSpaceStore
@@ -3120,28 +3110,6 @@ const chatStore = (initial?: Partial<ChatStore>) =>
           });
         } catch (error) {
           console.error('Failed to load search configuration:', error);
-        }
-      }
-
-      let remoteSubAgentConfig = null;
-      if (!type) {
-        try {
-          const providersRes = await proxyFetchGet(
-            '/api/v1/remote-sub-agent-providers',
-            { provider_name: REMOTE_SUB_AGENT_PROVIDER_ID, enabled: true }
-          );
-          const providerList = Array.isArray(providersRes)
-            ? providersRes
-            : providersRes.items || [];
-          const remoteSubAgentProvider = providerList[0];
-          remoteSubAgentConfig = toRemoteSubAgentRuntimeConfig(
-            normalizeRemoteSubAgentProvider(remoteSubAgentProvider)
-          );
-        } catch (error) {
-          console.error(
-            'Failed to load remote sub agent configuration:',
-            error
-          );
         }
       }
 
@@ -3757,7 +3725,8 @@ const chatStore = (initial?: Partial<ChatStore>) =>
             search_config: searchConfig,
             server_url: getDirectServerApiBaseUrl(),
             session_mode: sessionModeForRequest,
-            remote_sub_agent_config: remoteSubAgentConfig,
+            // Remote sub-agents only served the Workforce workers.
+            remote_sub_agent_config: null,
             project_context: buildProjectContinuationContext(
               project_id,
               startOptions.resumeRequestId ? undefined : newTaskId

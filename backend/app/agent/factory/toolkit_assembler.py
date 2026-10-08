@@ -128,9 +128,10 @@ DEFAULT_SINGLE_AGENT_TOOLKIT_CONFIG: dict[str, Any] = {
     "search": {"enabled": True},
     "browser": {"enabled": True},
     "terminal": {"enabled": True},
-    "workspace_git": {"enabled": True},
+    # Coding tools from upstream; the GEO pipeline has no use for them.
+    "workspace_git": {"enabled": False},
     "web_fetch": {"enabled": True},
-    "planning_worktree": {"enabled": True},
+    "planning_worktree": {"enabled": False},
     "mcp": {"enabled": True},
     "agent": {"enabled": True},
 }

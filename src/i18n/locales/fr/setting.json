@@ -226,7 +226,7 @@
   "models-default-setting-title": "Paramètre par défaut",
   "models-default-setting-description": "Choisissez l'un de vos modèles configurés comme modèle par défaut pour Eigent. Il sera appliqué globalement dans votre espace de travail.",
   "models-configuration": "Configuration",
-  "sub-agents": "Sous-agents",
+  "sub-agents": "GEO agents",
   "gemini-agent": "API Gemini Agents",
   "gemini-remote-sub-agent": "API Gemini Agents",
   "remote-sub-agent-description": "Déléguez les tâches adaptées à un bac à sable d'agent distant géré.",

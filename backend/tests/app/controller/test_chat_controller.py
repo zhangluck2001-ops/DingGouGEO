@@ -26,6 +26,7 @@ from pydantic import ValidationError
 from app.controller.chat_controller import (
     _admission_request_id,
     _classify_persisted_admission,
+    _on_geo_agent,
     _prepare_browser_for_request,
     _prepare_chat_run,
     _PreparedChatRun,
@@ -260,7 +261,8 @@ class TestChatController:
             assert handle is not None
             assert handle.subscriber_count == 2
             prepare.assert_awaited_once_with(
-                chat_data,
+                # Admitted as a GEO Agent session (Workforce is switched off).
+                _on_geo_agent(chat_data),
                 mock_request,
                 admission_request_id=_admission_request_id(
                     run_id,
@@ -2148,3 +2150,22 @@ def test_queued_stop_carries_expected_task_to_the_consumer():
             == 201
         )
         assert enqueue.call_args.args[1].expected_task_id == "run-original"
+
+
+@pytest.mark.parametrize("requested", ["workforce", "single-agent"])
+def test_every_session_runs_on_the_geo_agent(sample_chat_data, requested):
+    """Workforce is switched off: a request for it, from an old project or
+    another client, still runs on the GEO Agent."""
+    data = Chat(**{**sample_chat_data, "session_mode": requested})
+
+    assert _on_geo_agent(data).session_mode == "single-agent"
+    # Untouched otherwise.
+    assert _on_geo_agent(data).question == data.question
+
+
+def test_default_chat_requests_run_on_the_geo_agent(sample_chat_data):
+    # Chat still defaults to "workforce" for the dormant upstream code.
+    assert Chat(**sample_chat_data).session_mode == "workforce"
+    assert _on_geo_agent(Chat(**sample_chat_data)).session_mode == (
+        "single-agent"
+    )

@@ -226,7 +226,7 @@
   "models-default-setting-title": "기본 설정",
   "models-default-setting-description": "구성된 모델 중 하나를 Eigent의 기본 모델로 선택하세요. 워크스페이스 전체에 전역으로 적용됩니다.",
   "models-configuration": "구성",
-  "sub-agents": "서브 에이전트",
+  "sub-agents": "GEO agents",
   "gemini-agent": "Gemini Agents API",
   "gemini-remote-sub-agent": "Gemini Agents API",
   "remote-sub-agent-description": "적합한 작업을 관리형 원격 에이전트 샌드박스에 위임합니다.",

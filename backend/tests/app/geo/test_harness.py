@@ -100,3 +100,18 @@ def test_working_window_can_be_tuned_per_machine(geo_home, monkeypatch):
     assert harness.context_budget("openai", "gpt-6-sol").token_limit == 400_000
     monkeypatch.setenv("GEO_AGENT_WORKING_WINDOW", "lots")
     assert harness.context_budget("openai", "gpt-6-sol").token_limit == 200_000
+
+
+def test_agent_roster_is_the_geo_agent_and_its_stage_agents():
+    overview = harness.agents_overview()
+
+    assert overview["root"]["name"] == "GEO Agent"
+    tools = overview["root"]["tools"]
+    assert {"memory", "file", "terminal", "skill", "agent"} <= set(tools)
+    # Upstream coding tools are not part of the GEO Agent.
+    assert "workspace_git" not in tools
+    assert "planning_worktree" not in tools
+    assert [s["subagent_type"] for s in overview["stages"]] == [
+        s.subagent_type for s in harness.STAGES
+    ]
+    assert all(s["skills"] == [] for s in overview["stages"])

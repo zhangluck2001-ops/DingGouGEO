@@ -42,6 +42,8 @@ class Stage:
     duty: str
     writes: str
     subagent_type: str
+    # Skills this stage loads before working; empty until they are plugged in.
+    skills: tuple[str, ...] = ()
 
 
 STAGES: tuple[Stage, ...] = (
@@ -127,6 +129,41 @@ STAGES: tuple[Stage, ...] = (
 def stage_for_subagent(subagent_type: str) -> Stage | None:
     wanted = (subagent_type or "").strip().lower()
     return next((s for s in STAGES if s.subagent_type == wanted), None)
+
+
+ROOT_AGENT_NAME = "GEO Agent"
+
+
+def agents_overview() -> dict:
+    """The agents of DingGouGEO as the settings page shows them: the GEO
+    Agent with the tool groups it is built with, then one agent per stage."""
+    # Imported here: the assembler pulls in the agent package, which imports
+    # the GEO prompt module, which imports this one.
+    from app.agent.factory.toolkit_assembler import (
+        DEFAULT_SINGLE_AGENT_TOOLKIT_CONFIG,
+    )
+
+    tools = [
+        name
+        for name, value in DEFAULT_SINGLE_AGENT_TOOLKIT_CONFIG.items()
+        if not isinstance(value, dict) or value.get("enabled", True)
+    ]
+    return {
+        "root": {"name": ROOT_AGENT_NAME, "tools": ["memory", *tools]},
+        "stages": [
+            {
+                "seq": s.seq,
+                "key": s.key,
+                "name": s.name,
+                "folder": s.folder,
+                "duty": s.duty,
+                "writes": s.writes,
+                "subagent_type": s.subagent_type,
+                "skills": list(s.skills),
+            }
+            for s in STAGES
+        ],
+    }
 
 
 # ---- Context budget ---------------------------------------------------------

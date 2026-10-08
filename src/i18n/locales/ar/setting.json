@@ -202,7 +202,7 @@
   "models-default-setting-title": "الإعداد الافتراضي",
   "models-default-setting-description": "اختر أحد النماذج المكوّنة ليكون النموذج الافتراضي لـ DingGouGEO، وسيتم تطبيقه عالميًا عبر مساحة العمل الخاصة بك.",
   "models-configuration": "التكوين",
-  "sub-agents": "الوكلاء الفرعيون",
+  "sub-agents": "GEO agents",
   "gemini-agent": "Gemini Agents API",
   "gemini-remote-sub-agent": "Gemini Agents API",
   "remote-sub-agent-description": "فوّض المهام المناسبة إلى صندوق عزل مُدار لوكيل بعيد.",

@@ -160,6 +160,13 @@ DingGouGEO 基于开源项目 [Eigent](https://github.com/eigent-ai/eigent)（`d
 - 没动：Workforce 模式和它的六个通用角色；主智能体的工具集（Workspace Git、PlanningWorktree 两个编码场景工具是否去掉待定）。
 - 改的是后端，运行中的应用要重启才生效。
 
+### 2026-10-08 智能体只剩 DingGouGEO 这一套
+
+- **关闭上游多智能体（Workforce）**：对话框底部的「单智能体 / Workforce」切换去掉；前端请求固定为 `single-agent`（`chatStore`，旧项目记录的 workforce 也不再沿用）；后端在所有对话的唯一入口 `start_chat_stream` 强制改为 GEO Agent（`chat_controller._on_geo_agent`）。Workforce 代码暂不删，等链路跑通再清。
+- **设置「子智能体」页改为「GEO 智能体」**：只读展示 GEO Agent 及其工具、8 个环节智能体的职责、产出、技能槽（目前都「未配置」）。新接口 `GET /geo/agents`，数据来自 `harness.agents_overview()`；`Stage` 增加 `skills` 字段作为技能槽。Gemini 远程子智能体入口去掉，前端不再每次发起对话前去服务器取它的配置。
+- **GEO Agent 工具收窄**：关闭 Workspace Git、PlanningWorktree 两个编码工具。
+- 测试：后端全量 2629 项通过；新增 `test_every_session_runs_on_the_geo_agent` 等用例和前端 `GeoAgentsSettings.test.tsx`。前端时间线 6 项、设置页 8 项失败在改动前就存在（改名遗留），本次没有新增失败。
+
 ---
 
 ## 运行

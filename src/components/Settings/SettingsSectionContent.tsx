@@ -45,7 +45,7 @@ const sectionLoaders = {
 
 const Models = lazy(sectionLoaders.models);
 const Skills = lazy(sectionLoaders.skills);
-const SubAgents = lazy(sectionLoaders['sub-agents']);
+const GeoAgentsSettings = lazy(sectionLoaders['sub-agents']);
 const Memory = lazy(sectionLoaders.memory);
 const Connectors = lazy(sectionLoaders.connectors);
 const Channels = lazy(sectionLoaders.channels);
@@ -124,7 +124,7 @@ function SettingsSection({ section }: { section: SettingsSectionId }) {
     case 'models':
       return <Models />;
     case 'sub-agents':
-      return <SubAgents />;
+      return <GeoAgentsSettings />;
     case 'connectors':
       return <Connectors />;
     case 'skills':

@@ -226,7 +226,7 @@
   "models-default-setting-title": "Standard-Einstellung",
   "models-default-setting-description": "Wählen Sie einen von Ihren konfigurierten Modellen als Standardmodell für Eigent. Es wird weltweit in Ihrem Arbeitsbereich angewendet.",
   "models-configuration": "Konfiguration",
-  "sub-agents": "Sub-Agents",
+  "sub-agents": "GEO agents",
   "gemini-agent": "API von Gemini Agenten",
   "gemini-remote-sub-agent": "API von Gemini Agenten",
   "remote-sub-agent-description": "Übertragen geeignete Aufgaben an eine verwaltete Remoteflächenbox",

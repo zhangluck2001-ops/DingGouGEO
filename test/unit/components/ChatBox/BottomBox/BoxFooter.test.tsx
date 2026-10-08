@@ -85,10 +85,8 @@ describe('BoxFooter', () => {
     render(<BoxFooter sessionMode={SessionMode.SINGLE_AGENT} interactive />);
 
     const selector = screen.getByTestId('model-thinking-select');
-    expect(screen.getByTestId('session-mode-toggle')).toHaveAttribute(
-      'data-readonly',
-      'false'
-    );
+    // Every session runs on the GEO Agent: there is no mode to choose.
+    expect(screen.queryByTestId('session-mode-toggle')).toBeNull();
     expect(screen.getAllByTestId('model-thinking-select')).toHaveLength(1);
     expect(selector).toHaveAttribute('data-readonly', 'false');
     expect(selector).toHaveAttribute('data-effort', 'default');
@@ -112,7 +110,7 @@ describe('BoxFooter', () => {
     ).toBeUndefined();
   });
 
-  it('locks session mode on a running Session while thinking effort stays selectable', () => {
+  it('keeps thinking effort selectable on a running Session', () => {
     const projectId = useProjectStore
       .getState()
       .createProject('Running session', undefined, 'project_footer_effort');
@@ -122,10 +120,7 @@ describe('BoxFooter', () => {
     );
 
     const selector = screen.getByTestId('model-thinking-select');
-    expect(screen.getByTestId('session-mode-toggle')).toHaveAttribute(
-      'data-readonly',
-      'true'
-    );
+    expect(screen.queryByTestId('session-mode-toggle')).toBeNull();
     expect(screen.getAllByTestId('model-thinking-select')).toHaveLength(1);
     expect(selector).toHaveAttribute('data-readonly', 'false');
     expect(selector).toHaveAttribute('data-effort', 'default');

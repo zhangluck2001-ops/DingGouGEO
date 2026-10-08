@@ -226,7 +226,7 @@
   "models-default-setting-title": "默认设置",
   "models-default-setting-description": "从已配置的模型中选择一个作为 DingGouGEO 的默认模型，它将全局应用到您的工作区。",
   "models-configuration": "配置",
-  "sub-agents": "子智能体",
+  "sub-agents": "GEO 智能体",
   "gemini-agent": "Gemini Agents API",
   "gemini-remote-sub-agent": "Gemini Agents API",
   "remote-sub-agent-description": "把适合远程执行的任务委托给托管远程智能体沙盒。",

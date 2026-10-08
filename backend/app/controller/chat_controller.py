@@ -1489,9 +1489,20 @@ async def _prepare_chat_run(
     )
 
 
+def _on_geo_agent(data: Chat) -> Chat:
+    """DingGouGEO runs every session on the GEO Agent. The upstream Workforce
+    mode is switched off at ``start_chat_stream``, the one door every chat
+    start goes through (desktop, remote control, triggers); its code stays
+    until it is removed."""
+    if data.session_mode == "single-agent":
+        return data
+    return data.model_copy(update={"session_mode": "single-agent"})
+
+
 async def start_chat_stream(data: Chat, request: Request):
     """Admit one detached execution or attach this SSE to an existing one."""
 
+    data = _on_geo_agent(data)
     run_id = data.run_id or data.task_id
     coordinator = get_default_run_coordinator()
     journal = get_default_run_journal()

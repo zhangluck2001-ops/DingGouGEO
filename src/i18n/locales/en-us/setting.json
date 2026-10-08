@@ -226,7 +226,7 @@
   "models-default-setting-title": "Default setting",
   "models-default-setting-description": "Pick one of your configured models as the default model for Eigent. It will be applied globally across your workspace.",
   "models-configuration": "Configuration",
-  "sub-agents": "Sub Agents",
+  "sub-agents": "GEO agents",
   "gemini-agent": "Gemini Agents API",
   "gemini-remote-sub-agent": "Gemini Agents API",
   "remote-sub-agent-description": "Delegate suitable tasks to a managed remote agent sandbox.",
