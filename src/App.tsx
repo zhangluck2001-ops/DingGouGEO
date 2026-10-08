@@ -28,7 +28,6 @@ import { useExecutionSubscription } from './hooks/useExecutionSubscription';
 import { useTriggerTaskExecutor } from './hooks/useTriggerTaskExecutor';
 import { hasStackKeys } from './lib';
 import { useAuthStore } from './store/authStore';
-import { useInstallationStore } from './store/installationStore';
 
 import { useUsageNotices } from '@/hooks/useUsageNotices';
 
@@ -40,7 +39,6 @@ function App() {
   const navigate = useNavigate();
   const { setInitState } = useAuthStore();
   const { token } = useAuthStore();
-  const isBackendReady = useInstallationStore((state) => state.isBackendReady);
 
   // Subscribe to execution events when user is authenticated
   // Note: Removed triggers.length check to prevent reconnection on every trigger update
