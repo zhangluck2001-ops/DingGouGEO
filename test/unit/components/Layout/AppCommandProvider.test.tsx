@@ -104,7 +104,6 @@ vi.mock('@/store/projectRuntimeStore', () => {
 
 vi.mock('@/store/pageTabStore', () => ({
   WorkspaceTab: {
-    Dispatch: 'dispatch',
     Files: 'files',
     NewProject: 'new-project',
     Project: 'project',
@@ -353,7 +352,6 @@ describe('AppCommandProvider', () => {
       nativeCommand?.(APP_COMMAND.navigateWorkspace);
       nativeCommand?.(APP_COMMAND.navigateFiles);
       nativeCommand?.(APP_COMMAND.navigateScheduled);
-      nativeCommand?.(APP_COMMAND.navigateDispatch);
       nativeCommand?.(APP_COMMAND.navigateConfiguration);
     });
 
@@ -361,7 +359,6 @@ describe('AppCommandProvider', () => {
       ['workforce'],
       ['files', { clearFilesForProjectId: 'project-1' }],
       ['triggers'],
-      ['dispatch'],
     ]);
     expect(mocks.setNuwFileNum).toHaveBeenCalledWith('task-1', 0);
     expect(screen.getByTestId('location')).toHaveTextContent(

@@ -58,7 +58,7 @@ import {
 } from '@/store/spaceStore';
 import { useTriggerStore } from '@/store/triggerStore';
 import { ChatTaskStatus } from '@/types/constants';
-import { Cast, Inbox, LayoutGrid, Plus, ToolCase } from 'lucide-react';
+import { Inbox, LayoutGrid, Plus, ToolCase } from 'lucide-react';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -824,22 +824,6 @@ export default function SpaceSidebar({
                 }
                 ariaLabel={triggersTabAriaLabel}
                 ariaCurrentPage={activeWorkspaceTab === 'triggers'}
-              />
-              <NavTab
-                active={activeWorkspaceTab === 'dispatch'}
-                onClick={() => setActiveWorkspaceTab('dispatch')}
-                leading={<Cast className="h-4 w-4 shrink-0" aria-hidden />}
-                label={t('layout.dispatch-tab')}
-                tooltip={
-                  <ShortcutTooltipContent
-                    label={t('layout.dispatch-tab')}
-                    shortcutId="navigate-dispatch"
-                  />
-                }
-                tooltipCompact
-                tooltipVariant="delayed"
-                ariaLabel={t('layout.dispatch-tab')}
-                ariaCurrentPage={activeWorkspaceTab === 'dispatch'}
               />
               <NavTab
                 active={isConfigurationActive}

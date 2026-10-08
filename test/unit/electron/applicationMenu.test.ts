@@ -123,7 +123,6 @@ describe('application menu', () => {
     click(findItem(template, 'view.navigate-workspace'));
     click(findItem(template, 'view.navigate-files'));
     click(findItem(template, 'view.navigate-scheduled'));
-    click(findItem(template, 'view.navigate-dispatch'));
     click(findItem(template, 'view.navigate-configuration'));
     click(close);
     click(quit);
@@ -145,7 +144,6 @@ describe('application menu', () => {
       [APP_COMMAND.navigateWorkspace],
       [APP_COMMAND.navigateFiles],
       [APP_COMMAND.navigateScheduled],
-      [APP_COMMAND.navigateDispatch],
       [APP_COMMAND.navigateConfiguration],
     ]);
     expect(findItem(template, 'help.keyboard-shortcuts').accelerator).toBe(
@@ -322,16 +320,9 @@ describe('application menu', () => {
         'view.navigate-workspace',
         'view.navigate-files',
         'view.navigate-scheduled',
-        'view.navigate-dispatch',
         'view.navigate-configuration',
       ].map((id) => findItem(production, id).accelerator)
-    ).toEqual([
-      'Command+1',
-      'Command+2',
-      'Command+3',
-      'Command+4',
-      'Command+5',
-    ]);
+    ).toEqual(['Command+1', 'Command+2', 'Command+3', 'Command+5']);
     expect(findItemOrNull(production, 'view.reset-zoom')).toBeNull();
     expect(findItemOrNull(production, 'view.zoom-in')).toBeNull();
     expect(findItemOrNull(production, 'view.zoom-out')).toBeNull();

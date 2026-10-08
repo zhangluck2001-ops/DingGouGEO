@@ -137,12 +137,6 @@ export function getKeyboardShortcutGroups(
           keys: [primary, '3'],
         },
         {
-          id: 'navigate-dispatch',
-          labelKey: 'layout.shortcuts.navigate-dispatch',
-          defaultLabel: 'Go to Dispatch',
-          keys: [primary, '4'],
-        },
-        {
           id: 'navigate-configuration',
           labelKey: 'layout.shortcuts.navigate-configuration',
           defaultLabel: 'Go to Configuration',

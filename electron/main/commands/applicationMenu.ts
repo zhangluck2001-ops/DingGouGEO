@@ -193,11 +193,6 @@ function buildViewMenu(
         command: APP_COMMAND.navigateScheduled,
       },
       {
-        id: 'view.navigate-dispatch',
-        accelerator: platformAccelerator(platform, 'Command+4', 'Control+4'),
-        command: APP_COMMAND.navigateDispatch,
-      },
-      {
         id: 'view.navigate-configuration',
         accelerator: platformAccelerator(platform, 'Command+5', 'Control+5'),
         command: APP_COMMAND.navigateConfiguration,

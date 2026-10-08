@@ -35,7 +35,6 @@ export const WorkspaceTab = {
   Triggers: 'triggers',
   Runs: 'runs',
   Project: 'project',
-  Dispatch: 'dispatch',
   NewProject: 'new-project',
 } as const;
 

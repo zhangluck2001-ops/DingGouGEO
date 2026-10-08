@@ -25,7 +25,6 @@ const NAVIGATION_COMMANDS = new Set<AppCommandId>([
   APP_COMMAND.navigateWorkspace,
   APP_COMMAND.navigateFiles,
   APP_COMMAND.navigateScheduled,
-  APP_COMMAND.navigateDispatch,
   APP_COMMAND.navigateConfiguration,
 ]);
 

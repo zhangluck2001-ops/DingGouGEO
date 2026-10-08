@@ -20,7 +20,6 @@ import {
   GridPatternBackground,
   RuledLinesBackground,
 } from '@/components/Background';
-import { WorkspaceDispatch } from '@/components/Dispatch';
 import Folder from '@/components/Folder';
 import { useGeoSpaceBootstrap } from '@/components/Geo/useGeoSpaceBootstrap';
 import AppShellLayout, {
@@ -432,12 +431,6 @@ export default function WorkspacePage() {
             <div className={workspaceMainForegroundClass}>
               <Session isNewProject />
             </div>
-          </div>
-        );
-      case 'dispatch':
-        return (
-          <div className={mainPanelContentClass}>
-            <WorkspaceDispatch />
           </div>
         );
       case 'files':

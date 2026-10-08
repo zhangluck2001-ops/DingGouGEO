@@ -1,3 +1,17 @@
+# ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
+
 from __future__ import annotations
 
 import os
@@ -14,11 +28,9 @@ from app.auth.local_control import (
 )
 from app.controller import (
     chat_controller,
-    remote_command_controller,
     run_controller,
     workspace_bundle_controller,
 )
-from app.run_journal import IdempotencyConflictError, RunNotFoundError
 
 
 class _VerifiedAuth(IAuthProvider):
@@ -171,38 +183,22 @@ def test_non_electron_control_requires_brain_authorization(monkeypatch):
         assert response.json()["kind"] == "brain_user"
 
 
-def test_run_and_command_routers_enforce_the_control_principal(monkeypatch):
+def test_run_router_enforces_the_control_principal(monkeypatch):
     monkeypatch.setenv("EIGENT_RUNTIME", "electron")
     monkeypatch.setenv("EIGENT_LOCAL_CONTROL_CAPABILITY", "secret-1")
     app = FastAPI()
     app.include_router(run_controller.router)
-    app.include_router(remote_command_controller.router)
     client = TestClient(app, client=("127.0.0.1", 50000))
     journal = MagicMock()
     journal.get_run.return_value = None
-    journal.list_reconcilable_commands.return_value = []
 
     assert client.get("/runs/missing").status_code == 401
-    assert (
-        client.get("/remote-control/commands/inbox/pending").status_code == 401
-    )
-    with (
-        patch(
-            "app.controller.run_controller.get_default_run_journal",
-            return_value=journal,
-        ),
-        patch(
-            "app.controller.remote_command_controller.get_default_run_journal",
-            return_value=journal,
-        ),
+    with patch(
+        "app.controller.run_controller.get_default_run_journal",
+        return_value=journal,
     ):
         headers = {LOCAL_CONTROL_CAPABILITY_HEADER: "secret-1"}
         assert client.get("/runs/missing", headers=headers).status_code == 404
-        response = client.get(
-            "/remote-control/commands/inbox/pending", headers=headers
-        )
-        assert response.status_code == 200
-        assert response.json() == {"items": []}
 
 
 def test_mutating_chat_routes_require_the_control_principal(monkeypatch):
@@ -258,59 +254,3 @@ def test_every_bundle_install_route_requires_local_control_capability():
     assert "server_url" not in (
         workspace_bundle_controller.BundleMaterializeBody.model_fields
     )
-
-
-def test_command_result_maps_missing_command_to_not_found(monkeypatch):
-    monkeypatch.setenv("EIGENT_RUNTIME", "electron")
-    monkeypatch.setenv("EIGENT_LOCAL_CONTROL_CAPABILITY", "secret-1")
-    app = FastAPI()
-    app.include_router(remote_command_controller.router)
-    client = TestClient(app, client=("127.0.0.1", 50000))
-    journal = MagicMock()
-    journal.append_command_result.side_effect = RunNotFoundError("missing")
-
-    with patch(
-        "app.controller.remote_command_controller.get_default_run_journal",
-        return_value=journal,
-    ):
-        response = client.post(
-            "/remote-control/commands/missing/result",
-            headers={LOCAL_CONTROL_CAPABILITY_HEADER: "secret-1"},
-            json={
-                "status": "completed",
-                "event_id": "missing:execution-result",
-                "result": {},
-            },
-        )
-
-    assert response.status_code == 404
-    assert response.json()["detail"]["code"] == "REMOTE_COMMAND_NOT_FOUND"
-
-
-def test_command_result_maps_idempotency_conflict(monkeypatch):
-    monkeypatch.setenv("EIGENT_RUNTIME", "electron")
-    monkeypatch.setenv("EIGENT_LOCAL_CONTROL_CAPABILITY", "secret-1")
-    app = FastAPI()
-    app.include_router(remote_command_controller.router)
-    client = TestClient(app, client=("127.0.0.1", 50000))
-    journal = MagicMock()
-    journal.append_command_result.side_effect = IdempotencyConflictError(
-        "event payload differs"
-    )
-
-    with patch(
-        "app.controller.remote_command_controller.get_default_run_journal",
-        return_value=journal,
-    ):
-        response = client.post(
-            "/remote-control/commands/command-1/result",
-            headers={LOCAL_CONTROL_CAPABILITY_HEADER: "secret-1"},
-            json={
-                "status": "failed",
-                "event_id": "command-1:recovery-outcome-unknown",
-                "result": {},
-            },
-        )
-
-    assert response.status_code == 409
-    assert response.json()["detail"]["code"] == "REMOTE_COMMAND_CONFLICT"

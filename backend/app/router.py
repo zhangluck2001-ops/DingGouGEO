@@ -32,7 +32,6 @@ from app.controller import (
     message_controller,
     model_controller,
     permission_controller,
-    remote_command_controller,
     remote_sub_agent_controller,
     run_controller,
     skill_controller,
@@ -112,12 +111,6 @@ def register_routers(app: FastAPI, prefix: str = "") -> None:
             "router": memory_controller.router,
             "tags": ["Memory"],
             "description": "Authenticated local Lightweight Memory CRUD",
-            "self_authenticated": True,
-        },
-        {
-            "router": remote_command_controller.router,
-            "tags": ["Remote Command Inbox"],
-            "description": "Durable Remote Control Inbox and command-result lane",
             "self_authenticated": True,
         },
         {

@@ -25,7 +25,6 @@ import { WindowCloseProvider } from './components/Layout/WindowCloseProvider';
 import { Toaster } from './components/ui/sonner';
 import { useBackgroundTaskProcessor } from './hooks/useBackgroundTaskProcessor';
 import { useExecutionSubscription } from './hooks/useExecutionSubscription';
-import { useRemoteControlBridge } from './hooks/useRemoteControlBridge';
 import { useTriggerTaskExecutor } from './hooks/useTriggerTaskExecutor';
 import { hasStackKeys } from './lib';
 import { useAuthStore } from './store/authStore';
@@ -51,9 +50,6 @@ function App() {
 
   // Execute triggered tasks automatically when WebSocket events are received
   useTriggerTaskExecutor();
-  // The bridge can receive commands immediately after registration. Do not
-  // advertise it until the local Brain can durably persist the command inbox.
-  useRemoteControlBridge(token, isBackendReady);
 
   useEffect(() => {
     const handleShareCode = (event: any, share_token: string) => {

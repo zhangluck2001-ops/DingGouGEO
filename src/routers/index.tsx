@@ -13,7 +13,6 @@
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
 import { proxyFetchPost } from '@/api/http';
-import { isDesktop } from '@/client/platform';
 import { useAuthStore } from '@/store/authStore';
 import {
   SETTINGS_SECTIONS,
@@ -38,10 +37,8 @@ const Signup = lazy(() => import('@/pages/SignUp'));
 const Workspace = lazy(() => import('@/pages/Workspace'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
-const RemoteControl = lazy(() => import('@/pages/RemoteControl'));
 
 const IS_LOCAL_MODE = import.meta.env.VITE_USE_LOCAL_PROXY === 'true';
-const ENABLE_DESKTOP_REMOTE_CONTROL_FALLBACK = isDesktop();
 
 interface AuthState {
   loading: boolean;
@@ -214,9 +211,6 @@ const AppRoutes = () => (
   <Routes>
     <Route path="/login" element={<Login />} />
     <Route path="/signup" element={<Signup />} />
-    {ENABLE_DESKTOP_REMOTE_CONTROL_FALLBACK ? (
-      <Route path="/remote-control/:sessionId" element={<RemoteControl />} />
-    ) : null}
     <Route element={<ProtectedRoute />}>
       <Route element={<Layout />}>
         <Route

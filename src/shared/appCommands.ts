@@ -33,7 +33,6 @@ export const APP_COMMAND = {
   navigateWorkspace: 'navigate-workspace',
   navigateFiles: 'navigate-files',
   navigateScheduled: 'navigate-scheduled',
-  navigateDispatch: 'navigate-dispatch',
   navigateConfiguration: 'navigate-configuration',
 } as const;
 
@@ -65,7 +64,6 @@ export const APP_COMMAND_IDS = [
   APP_COMMAND.navigateWorkspace,
   APP_COMMAND.navigateFiles,
   APP_COMMAND.navigateScheduled,
-  APP_COMMAND.navigateDispatch,
   APP_COMMAND.navigateConfiguration,
 ] as const satisfies readonly AppCommandId[];
 

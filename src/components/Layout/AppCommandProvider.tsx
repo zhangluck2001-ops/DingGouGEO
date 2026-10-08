@@ -219,13 +219,6 @@ export function AppCommandProvider({ children }: { children: ReactNode }) {
             navigate('/');
           });
           return;
-        case APP_COMMAND.navigateDispatch:
-          void runAfterWorkspaceConfigurationSave(() => {
-            closeSettings();
-            setActiveWorkspaceTab(WorkspaceTab.Dispatch);
-            navigate('/');
-          });
-          return;
         case APP_COMMAND.navigateConfiguration:
           if (!activeSpaceId) return;
           void runAfterWorkspaceConfigurationSave(() => {
