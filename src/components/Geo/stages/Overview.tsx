@@ -12,10 +12,15 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
+import { ListChecks } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import GeoBase from '../GeoBase';
+import { GeoPipelineView } from '../GeoPipeline';
 
-/** The whole GEO pipeline for this brand, from probes to cited content. */
+/**
+ * The whole GEO pipeline for this brand: where each stage stands against
+ * its completion criteria, then the charts.
+ */
 export default function GeoOverview() {
   const { t } = useTranslation();
   return (
@@ -23,8 +28,15 @@ export default function GeoOverview() {
       sectionId="geo-overview"
       title={t('layout.geo-overview', { defaultValue: 'GEO overview' })}
       datasets={['answers']}
-      views={['dashboard']}
+      views={['custom', 'dashboard']}
       dashboardKind="overview"
+      customView={{
+        icon: ListChecks,
+        label: t('geo.view-pipeline', { defaultValue: 'Pipeline' }),
+        render: ({ projectId, refreshKey }) => (
+          <GeoPipelineView projectId={projectId} refreshKey={refreshKey} />
+        ),
+      }}
     />
   );
 }

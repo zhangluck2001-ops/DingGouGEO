@@ -256,5 +256,14 @@
   "agent-task-failed": "准备任务失败，请重试。",
   "agent-task-these-files": "这次只处理下面这些资料：",
   "agents-inputs": "输入",
-  "agents-done": "完成标准"
+  "agents-done": "完成标准",
+  "view-pipeline": "链路进度",
+  "pipeline-done": "已完成",
+  "pipeline-not-done": "未完成",
+  "pipeline-passed": "{{passed}}／{{total}} 项达标",
+  "pipeline-open": "打开",
+  "pipeline-load-failed": "读取链路进度失败，请重试。",
+  "pipeline-loading": "正在读取链路进度",
+  "pipeline-check-met": "已达标：",
+  "pipeline-check-unmet": "未达标："
 }

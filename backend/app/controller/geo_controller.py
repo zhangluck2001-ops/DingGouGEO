@@ -21,6 +21,7 @@ from app.geo import (
     harness,
     knowledge,
     metrics,
+    pipeline_status,
     queries,
     rounds,
     space_bootstrap,
@@ -90,6 +91,15 @@ def list_agents():
 def round_metrics(project_id: int, capture_round: str):
     """The contract's metrics for one capture round, per platform."""
     return metrics.round_metrics(project_id, capture_round)
+
+
+@router.get("/pipeline")
+def pipeline(project_id: int):
+    """Each stage's completion checks for the Space, for the overview."""
+    try:
+        return pipeline_status.pipeline_status(project_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
 
 
 @router.get("/stages/{key}/task")

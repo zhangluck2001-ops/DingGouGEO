@@ -256,5 +256,14 @@
   "agent-task-failed": "Couldn't prepare the task. Try again.",
   "agent-task-these-files": "This time, only these files:",
   "agents-inputs": "Input",
-  "agents-done": "Done when"
+  "agents-done": "Done when",
+  "view-pipeline": "Pipeline",
+  "pipeline-done": "Done",
+  "pipeline-not-done": "Not done",
+  "pipeline-passed": "{{passed}} of {{total}} checks met",
+  "pipeline-open": "Open",
+  "pipeline-load-failed": "Couldn't load the pipeline status. Try again.",
+  "pipeline-loading": "Loading the pipeline status",
+  "pipeline-check-met": "Met:",
+  "pipeline-check-unmet": "Not met:"
 }

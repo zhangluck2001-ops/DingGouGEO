@@ -185,6 +185,22 @@ export interface GeoStageAgent {
   skills: string[];
 }
 
+/** One stage's completion checks for a Space (pipeline contract). */
+export interface GeoPipelineStage {
+  key: GeoStageKey;
+  seq: number;
+  name: string;
+  state: '已完成' | '未完成';
+  passed: number;
+  checks: { label: string; ok: boolean; detail: string }[];
+}
+
+export interface GeoPipeline {
+  capture_round: string | null;
+  batch: string | null;
+  stages: GeoPipelineStage[];
+}
+
 export interface GeoAgents {
   root: { name: string; tools: string[] };
   stages: GeoStageAgent[];
@@ -214,6 +230,8 @@ function clean(params: GeoQuery) {
 export const geoApi = {
   projects: (): Promise<{ items: GeoProject[] }> => fetchGet('/geo/projects'),
   agents: (): Promise<GeoAgents> => fetchGet('/geo/agents'),
+  pipeline: (projectId: number): Promise<GeoPipeline> =>
+    fetchGet('/geo/pipeline', { project_id: projectId }),
   /** The stage's hand-off instruction, rendered by the backend from its
    * contract and the Space's current state. */
   stageTask: (
