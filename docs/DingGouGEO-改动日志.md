@@ -177,6 +177,15 @@ DingGouGEO 基于开源项目 [Eigent](https://github.com/eigent-ai/eigent)（`d
 - **技能槽**：品牌专属技能按空间配置 `GEO/stage_skills.json`。sma-geo 复制到本机 `~/.eigent/skills/sma-geo`（不进仓库：内含客户事实包），SMA 空间挂在内容生产环节。
 - **SMA 知识库**：桌面统一知识库原样拆进七个模块（合规红线后附 sma-geo 现行命名规则）；命名与指标条目 11 条写入 `geo_fact`；统一知识库、09-28 方案、事实包、DOI 白名单、文献表 5 份进 `原始资料/`，状态「待清洗」，留给 GEO Agent 在应用里逐条清洗。导入前备份：空间 `GEO/geo.db.bak-20261008-151916`、`GEO/01_品牌知识库.bak-20261008-151916.tgz`。
 
+### 2026-10-08（晚）清理上游功能 + 工程架构文档
+
+- **删除远程控制**：侧栏「调度」页（原来依赖 Eigent 云服务中转，本机始终是空的）、快捷键 ⌘4 与菜单项、`/remote-control` 页面、桌面桥接、后端远程命令收件箱接口。
+- **删除 Workforce 多智能体**：`chat_service.py` 从 3,051 行减到 245 行，只剩 GEO Agent；删掉执行循环、协调者、问题判断智能体、6 个通用角色及提示词、Workforce 遥测；前端删掉工作流画布、worker 卡片、「添加 worker」、模式切换和不再渲染的会话侧栏外壳。
+- **删除 Gemini 远程子智能体**和 **25 个只有 Workforce 用的工具**（社交媒体、Google Drive／Gmail、GitHub、网页部署、图片／音视频、RAG 等）；Notion、Google Calendar、LinkedIn 保留给连接器设置。
+- **保留**（用户 10-08 确认）：自动化、配置页、文件版本与 Review、浏览器设置。
+- 共删约 25,700 行。后端测试 2,430 项全过；前端无新增失败（68 个旧失败，原 69 个）。闲置但暂留的部分（运行日志的远程命令表、chatStore 的 Workforce 事件分支、本地服务的远程控制域等）列在 `docs/DingGouGEO-工程架构.md` 第五节。
+- 新增 **`docs/DingGouGEO-工程架构.md`**：三个进程、数据位置、后端模块、前端区域、上游功能去留。
+
 ---
 
 ## 运行

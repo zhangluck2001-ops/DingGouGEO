@@ -21,7 +21,7 @@ GEO Agent（主智能体，唯一和用户对话，负责编排）
  └── general-purpose 不属于任何一环的杂事
 ```
 
-- **DingGouGEO 只有这一套智能体**（2026-10-08 起）。上游 Eigent 的多智能体模式（Workforce：协调者、任务规划者和开发/浏览器/文档/多模态/社交媒体/MCP 六个通用角色）已关闭：对话框不再有模式切换，前端请求固定为 `single-agent`，后端在所有对话的唯一入口 `start_chat_stream` 再强制一次（`chat_controller._on_geo_agent`，旧项目、远程控制、触发器发来的 workforce 请求也一样）。Workforce 的代码暂未删除。
+- **DingGouGEO 只有这一套智能体**（2026-10-08 起）。上游 Eigent 的多智能体模式（Workforce：协调者、任务规划者和开发/浏览器/文档/多模态/社交媒体/MCP 六个通用角色）已关闭：对话框不再有模式切换，前端请求固定为 `single-agent`，后端在所有对话的唯一入口 `start_chat_stream` 再强制一次（`chat_controller._on_geo_agent`，旧项目、远程控制、触发器发来的 workforce 请求也一样）。Workforce 的代码已于 2026-10-08 删除（见 `docs/DingGouGEO-工程架构.md`）。
 - 设置 →「GEO 智能体」（原「子智能体」页，路由 id `sub-agents` 不变）只读展示这份名单：GEO Agent 和它的工具，8 个环节智能体的职责、产出和技能槽。数据来自 `GET /geo/agents`（`harness.agents_overview()`）。原来的 Gemini 远程子智能体入口已去掉——它只挂在 Workforce 的通用角色上，GEO Agent 从没用过。
 - 一次对话开始时只注册 **一个** 智能体：`single_agent`，界面显示为「GEO Agent」（翻译键仍是 `chat.camel-agent`，只改了显示值）。子智能体只在主智能体派发时才出现。
 - 子智能体只有一层，不能再往下派（`DepthLimitedAgentToolkit`，`max_depth=1`）。
@@ -141,5 +141,4 @@ CAMEL 在对话超过 `token_limit × 阈值` 时自动压缩，而 `token_limit
 ## 七、还没做的
 
 - 8 环子智能体各自的专门提示词和工具子集（现在共用一个模板、继承主智能体全部工具）。
-- 删除已关闭的 Workforce 代码（`chat_service.py` 大部分、`utils/workforce.py`、六个通用角色的工厂和提示词、工作流画布、`ProjectModeToggle`），等链路跑通后做。
 - 链路契约：8 环各自的输入、产出、入口、技能槽、完成标准、交接；数据层补「轮次 → 缺口 → 内容 → 复测」的关联；按钮、主智能体、子智能体的环节定义合成一处。
