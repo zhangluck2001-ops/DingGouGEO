@@ -26,7 +26,9 @@ export type GeoDatasetKey =
   | 'analyses'
   | 'citations'
   | 'probes'
-  | 'contents';
+  | 'contents'
+  | 'gaps'
+  | 'benchmarks';
 
 /** One row as returned by the local store; field values are text. */
 export type GeoRecord = {

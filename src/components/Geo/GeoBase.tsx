@@ -122,6 +122,8 @@ const TABLE_NAMES: Record<GeoDatasetKey, string> = {
   probes: 'geo_probe',
   contents: 'geo_content',
   facts: 'geo_fact',
+  gaps: 'geo_gap',
+  benchmarks: 'geo_benchmark',
 };
 const MAX_ROWS_IN_PROMPT = 30;
 

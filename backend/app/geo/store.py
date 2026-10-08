@@ -168,6 +168,41 @@ CREATE TABLE IF NOT EXISTS geo_fact (
     note TEXT
 );
 
+-- Stage 4 output, stage 6 input: where the brand is missing or losing, with
+-- the answers that show it. ``evidence`` lists capture codes.
+CREATE TABLE IF NOT EXISTS geo_gap (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES geo_project(id),
+    record_id TEXT NOT NULL UNIQUE,
+    capture_round TEXT,
+    scene TEXT,
+    gap_type TEXT,
+    platforms TEXT,
+    evidence TEXT,
+    priority TEXT,
+    direction TEXT,
+    status TEXT,
+    note TEXT
+);
+
+-- Stage 5 output, stage 6 input: highly cited articles to model content on.
+CREATE TABLE IF NOT EXISTS geo_benchmark (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    project_id INTEGER NOT NULL REFERENCES geo_project(id),
+    record_id TEXT NOT NULL UNIQUE,
+    capture_round TEXT,
+    title TEXT,
+    url TEXT,
+    site TEXT,
+    ai_platforms TEXT,
+    cited_count INTEGER,
+    chars INTEGER,
+    structure TEXT,
+    brand_count INTEGER,
+    archive_path TEXT,
+    note TEXT
+);
+
 CREATE TABLE IF NOT EXISTS geo_kb_source (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     project_id INTEGER NOT NULL REFERENCES geo_project(id),
@@ -216,6 +251,8 @@ RECORD_TABLES = (
     "geo_content",
     "geo_probe",
     "geo_fact",
+    "geo_gap",
+    "geo_benchmark",
 )
 _TRACKING_COLUMNS = {
     "local_edited": "INTEGER NOT NULL DEFAULT 0",
@@ -225,9 +262,32 @@ _TRACKING_COLUMNS = {
 # Columns added after the first release; CREATE TABLE IF NOT EXISTS won't add
 # them to an existing database.
 _ADDED_COLUMNS = {
-    "geo_probe": ("selling_points", "no_go", "panel"),
+    # ``basis``: the real customer questions a probe is based on.
+    "geo_probe": ("selling_points", "no_go", "panel", "basis"),
     "geo_citation": ("domain",),
-    "geo_content": ("channel",),
+    # ``role`` marks the facts later stages compute with: naming entries and
+    # core facts, evidence anchors, and concerns (see the pipeline contract).
+    "geo_fact": ("role",),
+    "geo_answer_analysis": (
+        "own_rank",
+        "anchor_same_para",
+        "absorbed_facts",
+        "concerns",
+    ),
+    # A piece knows the round and gaps it answers, the article it is
+    # modelled on, where its text is, whether it passed the gate, and when
+    # it went out.
+    "geo_content": (
+        "channel",
+        "batch",
+        "based_on_round",
+        "gap_ids",
+        "benchmark_url",
+        "target_channel",
+        "body_path",
+        "qc_status",
+        "published_on",
+    ),
 }
 
 # Older databases called the capture wave ``batch`` and the probe group

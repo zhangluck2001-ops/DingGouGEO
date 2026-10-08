@@ -121,6 +121,10 @@ DATASETS: dict[str, Dataset] = {
             "competitor_relation",
             "sentiment",
             "risk_tags",
+            "own_rank",
+            "anchor_same_para",
+            "absorbed_facts",
+            "concerns",
         ),
         search=(
             "capture_code",
@@ -136,6 +140,7 @@ DATASETS: dict[str, Dataset] = {
             "own_in_top3",
             "competitor_relation",
             "sentiment",
+            "anchor_same_para",
         ),
         default_sort="capture_code",
         computed={
@@ -183,9 +188,10 @@ DATASETS: dict[str, Dataset] = {
             "selling_points",
             "no_go",
             "panel",
+            "basis",
             "note",
         ),
-        search=("text", "code", "note", "selling_points"),
+        search=("text", "code", "note", "selling_points", "basis"),
         facets=(
             "review_status",
             "direction",
@@ -208,10 +214,47 @@ DATASETS: dict[str, Dataset] = {
             "claim_type",
             "evidence_grade",
             "source",
+            "role",
             "note",
         ),
         search=("content", "field", "product", "source", "note"),
-        facets=("module", "claim_type", "evidence_grade", "product"),
+        facets=("module", "claim_type", "evidence_grade", "product", "role"),
+        default_sort="id",
+    ),
+    "gaps": Dataset(
+        table="geo_gap",
+        columns=(
+            "capture_round",
+            "scene",
+            "gap_type",
+            "platforms",
+            "evidence",
+            "priority",
+            "direction",
+            "status",
+            "note",
+        ),
+        search=("scene", "direction", "evidence", "note"),
+        facets=("capture_round", "gap_type", "priority", "status"),
+        default_sort="id",
+    ),
+    "benchmarks": Dataset(
+        table="geo_benchmark",
+        columns=(
+            "capture_round",
+            "title",
+            "url",
+            "site",
+            "ai_platforms",
+            "cited_count",
+            "chars",
+            "structure",
+            "brand_count",
+            "archive_path",
+            "note",
+        ),
+        search=("title", "url", "site", "structure", "note"),
+        facets=("capture_round", "site"),
         default_sort="id",
     ),
     "contents": Dataset(
@@ -224,9 +267,25 @@ DATASETS: dict[str, Dataset] = {
             "account_platform",
             "account_name",
             "status",
+            "batch",
+            "based_on_round",
+            "gap_ids",
+            "benchmark_url",
+            "target_channel",
+            "body_path",
+            "qc_status",
+            "published_on",
         ),
-        search=("title", "account_name", "account_platform", "url"),
-        facets=("channel", "account_platform", "status", "account_name"),
+        search=("title", "account_name", "account_platform", "url", "batch"),
+        facets=(
+            "channel",
+            "account_platform",
+            "status",
+            "account_name",
+            "batch",
+            "based_on_round",
+            "qc_status",
+        ),
         default_sort="serial_num",
         computed={
             "cited_count": _CONTENT_CITED,
@@ -237,9 +296,22 @@ DATASETS: dict[str, Dataset] = {
 
 # Options offered even before any row uses them.
 CONTENT_STATUSES = ("草稿", "待发布", "已发布")
+QC_STATUSES = ("未验收", "通过", "未通过")
+# Knowledge-base roles (pipeline contract 1.3, stage 1). Naming roles tell
+# the diagnosis which brand names are ours; the other three name the facts
+# the metrics look for. For those, ``field`` holds the match words, "|"
+# between alternatives.
+NAMING_ROLES = ("标准名", "首提全称", "沿革句", "别名", "撞名排除")
+METRIC_ROLES = ("核心事实", "证据锚", "扣分项")
+GAP_TYPES = ("未进候选", "进了没首推", "事实错误", "负面顾虑")
+GAP_STATUSES = ("待处理", "已排产", "已发布", "已验证")
 FIXED_OPTIONS: dict[str, dict[str, tuple[str, ...]]] = {
     "geo_capture_round": {"kind": rounds.KINDS, "status": rounds.STATUSES},
-    "geo_content": {"status": CONTENT_STATUSES, "channel": ("自媒体", "媒体")},
+    "geo_content": {
+        "status": CONTENT_STATUSES,
+        "channel": ("自媒体", "媒体"),
+        "qc_status": QC_STATUSES,
+    },
     "geo_probe": {
         "brand_pointer": ("L1非品牌指向", "L2品牌指向"),
         "direction": ("正向", "反向"),
@@ -251,6 +323,7 @@ FIXED_OPTIONS: dict[str, dict[str, tuple[str, ...]]] = {
         "recommend_own": ("推荐", "条件推荐", "不推荐", "未提及"),
         "own_in_top3": ("是", "否"),
         "sentiment": ("正向", "负向", "无匹配类别"),
+        "anchor_same_para": ("是", "否"),
     },
     "geo_fact": {
         "module": (
@@ -264,6 +337,12 @@ FIXED_OPTIONS: dict[str, dict[str, tuple[str, ...]]] = {
         ),
         "claim_type": ("事实", "宣称", "话术", "存疑", "待核实"),
         "evidence_grade": ("A", "B", "C", "D", "E"),
+        "role": NAMING_ROLES + METRIC_ROLES,
+    },
+    "geo_gap": {
+        "gap_type": GAP_TYPES,
+        "priority": ("高", "中", "低"),
+        "status": GAP_STATUSES,
     },
 }
 

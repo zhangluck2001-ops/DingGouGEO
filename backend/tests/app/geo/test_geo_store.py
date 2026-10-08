@@ -313,3 +313,28 @@ def test_round_comparison_counts_each_round(tmp_path, monkeypatch):
     assert (first["mentions_own"], first["recommends_own"]) == (1, 1)
     assert first["cited_contents"] == 1
     assert (second["name"], second["answers"]) == ("第三轮", 0)
+
+
+def test_gaps_and_benchmarks_are_boards(tmp_path, monkeypatch):
+    pid = _seed(tmp_path, monkeypatch)
+    queries.create_record(
+        "gaps",
+        pid,
+        {"scene": "便秘换奶", "gap_type": "未进候选", "evidence": "RUN_1"},
+    )
+    queries.create_record(
+        "benchmarks",
+        pid,
+        {"title": "十款适度水解奶粉测评", "cited_count": "218"},
+    )
+    gaps = queries.list_records("gaps", pid)
+    assert gaps["items"][0]["scene"] == "便秘换奶"
+    # Options are offered before any row uses them.
+    statuses = {f["value"] for f in gaps["facets"]["status"]}
+    assert statuses == set(queries.GAP_STATUSES)
+    assert queries.list_records("benchmarks", pid)["total"] == 1
+    roles = {
+        f["value"]
+        for f in queries.list_records("facts", pid)["facets"]["role"]
+    }
+    assert {"标准名", "证据锚", "扣分项", "核心事实"} <= roles

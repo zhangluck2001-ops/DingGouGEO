@@ -22,7 +22,7 @@ export default function GeoCitations() {
     <GeoBase
       sectionId="geo-citations"
       title={t('layout.geo-citations', { defaultValue: 'Cited sources' })}
-      datasets={['citations']}
+      datasets={['citations', 'benchmarks']}
       views={['grid', 'dashboard']}
       dashboardKind="sources"
       agentTask={{

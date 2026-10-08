@@ -30,6 +30,8 @@ export const GEO_STAGE_FOR_DATASET: Record<GeoDatasetKey, SettingsSectionId> = {
   analyses: 'geo-analysis',
   citations: 'geo-citations',
   contents: 'geo-drafts',
+  gaps: 'geo-analysis',
+  benchmarks: 'geo-citations',
 };
 
 /**

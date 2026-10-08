@@ -20,6 +20,7 @@ from app.geo import (
     feishu_import,
     harness,
     knowledge,
+    metrics,
     queries,
     rounds,
     space_bootstrap,
@@ -82,6 +83,18 @@ def list_projects():
 @router.get("/agents")
 def list_agents():
     return harness.agents_overview()
+
+
+@router.get("/metrics")
+def round_metrics(project_id: int, capture_round: str):
+    """The contract's metrics for one capture round, per platform."""
+    return metrics.round_metrics(project_id, capture_round)
+
+
+@router.get("/metrics/compare")
+def compare_metrics(project_id: int, base_round: str, later_round: str):
+    """Two rounds over the probes both measured."""
+    return metrics.compare_rounds(project_id, base_round, later_round)
 
 
 @router.post("/spaces/ensure")

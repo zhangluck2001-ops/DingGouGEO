@@ -25,7 +25,7 @@ export default function GeoAnalysis() {
     <GeoBase
       sectionId="geo-analysis"
       title={t('layout.geo-analysis', { defaultValue: 'Diagnosis' })}
-      datasets={['analyses']}
+      datasets={['analyses', 'gaps']}
       views={['grid', 'dashboard']}
       dashboardKind="analysis"
       agentTask={{
