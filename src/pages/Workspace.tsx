@@ -22,6 +22,7 @@ import {
 } from '@/components/Background';
 import { WorkspaceDispatch } from '@/components/Dispatch';
 import Folder from '@/components/Folder';
+import { useGeoSpaceBootstrap } from '@/components/Geo/useGeoSpaceBootstrap';
 import AppShellLayout, {
   APP_SHELL_CONTENT_CLASS,
 } from '@/components/Layout/AppShellLayout';
@@ -69,6 +70,8 @@ export default function WorkspacePage() {
     activeProjectId ? state.getProjectMeta(activeProjectId) : null
   );
 
+  // Every Space is a GEO brand project: set it up the first time it opens.
+  useGeoSpaceBootstrap();
   const { activeWorkspaceTab, setHasAgentFiles, setActiveWorkspaceTab } =
     usePageTabStore();
   const workspaceSidebarHidden = usePageTabStore(
@@ -485,7 +488,11 @@ export default function WorkspacePage() {
            history survive panel close, workspace-tab hops, and project
            switches. Renders nothing on the web host. */
         overlay={<PreviewBrowserLayer />}
-        trailing={<WorkbenchPane />}
+        /* In a session the GEO pages are a tab of the session's own panel,
+           so the standalone GEO column only shows on other pages. */
+        trailing={
+          activeWorkspaceTab === 'project' ? undefined : <WorkbenchPane />
+        }
       >
         {renderActiveWorkspaceTab()}
       </AppShellLayout>

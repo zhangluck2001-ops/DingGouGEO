@@ -248,7 +248,7 @@
   "back-to-agent-details": "Retour aux détails de l’agent",
   "backend-not-ready": "❌ Le service backend n’est pas prêt. Patientez un instant et réessayez, ou redémarrez l’application si le problème persiste.",
   "browser-agent": "Agent de navigation",
-  "camel-agent": "Agent CAMEL",
+  "camel-agent": "GEO Agent",
   "cancel-task-failed": "Impossible d’annuler la tâche",
   "cloud-model-key-failed": "Impossible d’obtenir la clé du modèle cloud. Vérifiez votre compte ou les paramètres du modèle.",
   "cloud-model-switched": "Le modèle {{requestedModel}} n’est plus disponible ; passage à {{fallbackModel}}.",
@@ -441,5 +441,6 @@
   "notice-refresh-failed": "Impossible d’actualiser vos crédits. Réessayez.",
   "notice-availability-unverified": "Impossible de vérifier la disponibilité. Contactez l’assistance si le problème persiste.",
   "notice-access-unverified": "Votre forfait a été actualisé. Réessayez le modèle pour vérifier l’accès.",
-  "notice-credits-unavailable": "Crédits indisponibles"
+  "notice-credits-unavailable": "Crédits indisponibles",
+  "run-details": "Run details"
 }

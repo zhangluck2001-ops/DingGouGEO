@@ -1,0 +1,17 @@
+{
+  "default": {
+    "context_window": 128000
+  },
+  "models": [
+    {
+      "model_type": "gpt-6-sol",
+      "context_window": 1050000,
+      "source": "third-party model catalogues (artificialanalysis.ai, openrouter.ai), 2026-09-30; not checked against OpenAI's own documentation"
+    },
+    {
+      "model_type": "deepseek-flash",
+      "context_window": 1000000,
+      "source": "third-party model catalogues (haimaker.ai, getmaxim.ai), 2026-09-30; not checked against DeepSeek's own documentation"
+    }
+  ]
+}

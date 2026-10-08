@@ -12,7 +12,6 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
-import { useGeoSpaceBootstrap } from '@/components/Geo/useGeoSpaceBootstrap';
 import {
   APP_SHELL_COLUMN_GAP_PX,
   APP_SHELL_SIDEBAR_WIDTH_PX,
@@ -44,7 +43,6 @@ const KEYBOARD_STEP = 32;
  */
 export default function WorkbenchPane() {
   const { t } = useTranslation();
-  useGeoSpaceBootstrap();
   const open = useWorkbenchStore((state) => state.open);
   const width = useWorkbenchStore((state) => state.width);
   const setWidth = useWorkbenchStore((state) => state.setWidth);

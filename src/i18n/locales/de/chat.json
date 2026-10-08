@@ -247,7 +247,7 @@
   "back-to-agent-details": "Zurück zur Agenten-Einzelansicht.",
   "backend-not-ready": "❌ Der Hintergrunddienst ist nicht bereit. Warte einen Moment und versuche es noch einmal oder starte die Anwendung, wenn das Problem fortgesetzt wird.",
   "browser-agent": "Browser-Agent",
-  "camel-agent": "CAMEL-Agent.",
+  "camel-agent": "GEO Agent",
   "cancel-task-failed": "Die Aufgabe konnte nicht storniert werden.",
   "cloud-model-key-failed": "Kann keine Cloud-Modell-Schlüssel erhalten. Überprüfen Sie Ihre Kontoeinstellungen oder Modell-Einstellungen.",
   "cloud-model-switched": "Das Modell {{requestedModel}} ist nicht mehr verfügbar; verwendet stattdessen {{fallbackModel}}.",
@@ -437,5 +437,6 @@
   "notice-refresh-failed": "Deine Credits konnten nicht aktualisiert werden. Versuche es erneut.",
   "notice-availability-unverified": "Verfügbarkeit konnte nicht geprüft werden. Kontaktiere den Support, wenn das Problem anhält.",
   "notice-access-unverified": "Dein Tarif wurde aktualisiert. Versuche das Modell erneut, um den Zugriff zu prüfen.",
-  "notice-credits-unavailable": "Credits nicht verfügbar"
+  "notice-credits-unavailable": "Credits nicht verfügbar",
+  "run-details": "Run details"
 }

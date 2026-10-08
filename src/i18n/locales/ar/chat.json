@@ -251,7 +251,7 @@
   "back-to-agent-details": "العودة إلى تفاصيل الوكيل",
   "backend-not-ready": "❌ خدمة الواجهة الخلفية غير جاهزة. انتظر قليلًا ثم حاول مرة أخرى، أو أعد تشغيل التطبيق إذا استمرت المشكلة.",
   "browser-agent": "وكيل المتصفح",
-  "camel-agent": "وكيل CAMEL",
+  "camel-agent": "GEO Agent",
   "cancel-task-failed": "تعذّر إلغاء المهمة",
   "cloud-model-key-failed": "تعذّر الحصول على مفتاح النموذج السحابي. تحقّق من حسابك أو إعدادات النموذج.",
   "cloud-model-switched": "لم يعد النموذج {{requestedModel}} متاحًا؛ تم التبديل إلى {{fallbackModel}}.",
@@ -453,5 +453,6 @@
   "notice-refresh-failed": "تعذّر تحديث أرصدتك. حاول مجددًا.",
   "notice-availability-unverified": "تعذّر التحقق من التوفر. تواصل مع الدعم إذا استمرت المشكلة.",
   "notice-access-unverified": "تم تحديث خطتك. جرّب النموذج مجددًا للتحقق من إمكانية الوصول.",
-  "notice-credits-unavailable": "الأرصدة غير متاحة"
+  "notice-credits-unavailable": "الأرصدة غير متاحة",
+  "run-details": "Run details"
 }

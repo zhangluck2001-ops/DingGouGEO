@@ -1542,5 +1542,9 @@
   "geo-citations": "Cited sources",
   "geo-drafts": "Content production",
   "geo-published": "Publishing and tracking",
-  "geo-knowledge": "Brand knowledge base"
+  "geo-knowledge": "Brand knowledge base",
+  "back-to-spaces": "Back to Spaces",
+  "geo-analysis": "Diagnosis",
+  "preview-kind-geo": "GEO",
+  "preview-kind-geo-desc": "This Space's GEO pipeline: knowledge base, probes, captures, diagnosis, sources, and content."
 }

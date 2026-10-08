@@ -85,3 +85,17 @@ def test_depth_limited_agent_toolkit_propagates_run_context_to_child_thread():
         toolkit._executor.shutdown(wait=True)
 
     assert observed == ["run-1"]
+
+
+def test_geo_stage_type_gets_the_stage_prompt_and_others_the_generic_one():
+    toolkit = DepthLimitedAgentToolkit(current_depth=0, max_depth=1)
+    try:
+        stage = toolkit._build_system_message("geo-content", "写三篇底稿")
+        generic = toolkit._build_system_message("research", "Find references")
+    finally:
+        toolkit._executor.shutdown(wait=True)
+
+    assert stage.startswith("你是 DingGouGEO 的「内容生产」子智能体")
+    assert "本次任务：写三篇底稿" in stage
+    assert "Sub-agent type: research" in generic
+    assert "do not create or delegate" in generic

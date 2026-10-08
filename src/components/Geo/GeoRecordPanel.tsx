@@ -91,7 +91,7 @@ export default function GeoRecordPanel({
     let cancelled = false;
     setLoading(true);
     void geoApi
-      .get(config.key, recordId)
+      .get(config.key, recordId, projectId)
       .then((response) => {
         if (cancelled) return;
         setRecord(response);
@@ -108,7 +108,7 @@ export default function GeoRecordPanel({
     };
     // initialValues only seeds a new record.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config, isNew, recordId]);
+  }, [config, isNew, projectId, recordId]);
 
   const original = useMemo(() => toValues(config, record), [config, record]);
   const changed = useMemo(
@@ -127,7 +127,7 @@ export default function GeoRecordPanel({
     try {
       const saved = isNew
         ? await geoApi.create(config.key, projectId, values)
-        : await geoApi.update(config.key, recordId, changed);
+        : await geoApi.update(config.key, recordId, changed, projectId);
       setRecord(saved);
       setValues(toValues(config, saved));
       onSaved(saved);
@@ -136,11 +136,12 @@ export default function GeoRecordPanel({
           ? t('geo.record-created', { defaultValue: 'Record added' })
           : t('geo.record-saved', { defaultValue: 'Changes saved' })
       );
-    } catch {
+    } catch (error) {
       toast.error(
         t('geo.record-save-failed', {
           defaultValue: "Couldn't save. Try again.",
-        })
+        }),
+        { description: error instanceof Error ? error.message : undefined }
       );
     } finally {
       setSaving(false);
@@ -150,7 +151,7 @@ export default function GeoRecordPanel({
   const remove = async () => {
     if (isNew) return;
     try {
-      await geoApi.remove(config.key, [recordId]);
+      await geoApi.remove(config.key, [recordId], projectId);
       onDeleted(recordId);
       toast.success(
         t('geo.records-deleted', {
@@ -158,11 +159,12 @@ export default function GeoRecordPanel({
           count: 1,
         })
       );
-    } catch {
+    } catch (error) {
       toast.error(
         t('geo.record-delete-failed', {
           defaultValue: "Couldn't delete. Try again.",
-        })
+        }),
+        { description: error instanceof Error ? error.message : undefined }
       );
     }
   };

@@ -585,7 +585,12 @@ function HomeSettingsPageContent() {
   return (
     <SkillsProvider active={!isSpacesView && activeSection === 'skills'}>
       <ConnectorsNavigationProvider>
-        <AppShellLayout sidebar={sidebar} sidebarHidden={sidebarHidden}>
+        {/* The Spaces list is the landing page: it needs no rail. Settings
+            keep theirs. */}
+        <AppShellLayout
+          sidebar={sidebar}
+          sidebarHidden={sidebarHidden || (isSpacesView && !visibleSpaceId)}
+        >
           <main className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
             <ContentHeaderFrame>
               <div className="relative min-h-0 flex-1">

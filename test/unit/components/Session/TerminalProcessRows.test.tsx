@@ -89,14 +89,15 @@ describe('Summary process controls', () => {
       'last line'
     );
   });
-  it('offers four direct view options with inline shortcuts and no heading', () => {
+  it('offers five direct view options (GEO first) with inline shortcuts and no heading', () => {
     const choose = vi.fn();
     render(
       <TooltipProvider>
         <ChooserTab onChoose={choose} />
       </TooltipProvider>
     );
-    expect(screen.getAllByRole('button')).toHaveLength(4);
+    expect(screen.getAllByRole('button')).toHaveLength(5);
+    expect(screen.getAllByRole('button')[0]).toHaveAccessibleName(/^GEO\b/);
     expect(screen.queryByText('Open a new view')).not.toBeInTheDocument();
     expect(screen.queryByText('From this session')).not.toBeInTheDocument();
     const keycaps = document.querySelectorAll('kbd');
@@ -121,6 +122,7 @@ describe('Summary process controls', () => {
     }
     for (const button of screen.getAllByRole('button')) fireEvent.click(button);
     expect(choose.mock.calls.map((call) => call[0])).toEqual([
+      'geo',
       'browser',
       'file',
       'review',

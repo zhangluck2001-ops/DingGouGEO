@@ -36,12 +36,33 @@ describe('pageTabStore session preview', () => {
     usePageTabStore.getState().setSessionPreviewProject('project-a');
   });
 
-  it('opens onto a single chooser tab', () => {
+  it('opens onto the GEO tab (DingGouGEO)', () => {
     const store = usePageTabStore.getState();
     store.toggleSessionPreview();
 
     expect(slice().open).toBe(true);
-    expect(slice().tabs.map((tab) => tab.type)).toEqual(['chooser']);
+    expect(slice().tabs.map((tab) => tab.type)).toEqual(['geo']);
+    expect(slice().activeTabId).toBe(slice().tabs[0].id);
+  });
+
+  it('opens a new session on the GEO tab but keeps saved panel state', () => {
+    const store = usePageTabStore.getState();
+    store.ensureDefaultSessionPreview('project-a');
+    expect(slice()).toMatchObject({ open: true });
+    expect(slice().tabs.map((tab) => tab.type)).toEqual(['geo']);
+
+    store.closeSessionPreview();
+    store.ensureDefaultSessionPreview('project-a');
+    expect(slice().open).toBe(false);
+  });
+
+  it('keeps a single GEO tab', () => {
+    const store = usePageTabStore.getState();
+    store.openPreviewTab('geo');
+    store.openPreviewTab('browser');
+    store.openPreviewTab('geo');
+
+    expect(slice().tabs.map((tab) => tab.type)).toEqual(['geo', 'browser']);
     expect(slice().activeTabId).toBe(slice().tabs[0].id);
   });
 
@@ -139,7 +160,7 @@ describe('pageTabStore session preview', () => {
 
   it('opens agent streams in terminal tabs, converting the chooser in place', () => {
     const store = usePageTabStore.getState();
-    store.toggleSessionPreview();
+    store.addChooserPreviewTab();
     const chooserId = slice().tabs[0].id;
 
     store.openAgentTerminalPreview(
@@ -201,7 +222,7 @@ describe('pageTabStore session preview', () => {
 
   it('reuses the chooser tab when a file is opened', () => {
     const store = usePageTabStore.getState();
-    store.toggleSessionPreview();
+    store.addChooserPreviewTab();
     const file = { name: 'doc.txt', path: '/tmp/doc.txt' } as FileInfo;
     store.openFilePreview(file);
 
@@ -527,7 +548,7 @@ describe('pageTabStore session preview', () => {
 
   it('reuses the chooser and deduplicates browser tabs by URL', () => {
     const store = usePageTabStore.getState();
-    store.toggleSessionPreview();
+    store.addChooserPreviewTab();
     store.openBrowserPreview('https://example.com/docs');
 
     // Chooser replaced in place — no extra tab piled up.

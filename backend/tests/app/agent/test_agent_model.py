@@ -157,6 +157,50 @@ class TestAgentFactoryFunctions:
             assert result is mock_agent
             mock_listen_agent.assert_called_once()
 
+    def test_background_model_call_is_not_registered_as_an_agent(
+        self, sample_chat_data
+    ):
+        options = Chat(**sample_chat_data)
+        lock = MagicMock()
+        _m = sys.modules["app.agent.agent_model"]
+        with (
+            patch.object(_m, "ListenChatAgent") as listen_agent,
+            patch.object(_m, "ModelFactory"),
+            patch.object(_m, "get_task_lock", return_value=lock),
+            patch.object(_m, "_schedule_async_task") as schedule,
+        ):
+            agent_model("task_summary_agent", "p", options, announce=False)
+
+        schedule.assert_not_called()
+        lock.put_queue.assert_not_called()
+        assert listen_agent.call_args.kwargs["announce"] is False
+
+    def test_context_budget_reaches_the_agent_only_when_given(
+        self, sample_chat_data
+    ):
+        options = Chat(**sample_chat_data)
+        lock = MagicMock()
+        _m = sys.modules["app.agent.agent_model"]
+        with (
+            patch.object(_m, "ListenChatAgent") as listen_agent,
+            patch.object(_m, "ModelFactory"),
+            patch.object(_m, "get_task_lock", return_value=lock),
+            patch.object(_m, "_schedule_async_task") as schedule,
+        ):
+            agent_model("a", "p", options)
+            default_kwargs = listen_agent.call_args.kwargs
+            agent_model(
+                "a", "p", options, token_limit=200_000, summarize_threshold=80
+            )
+            budget_kwargs = listen_agent.call_args.kwargs
+
+        assert schedule.call_count == 2  # both are announced
+        assert default_kwargs["announce"] is True
+        assert "token_limit" not in default_kwargs
+        assert "summarize_threshold" not in default_kwargs
+        assert budget_kwargs["token_limit"] == 200_000
+        assert budget_kwargs["summarize_threshold"] == 80
+
     def test_responses_instructions_are_not_duplicated_in_input(self):
         class ResponsesBackend:
             def _prepare_responses_input_and_chain(

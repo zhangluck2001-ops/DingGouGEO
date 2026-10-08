@@ -126,7 +126,7 @@ export default function GeoKanban({
       )
     );
     try {
-      await geoApi.update(config.key, id, { [groupField]: value });
+      await geoApi.update(config.key, id, { [groupField]: value }, projectId);
       onChanged();
     } catch {
       toast.error(

@@ -19,6 +19,7 @@ import Appearance from '../Appearance';
 import General from '../General';
 import { SettingsRow, SettingsRowGroup } from '../SettingsRowGroup';
 import SettingsSectionPage from '../SettingsSectionPage';
+import GeoImportSettings from './GeoImportSettings';
 
 /**
  * App version only. DingGouGEO ships without the upstream updater and
@@ -54,6 +55,7 @@ export default function SettingsOverview() {
     <div className="flex w-full flex-col gap-4 py-4 [&>section]:py-0">
       <General />
       <Appearance />
+      <GeoImportSettings />
       <AboutSettings />
     </div>
   );

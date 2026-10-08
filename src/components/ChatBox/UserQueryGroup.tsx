@@ -453,7 +453,11 @@ export const UserQueryGroup: React.FC<UserQueryGroupProps> = ({
           className="px-2"
         >
           {showPreparingExecute ? <PreparingToExecuteTasks /> : null}
-          <TaskWorkLogAccordion chatStore={chatStore} taskId={activeTaskId} />
+          <TaskWorkLogAccordion
+            chatStore={chatStore}
+            taskId={activeTaskId}
+            showRunDetails={isCurrentUserQuery}
+          />
         </motion.div>
       )}
 

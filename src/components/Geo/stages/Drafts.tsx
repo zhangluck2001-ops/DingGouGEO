@@ -24,6 +24,17 @@ export default function GeoDrafts() {
       title={t('layout.geo-drafts', { defaultValue: 'Content production' })}
       datasets={['contents']}
       views={['kanban', 'grid']}
+      agentTask={{
+        label: t('geo.agent-task', { defaultValue: 'Hand to AI' }),
+        prompt: ({ project, db, geoRoot }) =>
+          t('geo.agent-prompt-drafts', {
+            defaultValue:
+              'Write GEO content for {{project}}. Start from the gaps in the latest diagnosis ({{geo}}/04_诊断分析 and table geo_answer_analysis in {{db}}) and the recommended channels in {{geo}}/05_引用来源. State only facts that exist in {{geo}}/01_品牌知识库 and follow 06_合规红线. Save each draft with several title variants to {{geo}}/06_内容生产/ and add a row per piece to geo_content with status 草稿.',
+            project,
+            db,
+            geo: geoRoot,
+          }),
+      }}
     />
   );
 }

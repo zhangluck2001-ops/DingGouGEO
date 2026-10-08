@@ -12,10 +12,15 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
+import { GitCompareArrows } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import GeoBase from '../GeoBase';
+import GeoRoundCompare from '../GeoRoundCompare';
 
-/** Stage 5: published pieces and which ones AI cites. */
+/**
+ * Publishing and tracking: published pieces, which ones AI cites, and the
+ * capture rounds side by side to see what optimizing changed.
+ */
 export default function GeoPublished() {
   const { t } = useTranslation();
   return (
@@ -25,10 +30,30 @@ export default function GeoPublished() {
         defaultValue: 'Publishing and tracking',
       })}
       datasets={['contents']}
-      views={['grid', 'dashboard']}
+      views={['grid', 'custom', 'dashboard']}
       dashboardKind="content"
       fixedFilters={{ status: '已发布' }}
       defaultSort={{ field: 'cited_count', order: 'desc' }}
+      customView={{
+        icon: GitCompareArrows,
+        label: t('geo.view-round-compare', {
+          defaultValue: 'Round comparison',
+        }),
+        render: ({ projectId, refreshKey }) => (
+          <GeoRoundCompare projectId={projectId} refreshKey={refreshKey} />
+        ),
+      }}
+      agentTask={{
+        label: t('geo.agent-task', { defaultValue: 'Hand to AI' }),
+        prompt: ({ project, db, geoRoot }) =>
+          t('geo.agent-prompt-tracking', {
+            defaultValue:
+              'Write a progress report for {{project}}: compare the capture rounds in {{db}} (geo_capture_round, geo_answer, geo_answer_analysis, geo_citation), say what changed since the baseline, which published pieces (geo_content) AI now cites, and what to optimize next. Save it to {{geo}}/08_效果追踪/.',
+            project,
+            db,
+            geo: geoRoot,
+          }),
+      }}
     />
   );
 }

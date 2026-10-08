@@ -77,14 +77,16 @@ describe('PreviewPanel', () => {
       previewBrowserViewport: null,
     });
     usePageTabStore.getState().setSessionPreviewProject('project-test');
-    usePageTabStore.getState().toggleSessionPreview();
+    // DingGouGEO opens the panel on its GEO tab; these tests exercise the
+    // chooser, which "+" adds.
+    usePageTabStore.getState().addChooserPreviewTab();
   });
 
   it('opens on the chooser tab listing the available content kinds', () => {
     renderPanel();
     expect(screen.getByRole('tab', { name: 'New tab' })).toBeInTheDocument();
     // Vertical options use the same product copy users see in the chooser.
-    for (const label of ['Browser', 'File', 'Review', 'Terminal']) {
+    for (const label of ['GEO', 'Browser', 'File', 'Review', 'Terminal']) {
       expect(
         screen.getByRole('button', {
           name: new RegExp(`^${label}\\b`),

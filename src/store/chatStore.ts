@@ -2126,7 +2126,7 @@ const ensureSingleAgentAssignment = (
   if (existingIndex !== -1) return existingIndex;
   taskAssigning.push({
     agent_id: agentId || `${taskId}-single-agent`,
-    name: 'CAMEL Agent',
+    name: 'GEO Agent',
     type: 'single_agent',
     status: AgentStatusValue.RUNNING,
     tasks: [],
@@ -4128,7 +4128,7 @@ const chatStore = (initial?: Partial<ChatStore>) =>
               defaultValue: 'Social media agent',
             }),
             single_agent: i18next.t('chat.camel-agent', {
-              defaultValue: 'CAMEL agent',
+              defaultValue: 'GEO Agent',
             }),
           };
 
@@ -4821,7 +4821,7 @@ const chatStore = (initial?: Partial<ChatStore>) =>
               existingIndex === -1
                 ? {
                     agent_id: agentId,
-                    name: 'CAMEL Agent',
+                    name: 'GEO Agent',
                     type: 'single_agent',
                     tasks: todoTasks,
                     log: [],
@@ -4832,7 +4832,7 @@ const chatStore = (initial?: Partial<ChatStore>) =>
                 : {
                     ...existingAgents[existingIndex],
                     agent_id: existingAgents[existingIndex].agent_id || agentId,
-                    name: existingAgents[existingIndex].name || 'CAMEL Agent',
+                    name: existingAgents[existingIndex].name || 'GEO Agent',
                     type: 'single_agent',
                     tasks: todoTasks,
                   };

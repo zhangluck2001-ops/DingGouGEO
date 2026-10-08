@@ -37,7 +37,7 @@ const AGENT_NAMES: Record<string, [string, string]> = {
   document_agent: ['chat.document-agent', 'Document agent'],
   multi_modal_agent: ['chat.multimodal-agent', 'Multimodal agent'],
   social_media_agent: ['chat.social-media-agent', 'Social media agent'],
-  single_agent: ['chat.camel-agent', 'CAMEL agent'],
+  single_agent: ['chat.camel-agent', 'GEO Agent'],
 };
 const text = (value: unknown) => (typeof value === 'string' ? value : '');
 const object = (value: unknown): Record<string, unknown> =>

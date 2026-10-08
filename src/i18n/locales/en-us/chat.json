@@ -247,7 +247,7 @@
   "back-to-agent-details": "Back to agent details",
   "backend-not-ready": "❌ Backend service is not ready. Wait a moment and try again, or restart the application if the problem continues.",
   "browser-agent": "Browser agent",
-  "camel-agent": "CAMEL agent",
+  "camel-agent": "GEO Agent",
   "cancel-task-failed": "Failed to cancel task",
   "cloud-model-key-failed": "Could not get the cloud model key. Check your account or model settings.",
   "cloud-model-switched": "Model {{requestedModel}} is no longer available; switched to {{fallbackModel}}.",
@@ -437,5 +437,6 @@
   "notice-refresh-failed": "Couldn’t refresh your credits. Try again.",
   "notice-availability-unverified": "Couldn’t check availability. Contact support if this continues.",
   "notice-access-unverified": "Your plan was refreshed. Try the model again to check access.",
-  "notice-credits-unavailable": "Credits unavailable"
+  "notice-credits-unavailable": "Credits unavailable",
+  "run-details": "Run details"
 }

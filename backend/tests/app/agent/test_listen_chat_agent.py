@@ -469,6 +469,50 @@ class TestListenChatAgent:
                 # Should queue activation notification
                 mock_task_lock.put_queue.assert_called()
 
+    @pytest.mark.asyncio
+    async def test_unannounced_agent_publishes_no_turn_events(
+        self, mock_task_lock
+    ):
+        """A background model call stays out of the run's agent timeline."""
+        with (
+            patch(f"{_LCA}.get_task_lock", return_value=mock_task_lock),
+            patch(
+                f"{_LCA}.get_task_lock_if_exists",
+                return_value=mock_task_lock,
+            ),
+            patch("camel.models.ModelFactory.create") as mock_create_model,
+            patch(f"{_LCA}._schedule_async_task") as schedule,
+        ):
+            mock_backend = MagicMock()
+            mock_backend.model_type = "gpt-4"
+            mock_backend.current_model = MagicMock()
+            mock_backend.current_model.model_type = "gpt-4"
+            mock_create_model.return_value = mock_backend
+
+            agent = ListenChatAgent(
+                api_task_id="test_api_task_123",
+                agent_name="task_summary_agent",
+                model="gpt-4",
+                announce=False,
+            )
+            agent.model_backend.model_config_dict = {"stream": False}
+            mock_response = MagicMock(spec=ChatAgentResponse)
+            mock_response.msg = MagicMock()
+            mock_response.msg.content = "标题|摘要"
+            mock_response.info = {"usage": {"total_tokens": 100}}
+
+            with patch.object(ChatAgent, "step", return_value=mock_response):
+                assert agent.step("起个标题") is mock_response
+            with patch.object(
+                ChatAgent,
+                "_astep_non_streaming_task",
+                return_value=mock_response,
+            ):
+                assert await agent.astep("起个标题") is mock_response
+
+            schedule.assert_not_called()
+            mock_task_lock.put_queue.assert_not_called()
+
     def test_listen_chat_agent_reloads_model_once_on_auth_error(
         self, mock_task_lock
     ):

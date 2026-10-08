@@ -100,6 +100,13 @@ class DepthLimitedAgentToolkit(AgentToolkit, AbstractToolkit):
         subagent_type: str,
         description: str,
     ) -> str:
+        # A GEO stage type gets that stage's own prompt. Imported here:
+        # app.geo.agent_prompt imports the agent package this module is in.
+        from app.geo.agent_prompt import build_subagent_prompt
+
+        stage_prompt = build_subagent_prompt(subagent_type, description)
+        if stage_prompt is not None:
+            return stage_prompt
         base = super()._build_system_message(subagent_type, description)
         return (
             base + "\nYou are a child sub-agent. Complete the assigned task "

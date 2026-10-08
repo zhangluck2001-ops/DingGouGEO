@@ -23,7 +23,24 @@ export default function GeoCitations() {
       sectionId="geo-citations"
       title={t('layout.geo-citations', { defaultValue: 'Cited sources' })}
       datasets={['citations']}
-      views={['grid']}
+      views={['grid', 'dashboard']}
+      dashboardKind="sources"
+      agentTask={{
+        label: t('geo.agent-task', { defaultValue: 'Hand to AI' }),
+        prompt: ({ project, db, geoRoot, round }) =>
+          t('geo.agent-prompt-citations', {
+            defaultValue:
+              'Analyse the sources AI platforms cited for {{project}} in {{round}} (table geo_citation in {{db}}). Rank sites and domains by how often they are cited, per AI platform and source type, point out which of our published pieces (geo_content URLs) are cited, and recommend where to publish next. Save the analysis to {{geo}}/05_引用来源/.',
+            project,
+            db,
+            geo: geoRoot,
+            round:
+              round ??
+              t('geo.latest-round', {
+                defaultValue: 'the latest capture round',
+              }),
+          }),
+      }}
     />
   );
 }

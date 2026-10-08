@@ -20,7 +20,14 @@ import {
   type SettingsSectionId,
 } from '@/store/settingsStore';
 import { lazy, useEffect, useReducer } from 'react';
-import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import {
+  Navigate,
+  Outlet,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 
 import Layout from '@/components/Layout';
 import { LegacyRouteRedirect } from './LegacyRouteCompatibility';
@@ -158,6 +165,21 @@ const ProtectedRoute = () => {
   );
 };
 
+// The app opens on the Spaces list: people pick or create the brand Space
+// first. Only the very first visit to the index route redirects, so opening
+// a Space (which navigates to "/") still lands in its workspace.
+let launchRedirectDone = false;
+
+function LaunchToSpaces() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (launchRedirectDone) return;
+    launchRedirectDone = true;
+    navigate('/home?section=spaces', { replace: true });
+  }, [navigate]);
+  return null;
+}
+
 /** Keep legacy Settings links working while Home is the canonical surface. */
 function SettingsRouteRedirect() {
   const location = useLocation();
@@ -200,7 +222,7 @@ const AppRoutes = () => (
         <Route
           element={<WorkspaceSettingsRouteLayout workspace={<Workspace />} />}
         >
-          <Route index element={null} />
+          <Route index element={<LaunchToSpaces />} />
           <Route path="/home" element={<Settings />} />
         </Route>
         <Route path="/settings" element={<SettingsRouteRedirect />} />

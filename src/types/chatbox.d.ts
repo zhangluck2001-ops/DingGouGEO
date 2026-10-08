@@ -247,7 +247,7 @@ declare global {
     document_agent: 'Document Agent';
     multi_modal_agent: 'Multi Modal Agent';
     social_media_agent: 'Social Media Agent';
-    single_agent: 'CAMEL Agent';
+    single_agent: 'GEO Agent';
   }
   type WorkspaceType =
     | 'workflow'

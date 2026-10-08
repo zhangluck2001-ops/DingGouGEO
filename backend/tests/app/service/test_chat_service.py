@@ -30,6 +30,7 @@ from app.service.chat_service import (
     _build_question_context,
     _extract_stream_chunk_content,
     _render_subtask_report,
+    _summarize_single_agent_task,
     _trim_in_process_history,
     add_sub_tasks,
     build_context_for_workforce,
@@ -1931,3 +1932,81 @@ class TestChatServiceErrorCases:
 
         # Should filter out empty content tasks
         assert len(result) <= 1
+
+
+@pytest.mark.asyncio
+async def test_single_agent_session_creates_no_question_agent(
+    sample_chat_data, mock_task_lock
+):
+    """The question agent routes Workforce questions; a single-agent session
+    has no use for it, so it must not show up as an agent of the run."""
+    options = Chat(**{**sample_chat_data, "session_mode": "single-agent"})
+    request = MagicMock()
+    request.state.hands = None
+    request.headers = {}
+    mock_task_lock.question_agent = None
+
+    async def solve(*_args, **_kwargs):
+        yield "chunk"
+
+    with (
+        patch("app.service.chat_service.single_agent_solve", new=solve),
+        patch(
+            "app.service.chat_service.question_confirm_agent"
+        ) as question_agent,
+    ):
+        responses = [
+            response
+            async for response in step_solve(options, request, mock_task_lock)
+        ]
+
+    assert responses == ["chunk"]
+    question_agent.assert_not_called()
+    assert mock_task_lock.question_agent is None
+
+
+@pytest.mark.asyncio
+async def test_single_agent_title_is_a_background_model_call(
+    sample_chat_data,
+):
+    options = Chat(**sample_chat_data)
+    agent = MagicMock(spec=["step"])
+    agent.step.return_value = SimpleNamespace(
+        msg=SimpleNamespace(content="SMA敏护首轮诊断|诊断第一轮的回答"),
+        msgs=[],
+    )
+
+    with (
+        patch(
+            "app.service.chat_service.session_title_agent", return_value=agent
+        ),
+        patch("app.service.chat_service.task_summary_agent") as announced,
+    ):
+        title = await _summarize_single_agent_task(
+            options, "帮我诊断第一轮", "task-1"
+        )
+
+    assert title == "SMA敏护首轮诊断|诊断第一轮的回答"
+    announced.assert_not_called()
+    prompt = agent.step.call_args.args[0]
+    assert "帮我诊断第一轮" in prompt
+    # Only the user's message is titled, not the completion-report rules.
+    assert DEFAULT_SUMMARY_PROMPT.strip() not in prompt
+
+
+@pytest.mark.asyncio
+async def test_single_agent_title_falls_back_to_the_question(
+    sample_chat_data,
+):
+    options = Chat(**sample_chat_data)
+    agent = MagicMock(spec=["step"])
+    agent.step.side_effect = RuntimeError("model unavailable")
+
+    with patch(
+        "app.service.chat_service.session_title_agent", return_value=agent
+    ):
+        title = await _summarize_single_agent_task(
+            options, "帮我诊断第一轮", "task-1"
+        )
+
+    assert title == "帮我诊断第一轮|帮我诊断第一轮"

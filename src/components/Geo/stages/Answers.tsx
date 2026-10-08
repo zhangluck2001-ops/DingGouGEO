@@ -15,14 +15,18 @@
 import { useTranslation } from 'react-i18next';
 import GeoBase from '../GeoBase';
 
-/** Stage 2: what each AI platform answered, round by round. */
+/**
+ * Stage 2: what each AI platform answered. The same probe set is captured
+ * once as a baseline and again after every optimization pass; each pass is a
+ * capture round.
+ */
 export default function GeoAnswers() {
   const { t } = useTranslation();
   return (
     <GeoBase
       sectionId="geo-answers"
       title={t('layout.geo-answers', { defaultValue: 'AI capture' })}
-      datasets={['answers']}
+      datasets={['answers', 'rounds']}
       views={['grid', 'dashboard']}
       dashboardKind="data"
     />

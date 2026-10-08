@@ -3556,7 +3556,11 @@ async function createWindowInternal() {
   // Load content
   if (VITE_DEV_SERVER_URL) {
     win.loadURL(VITE_DEV_SERVER_URL);
-    win.webContents.openDevTools();
+    // DevTools stay closed by default in dev; open with Cmd+Opt+I (or
+    // Ctrl+Shift+I) or start with EIGENT_OPEN_DEVTOOLS=1.
+    if (process.env.EIGENT_OPEN_DEVTOOLS === '1') {
+      win.webContents.openDevTools();
+    }
   } else {
     win.loadFile(indexHtml);
   }

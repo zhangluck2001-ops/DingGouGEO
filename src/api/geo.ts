@@ -20,7 +20,13 @@ export interface GeoFacetValue {
 }
 
 export type GeoDatasetKey =
-  'facts' | 'answers' | 'citations' | 'probes' | 'contents';
+  | 'facts'
+  | 'rounds'
+  | 'answers'
+  | 'analyses'
+  | 'citations'
+  | 'probes'
+  | 'contents';
 
 /** One row as returned by the local store; field values are text. */
 export type GeoRecord = {
@@ -54,6 +60,8 @@ export interface GeoProject {
   name: string;
   space_id: string | null;
   workspace_root: string | null;
+  /** The SQLite file holding this project's rows (inside its Space folder). */
+  db_path: string;
   counts: Record<GeoDatasetKey, number>;
   last_imported_at: string | null;
 }
@@ -62,6 +70,20 @@ export interface GeoChartRow {
   id?: number;
   label: string;
   value: number;
+}
+
+/** One capture round: the baseline or a re-capture after optimizing. */
+export interface GeoRoundSummary {
+  id: number;
+  label: string;
+  seq: number | null;
+  kind: string | null;
+  status: string | null;
+  started_on: string | null;
+  ended_on: string | null;
+  /** Answers captured in this round. */
+  value: number;
+  citations: number;
 }
 
 export interface GeoDashboard {
@@ -74,8 +96,14 @@ export interface GeoDashboard {
     published: number;
     cited_contents: number;
     answers_with_sources: number;
+    analyses: number;
+    mentions_own: number;
+    recommends_own: number;
+    own_in_top3: number;
+    source_domains: number;
   };
   charts: Record<string, GeoChartRow[]>;
+  rounds: GeoRoundSummary[];
 }
 
 export interface GeoImportRun {
@@ -112,12 +140,33 @@ export interface GeoKnowledgeSource {
 
 export interface GeoKnowledgeStatus {
   project_id: number;
+  db_path?: string;
   root: string | null;
   rules_path?: string;
   raw_path?: string;
   modules: GeoKnowledgeModule[];
   sources: GeoKnowledgeSource[];
   fact_count?: number;
+}
+
+/** Plain per-round counts for comparing capture rounds. */
+export interface GeoRoundComparison {
+  id: number;
+  name: string;
+  seq: number | null;
+  kind: string | null;
+  status: string | null;
+  started_on: string | null;
+  ended_on: string | null;
+  answers: number;
+  answers_with_sources: number;
+  citations: number;
+  source_domains: number;
+  analyses: number;
+  mentions_own: number;
+  recommends_own: number;
+  own_in_top3: number;
+  cited_contents: number;
 }
 
 export type GeoQuery = Record<string, string | number | undefined>;
@@ -142,6 +191,7 @@ export const geoApi = {
     name: string;
     created_project: boolean;
     created_paths: string[];
+    db_path: string;
   }> => fetchPost('/geo/spaces/ensure', body),
   knowledge: (projectId: number): Promise<GeoKnowledgeStatus> =>
     fetchGet('/geo/knowledge', { project_id: projectId }),
@@ -160,12 +210,19 @@ export const geoApi = {
       file_name: fileName,
       status,
     }),
-  dashboard: (projectId: number): Promise<GeoDashboard> =>
-    fetchGet('/geo/dashboard', { project_id: projectId }),
+  dashboard: (projectId: number, round?: string): Promise<GeoDashboard> =>
+    fetchGet(
+      '/geo/dashboard',
+      clean({ project_id: projectId, capture_round: round })
+    ),
   list: (dataset: GeoDatasetKey, params: GeoQuery): Promise<GeoRecordPage> =>
     fetchGet(`/geo/datasets/${dataset}`, clean(params)),
-  get: (dataset: GeoDatasetKey, id: number): Promise<GeoRecord> =>
-    fetchGet(`/geo/datasets/${dataset}/${id}`),
+  get: (
+    dataset: GeoDatasetKey,
+    id: number,
+    projectId: number
+  ): Promise<GeoRecord> =>
+    fetchGet(`/geo/datasets/${dataset}/${id}`, { project_id: projectId }),
   create: (
     dataset: GeoDatasetKey,
     projectId: number,
@@ -175,16 +232,35 @@ export const geoApi = {
   update: (
     dataset: GeoDatasetKey,
     id: number,
-    fields: Record<string, string | null>
+    fields: Record<string, string | null>,
+    projectId: number
   ): Promise<GeoRecord> =>
-    fetchPatch(`/geo/datasets/${dataset}/${id}`, { fields }),
+    fetchPatch(`/geo/datasets/${dataset}/${id}`, {
+      project_id: projectId,
+      fields,
+    }),
   remove: (
     dataset: GeoDatasetKey,
-    ids: number[]
+    ids: number[],
+    projectId: number
   ): Promise<{ deleted: number }> =>
-    fetchPost(`/geo/datasets/${dataset}/delete`, { ids }),
-  importStatus: (): Promise<{ running: boolean; runs: GeoImportRun[] }> =>
-    fetchGet('/geo/import'),
-  startImport: (): Promise<{ started: boolean; running: boolean }> =>
-    fetchPost('/geo/import', {}),
+    fetchPost(`/geo/datasets/${dataset}/delete`, {
+      project_id: projectId,
+      ids,
+    }),
+  compareRounds: (
+    projectId: number
+  ): Promise<{ items: GeoRoundComparison[] }> =>
+    fetchGet('/geo/rounds/compare', { project_id: projectId }),
+  importStatus: (
+    projectId: number
+  ): Promise<{
+    running: boolean;
+    configured: boolean;
+    runs: GeoImportRun[];
+  }> => fetchGet('/geo/import', { project_id: projectId }),
+  startImport: (
+    projectId: number
+  ): Promise<{ started: boolean; running: boolean }> =>
+    fetchPost('/geo/import', { project_id: projectId }),
 };

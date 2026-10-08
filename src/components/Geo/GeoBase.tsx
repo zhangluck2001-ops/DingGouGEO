@@ -41,6 +41,7 @@ import { TooltipSimple } from '@/components/ui/tooltip';
 import { useWorkbenchChrome } from '@/components/Workbench';
 import { useWorkbenchStore } from '@/store/workbenchStore';
 import {
+  Bot,
   Columns3,
   Database,
   KanbanSquare,
@@ -77,10 +78,8 @@ import {
   GeoEmptyState,
   GeoFacetSelect,
   GeoPager,
-  GeoProjectSelect,
-  GeoSyncButton,
   useDebounced,
-  useGeoProjects,
+  useGeoProject,
 } from './shared';
 import { useGeoFieldPrefs } from './useGeoFieldPrefs';
 
@@ -92,14 +91,33 @@ export interface GeoCustomView {
   label: string;
   render: (context: {
     projectId: number;
+    refreshKey: number;
     refresh: () => void;
     openGrid: () => void;
   }) => ReactNode;
 }
 
-const DB_PATH = '~/.eigent/geo/geo.db';
+/**
+ * A stage's own job for the agent: the button drops an instruction into the
+ * chat box, where people can adjust it before sending.
+ */
+export interface GeoAgentTask {
+  label: string;
+  prompt: (context: {
+    project: string;
+    /** The Space's database file. */
+    db: string;
+    /** The Space's GEO folder. */
+    geoRoot: string;
+    /** Capture round being looked at, if one is picked. */
+    round: string | null;
+  }) => string;
+}
+
 const TABLE_NAMES: Record<GeoDatasetKey, string> = {
+  rounds: 'geo_capture_round',
   answers: 'geo_answer',
+  analyses: 'geo_answer_analysis',
   citations: 'geo_citation',
   probes: 'geo_probe',
   contents: 'geo_content',
@@ -128,6 +146,7 @@ export default function GeoBase({
   fixedFilters,
   defaultSort,
   customView,
+  agentTask,
 }: {
   sectionId: string;
   title: string;
@@ -138,17 +157,17 @@ export default function GeoBase({
   fixedFilters?: Record<string, string>;
   defaultSort?: GeoSort;
   customView?: GeoCustomView;
+  agentTask?: GeoAgentTask;
 }) {
   const { t } = useTranslation();
   const headingRef = useFocusContentHeading(sectionId);
   const sendToChat = useWorkbenchStore((state) => state.sendToChat);
   const [refreshKey, setRefreshKey] = useState(0);
   const {
-    projects,
+    project,
     projectId,
-    setProjectId,
-    loading: projectsLoading,
-  } = useGeoProjects(refreshKey);
+    loading: projectLoading,
+  } = useGeoProject(refreshKey);
   const [dataset, setDataset] = useState<GeoDatasetKey>(datasets[0]);
   const [view, setView] = useState<GeoView>(views[0]);
   const [filtersByDataset, setFiltersByDataset] = useState<
@@ -265,8 +284,24 @@ export default function GeoBase({
       [dataset]: { ...(current[dataset] ?? {}), [field]: value },
     }));
 
-  const projectName =
-    projects.find((project) => project.id === projectId)?.name ?? '';
+  const projectName = project?.name ?? '';
+  const dbPath = project?.db_path ?? 'GEO/geo.db';
+  const geoRoot = dbPath.replace(/\/geo\.db$/, '');
+
+  const sendAgentTask = () => {
+    if (!agentTask) return;
+    sendToChat(
+      agentTask.prompt({
+        project: projectName,
+        db: dbPath,
+        geoRoot,
+        round: filters.capture_round || null,
+      })
+    );
+    toast.success(
+      t('geo.sent-to-chat', { defaultValue: 'Added to the chat box' })
+    );
+  };
 
   const describeFilters = () => {
     const active = Object.entries(filters).filter(([, value]) => value);
@@ -307,7 +342,7 @@ export default function GeoBase({
           'Analyze these {{count}} {{dataset}} records from the local GEO database ({{db}}, table {{table}}, project {{project}}):',
         count: records.length,
         dataset: datasetLabel,
-        db: DB_PATH,
+        db: dbPath,
         table: TABLE_NAMES[dataset],
         project: projectName,
       })}\n${lines.join('\n')}${more}`
@@ -322,7 +357,7 @@ export default function GeoBase({
       t('geo.ai-prompt-view', {
         defaultValue:
           'Using the local GEO database ({{db}}, table {{table}}), analyze the current {{dataset}} view: project {{project}}, filters {{filters}}, {{count}} records.',
-        db: DB_PATH,
+        db: dbPath,
         table: TABLE_NAMES[dataset],
         dataset: datasetLabel,
         project: projectName,
@@ -337,8 +372,9 @@ export default function GeoBase({
 
   const deleteSelected = async () => {
     const ids = [...selected.keys()];
+    if (projectId == null) return;
     try {
-      const result = await geoApi.remove(dataset, ids);
+      const result = await geoApi.remove(dataset, ids, projectId);
       toast.success(
         t('geo.records-deleted', {
           defaultValue: '{{count}} deleted',
@@ -349,11 +385,12 @@ export default function GeoBase({
       if (panel && typeof panel.id === 'number' && selected.has(panel.id))
         setPanel(null);
       refresh();
-    } catch {
+    } catch (error) {
       toast.error(
         t('geo.record-delete-failed', {
           defaultValue: "Couldn't delete. Try again.",
-        })
+        }),
+        { description: error instanceof Error ? error.message : undefined }
       );
     }
   };
@@ -379,7 +416,7 @@ export default function GeoBase({
   const kanbanValues = config.kanbanField
     ? (facets[config.kanbanField] ?? []).map((item) => item.value)
     : [];
-  const hasProjects = projects.length > 0;
+  const hasProject = project != null;
   const activeRecordId =
     panel && typeof panel.id === 'number' ? panel.id : null;
 
@@ -441,7 +478,18 @@ export default function GeoBase({
             </TabsList>
           </Tabs>
         ) : null}
-        {hasProjects ? (
+        {hasProject && agentTask ? (
+          <Button
+            variant="primary"
+            size="sm"
+            buttonRadius="full"
+            onClick={sendAgentTask}
+          >
+            <Bot aria-hidden />
+            {agentTask.label}
+          </Button>
+        ) : null}
+        {hasProject ? (
           <TooltipSimple
             content={t('geo.ask-ai-view', {
               defaultValue: 'Ask AI about this view',
@@ -458,7 +506,6 @@ export default function GeoBase({
             </Button>
           </TooltipSimple>
         ) : null}
-        <GeoSyncButton onFinished={refresh} />
         {chrome ? (
           <Button
             variant="ghost"
@@ -475,26 +522,20 @@ export default function GeoBase({
         ) : null}
       </CollectionToolbar>
 
-      {!hasProjects && !projectsLoading ? (
+      {!hasProject && !projectLoading ? (
         <GeoEmptyState
           icon={Database}
-          title={t('geo.empty-data-title', {
-            defaultValue: 'Sync your first project',
+          title={t('geo.space-not-ready-title', {
+            defaultValue: 'Setting up this Space',
           })}
-          description={t('geo.empty-data-desc', {
+          description={t('geo.space-not-ready-desc', {
             defaultValue:
-              'Pull capture answers, sources, and probes from Feishu into the local database.',
+              'Each Space is one brand project. Its GEO folder and database are created the first time the Space opens.',
           })}
-          action={<GeoSyncButton onFinished={refresh} />}
         />
       ) : (
         <div className="@container flex min-h-0 flex-1 flex-col">
           <div className="flex shrink-0 flex-wrap items-center gap-ds-8 px-ds-16 py-ds-8">
-            <GeoProjectSelect
-              projects={projects}
-              value={projectId}
-              onChange={setProjectId}
-            />
             {datasets.length > 1 && isRecordView ? (
               <Tabs
                 value={dataset}
@@ -570,7 +611,15 @@ export default function GeoBase({
                   variant="secondary"
                   size="sm"
                   buttonRadius="full"
-                  onClick={() => setPanel({ id: 'new' })}
+                  onClick={() =>
+                    setPanel({
+                      id: 'new',
+                      // New captures go into the round being looked at.
+                      initial: filters.capture_round
+                        ? { capture_round: filters.capture_round }
+                        : undefined,
+                    })
+                  }
                 >
                   <Plus aria-hidden />
                   {t('geo.add-record', { defaultValue: 'Add record' })}
@@ -593,6 +642,7 @@ export default function GeoBase({
               {projectId == null ? null : view === 'custom' && customView ? (
                 customView.render({
                   projectId,
+                  refreshKey,
                   refresh,
                   openGrid: () => setView('grid'),
                 })

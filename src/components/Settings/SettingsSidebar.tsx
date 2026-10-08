@@ -14,7 +14,6 @@
 
 import { fetchConnectedProviders } from '@/api/connectors';
 import { fetchGet } from '@/api/http';
-import { HomeSidebarNavGroup } from '@/components/Home';
 import type { HomeSection } from '@/components/Home/hooks/useHomeSection';
 import {
   NavTab,
@@ -28,6 +27,7 @@ import { useHost } from '@/host';
 import { useAuthStore } from '@/store/authStore';
 import { useSettingsResourceCountsStore } from '@/store/settingsResourceCountsStore';
 import type { SettingsSectionId } from '@/store/settingsStore';
+import { ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useConnectorsNavigation } from './Connectors/ConnectorsNavigationContext';
@@ -43,7 +43,10 @@ interface SettingsSidebarProps {
   className?: string;
 }
 
-/** Combined Home / Settings rail, using the former Settings page layout. */
+/**
+ * Settings rail. The Spaces list is its own landing page, so the rail only
+ * offers a way back to it above the settings groups.
+ */
 export default function SettingsSidebar({
   activeHomeSection,
   activeSection,
@@ -157,10 +160,19 @@ export default function SettingsSidebar({
           ariaLabel={t('layout.home', { defaultValue: 'Home' })}
           className="gap-4 pt-1"
         >
-          <HomeSidebarNavGroup
-            activeSection={activeHomeSection}
-            onSectionChange={onHomeSectionChange}
-          />
+          <SidebarNavGroup>
+            <NavTab
+              active={activeHomeSection === 'spaces'}
+              onClick={() => onHomeSectionChange('spaces')}
+              leading={<ArrowLeft className="h-4 w-4 shrink-0" aria-hidden />}
+              label={t('layout.back-to-spaces', {
+                defaultValue: 'Back to Spaces',
+              })}
+              ariaLabel={t('layout.back-to-spaces', {
+                defaultValue: 'Back to Spaces',
+              })}
+            />
+          </SidebarNavGroup>
           {SETTINGS_NAVIGATION.map((group) => (
             <SidebarNavGroup
               key={group.scope}

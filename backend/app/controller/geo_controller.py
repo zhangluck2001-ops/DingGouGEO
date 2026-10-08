@@ -16,7 +16,7 @@
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
-from app.geo import feishu_import, knowledge, queries, space_bootstrap
+from app.geo import feishu_import, knowledge, queries, rounds, space_bootstrap
 from app.utils.workspace_resolver import get_workspace_resolver
 
 router = APIRouter(prefix="/geo", tags=["GEO"])
@@ -30,6 +30,7 @@ class CreateRecordBody(BaseModel):
 
 
 class UpdateRecordBody(BaseModel):
+    project_id: int | None = None
     fields: dict[str, str | None] = Field(default_factory=dict)
 
 
@@ -52,7 +53,12 @@ class SourceStatusBody(BaseModel):
 
 
 class DeleteRecordsBody(BaseModel):
+    project_id: int | None = None
     ids: list[int] = Field(default_factory=list, max_length=1000)
+
+
+class ImportBody(BaseModel):
+    project_id: int
 
 
 def _dataset(name: str) -> str:
@@ -116,22 +122,34 @@ def set_knowledge_source_status(body: SourceStatusBody):
 
 
 @router.get("/dashboard")
-def dashboard(project_id: int):
-    return queries.dashboard(project_id)
+def dashboard(project_id: int, capture_round: str | None = None):
+    return queries.dashboard(project_id, capture_round or None)
+
+
+@router.get("/rounds/compare")
+def compare_rounds(project_id: int):
+    return {"items": queries.round_comparison(project_id)}
 
 
 @router.get("/import")
-def import_status():
+def import_status(project_id: int):
     return {
-        "running": feishu_import.is_import_running(),
-        "runs": queries.import_runs(),
+        "running": feishu_import.is_import_running(project_id),
+        "configured": feishu_import.load_sources(project_id) is not None,
+        "runs": queries.import_runs(project_id),
     }
 
 
 @router.post("/import")
-def start_import():
-    started = feishu_import.start_import_in_background()
-    return {"started": started, "running": feishu_import.is_import_running()}
+def start_import(body: ImportBody):
+    try:
+        started = feishu_import.start_import_in_background(body.project_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {
+        "started": started,
+        "running": feishu_import.is_import_running(body.project_id),
+    }
 
 
 @router.get("/datasets/{dataset}")
@@ -156,8 +174,8 @@ def list_records(
 
 
 @router.get("/datasets/{dataset}/{record_id}")
-def get_record(dataset: str, record_id: int):
-    record = queries.get_record(_dataset(dataset), record_id)
+def get_record(dataset: str, record_id: int, project_id: int | None = None):
+    record = queries.get_record(_dataset(dataset), record_id, project_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
@@ -165,14 +183,22 @@ def get_record(dataset: str, record_id: int):
 
 @router.post("/datasets/{dataset}")
 def create_record(dataset: str, body: CreateRecordBody):
-    return queries.create_record(
-        _dataset(dataset), body.project_id, body.fields
-    )
+    try:
+        return queries.create_record(
+            _dataset(dataset), body.project_id, body.fields
+        )
+    except rounds.RoundInUse as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @router.patch("/datasets/{dataset}/{record_id}")
 def update_record(dataset: str, record_id: int, body: UpdateRecordBody):
-    record = queries.update_record(_dataset(dataset), record_id, body.fields)
+    try:
+        record = queries.update_record(
+            _dataset(dataset), record_id, body.fields, body.project_id
+        )
+    except rounds.RoundInUse as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     if record is None:
         raise HTTPException(status_code=404, detail="Record not found")
     return record
@@ -180,4 +206,10 @@ def update_record(dataset: str, record_id: int, body: UpdateRecordBody):
 
 @router.post("/datasets/{dataset}/delete")
 def delete_records(dataset: str, body: DeleteRecordsBody):
-    return {"deleted": queries.delete_records(_dataset(dataset), body.ids)}
+    try:
+        deleted = queries.delete_records(
+            _dataset(dataset), body.ids, body.project_id
+        )
+    except rounds.RoundInUse as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    return {"deleted": deleted}

@@ -12,8 +12,10 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
+import { getSettingsNavigationItem } from '@/components/Settings/settingsNavigation';
 import { Button } from '@/components/ui/button';
 import { TooltipSimple } from '@/components/ui/tooltip';
+import Workbench from '@/components/Workbench';
 import { useHost } from '@/host';
 import { cn } from '@/lib/utils';
 import {
@@ -21,6 +23,7 @@ import {
   usePageTabStore,
   type SessionPreviewTab,
 } from '@/store/pageTabStore';
+import { useWorkbenchStore } from '@/store/workbenchStore';
 import { Plus, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -76,6 +79,15 @@ export function PreviewPanel({
   const closeSessionPreviewTab = usePageTabStore(
     (state) => state.closeSessionPreviewTab
   );
+
+  // The GEO tab is titled after the stage it shows ("GEO · 诊断分析").
+  const geoSection = useWorkbenchStore((state) => state.section);
+  const geoStageItem = getSettingsNavigationItem(geoSection);
+  const geoTitle = `GEO · ${t(geoStageItem.labelKey, {
+    defaultValue: geoStageItem.defaultLabel,
+  })}`;
+  const tabTitle = (tab: SessionPreviewTab) =>
+    tab.type === 'geo' ? geoTitle : tab.title;
 
   const activeTab = useMemo(
     () => tabs.find((tab) => tab.id === activeTabId) ?? tabs[0] ?? null,
@@ -150,6 +162,8 @@ export function PreviewPanel({
 
   const renderActiveContent = () => {
     switch (activeTab.type) {
+      case 'geo':
+        return <Workbench embedded />;
       case 'chooser':
         return (
           <ChooserTab
@@ -223,7 +237,7 @@ export function PreviewPanel({
                   >
                     <Icon className="h-4 w-4 shrink-0" aria-hidden />
                     <span className="truncate text-sm font-medium">
-                      {tab.title}
+                      {tabTitle(tab)}
                     </span>
                   </button>
                   <button

@@ -59,7 +59,7 @@ import {
   isDisposableBlankSpace,
   useSpaceStore,
 } from '@/store/spaceStore';
-import { useWorkbenchStore } from '@/store/workbenchStore';
+import { useRightPanelOpen, useWorkbenchStore } from '@/store/workbenchStore';
 import {
   ChevronsUpDown,
   Folder,
@@ -120,7 +120,7 @@ function HeaderWin() {
   }, [host]);
 
   const isWorkspacePage = location.pathname === '/';
-  const workbenchOpen = useWorkbenchStore((state) => state.open);
+  const workbenchOpen = useRightPanelOpen();
   const toggleWorkbench = useWorkbenchStore((state) => state.toggleOpen);
   const workbenchToggleLabel = workbenchOpen
     ? t('layout.workbench-hide', { defaultValue: 'Hide workbench' })

@@ -24,9 +24,10 @@ import type { SettingsSectionId } from '@/store/settingsStore';
 import { LoaderCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { GeoStat } from './shared';
+import { GeoFacetSelect, GeoStat } from './shared';
 
-export type GeoDashboardKind = 'data' | 'content' | 'overview';
+export type GeoDashboardKind =
+  'data' | 'analysis' | 'sources' | 'content' | 'overview';
 
 interface ChartSpec {
   key: string;
@@ -46,10 +47,10 @@ const DATA_CHARTS: ChartSpec[] = [
     drill: { dataset: 'answers', field: 'platform' },
   },
   {
-    key: 'answers_by_batch',
-    titleKey: 'geo.chart-answers-by-batch',
-    defaultTitle: 'Answers by batch',
-    drill: { dataset: 'answers', field: 'batch' },
+    key: 'answers_by_round',
+    titleKey: 'geo.chart-answers-by-round',
+    defaultTitle: 'Answers by capture round',
+    drill: { dataset: 'answers', field: 'capture_round' },
   },
   {
     key: 'answers_by_web_search',
@@ -90,6 +91,12 @@ const DATA_CHARTS: ChartSpec[] = [
 
 const OVERVIEW_CHARTS: ChartSpec[] = [
   {
+    key: 'answers_by_round',
+    titleKey: 'geo.chart-answers-by-round',
+    defaultTitle: 'Answers by capture round',
+    drill: { dataset: 'answers', field: 'capture_round' },
+  },
+  {
     key: 'answers_by_platform',
     titleKey: 'geo.chart-answers-by-platform',
     defaultTitle: 'Answers by AI platform',
@@ -123,6 +130,51 @@ const OVERVIEW_CHARTS: ChartSpec[] = [
     titleKey: 'geo.chart-probes-by-cep',
     defaultTitle: 'Probes by entry point',
     drill: { dataset: 'probes', field: 'cep' },
+  },
+];
+
+const analysisChart = (
+  field: string,
+  defaultTitle: string,
+  drill = true
+): ChartSpec => ({
+  key: `analyses_by_${field}`,
+  titleKey: `geo.chart-analyses-by-${field.replace(/_/g, '-')}`,
+  defaultTitle,
+  drill: drill ? { dataset: 'analyses', field } : undefined,
+});
+
+const ANALYSIS_CHARTS: ChartSpec[] = [
+  analysisChart('mentions_own', 'Mentions own brand'),
+  analysisChart('recommend_own', 'Recommends own brand'),
+  analysisChart('own_in_top3', 'Own brand in top 3'),
+  analysisChart('top_brand', 'Top pick', false),
+  analysisChart('competitor_relation', 'Competitor relation'),
+  analysisChart('sentiment', 'Sentiment'),
+];
+
+const SOURCE_CHARTS: ChartSpec[] = [
+  {
+    key: 'top_source_sites',
+    titleKey: 'geo.chart-top-sites',
+    defaultTitle: 'Most cited source sites',
+  },
+  {
+    key: 'top_domains',
+    titleKey: 'geo.chart-top-domains',
+    defaultTitle: 'Most cited domains',
+  },
+  {
+    key: 'citations_by_ai_platform',
+    titleKey: 'geo.chart-sources-by-platform',
+    defaultTitle: 'Sources by AI platform',
+    drill: { dataset: 'citations', field: 'ai_platform' },
+  },
+  {
+    key: 'citations_by_type',
+    titleKey: 'geo.chart-sources-by-type',
+    defaultTitle: 'Sources by type',
+    drill: { dataset: 'citations', field: 'source_type' },
   },
 ];
 
@@ -243,12 +295,19 @@ export default function GeoDashboard({
   const { t } = useTranslation();
   const [data, setData] = useState<Dashboard | null>(null);
   const [loading, setLoading] = useState(true);
+  // '' = every capture round; content numbers don't depend on rounds.
+  const [round, setRound] = useState('');
+  const byRound = kind !== 'content';
+
+  useEffect(() => {
+    setRound('');
+  }, [projectId]);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     void geoApi
-      .dashboard(projectId)
+      .dashboard(projectId, byRound ? round : undefined)
       .then((response) => {
         if (!cancelled) setData(response);
       })
@@ -261,7 +320,7 @@ export default function GeoDashboard({
     return () => {
       cancelled = true;
     };
-  }, [projectId, refreshKey]);
+  }, [byRound, projectId, refreshKey, round]);
 
   if (loading && !data) {
     return (
@@ -282,52 +341,73 @@ export default function GeoDashboard({
   }
 
   const { totals, charts } = data;
+  const stat = (key: string, defaultValue: string, value: number) => ({
+    label: t(key, { defaultValue }),
+    value,
+  });
   const tiles =
-    kind === 'data'
+    kind === 'analysis'
       ? [
-          {
-            label: t('geo.stat-answers', { defaultValue: 'Answers captured' }),
-            value: totals.answers,
-          },
-          {
-            label: t('geo.stat-answers-with-sources', {
-              defaultValue: 'Answers with sources',
-            }),
-            value: totals.answers_with_sources,
-          },
-          {
-            label: t('geo.stat-sources', { defaultValue: 'Sources captured' }),
-            value: totals.citations,
-          },
-          {
-            label: t('geo.stat-probes', { defaultValue: 'Probes' }),
-            value: totals.probes,
-          },
+          stat('geo.stat-analyses', 'Answers diagnosed', totals.analyses),
+          stat(
+            'geo.stat-mentions-own',
+            'Mention own brand',
+            totals.mentions_own
+          ),
+          stat(
+            'geo.stat-recommends-own',
+            'Recommend own brand',
+            totals.recommends_own
+          ),
+          stat(
+            'geo.stat-own-in-top3',
+            'Own brand in top 3',
+            totals.own_in_top3
+          ),
         ]
-      : [
-          {
-            label: t('geo.stat-produced', { defaultValue: 'Produced' }),
-            value: totals.contents,
-          },
-          {
-            label: t('geo.stat-published', { defaultValue: 'Published' }),
-            value: totals.published,
-          },
-          {
-            label: t('geo.stat-cited', { defaultValue: 'Cited by AI' }),
-            value: totals.cited_contents,
-          },
-          {
-            label: t('geo.stat-channels', { defaultValue: 'Channels' }),
-            value: charts.contents_by_platform?.length ?? 0,
-          },
-        ];
-  const specs =
-    kind === 'overview'
-      ? OVERVIEW_CHARTS
-      : kind === 'data'
-        ? DATA_CHARTS
-        : CONTENT_CHARTS;
+      : kind === 'sources'
+        ? [
+            stat('geo.stat-sources', 'Sources captured', totals.citations),
+            stat(
+              'geo.stat-source-domains',
+              'Source domains',
+              totals.source_domains
+            ),
+            stat(
+              'geo.stat-answers-with-sources',
+              'Answers with sources',
+              totals.answers_with_sources
+            ),
+            stat('geo.stat-cited', 'Cited by AI', totals.cited_contents),
+          ]
+        : kind === 'data'
+          ? [
+              stat('geo.stat-answers', 'Answers captured', totals.answers),
+              stat(
+                'geo.stat-answers-with-sources',
+                'Answers with sources',
+                totals.answers_with_sources
+              ),
+              stat('geo.stat-sources', 'Sources captured', totals.citations),
+              stat('geo.stat-probes', 'Probes', totals.probes),
+            ]
+          : [
+              stat('geo.stat-produced', 'Produced', totals.contents),
+              stat('geo.stat-published', 'Published', totals.published),
+              stat('geo.stat-cited', 'Cited by AI', totals.cited_contents),
+              stat(
+                'geo.stat-channels',
+                'Channels',
+                charts.contents_by_platform?.length ?? 0
+              ),
+            ];
+  const specs = {
+    overview: OVERVIEW_CHARTS,
+    data: DATA_CHARTS,
+    analysis: ANALYSIS_CHARTS,
+    sources: SOURCE_CHARTS,
+    content: CONTENT_CHARTS,
+  }[kind];
   const stages = [
     {
       section: 'geo-knowledge',
@@ -350,6 +430,16 @@ export default function GeoDashboard({
         defaultValue: '{{count}} with sources',
         count: totals.answers_with_sources,
         formatted: totals.answers_with_sources.toLocaleString(),
+      }),
+    },
+    {
+      section: 'geo-analysis',
+      label: t('layout.geo-analysis', { defaultValue: 'Diagnosis' }),
+      value: totals.analyses,
+      note: t('geo.stage-mentions-own', {
+        defaultValue: '{{count}} mention own brand',
+        count: totals.mentions_own,
+        formatted: totals.mentions_own.toLocaleString(),
       }),
     },
     {
@@ -381,8 +471,45 @@ export default function GeoDashboard({
     },
   ] as const;
 
+  const roundLabel = t('geo.field-capture-round', {
+    defaultValue: 'Capture round',
+  });
+
   return (
     <div className="scrollbar-always-visible @container min-h-0 flex-1 overflow-y-auto p-ds-16">
+      {byRound && data.rounds.length > 0 ? (
+        <div className="mb-ds-12 flex flex-wrap items-center gap-ds-8">
+          <GeoFacetSelect
+            label={roundLabel}
+            allLabel={`${roundLabel}: ${t('geo.all', { defaultValue: 'All' })}`}
+            values={data.rounds.map((item) => ({
+              value: item.label,
+              count: item.value,
+            }))}
+            value={round}
+            onChange={setRound}
+          />
+          {data.rounds
+            .filter((item) => !round || item.label === round)
+            .map((item) => (
+              <DsText
+                key={item.id}
+                as="span"
+                role="meta"
+                className="text-ds-ink-muted-default"
+              >
+                {[
+                  item.label,
+                  item.kind,
+                  item.status,
+                  [item.started_on, item.ended_on].filter(Boolean).join(' – '),
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </DsText>
+            ))}
+        </div>
+      ) : null}
       {kind === 'overview' ? (
         <ol
           aria-label={t('layout.geo-pipeline', {

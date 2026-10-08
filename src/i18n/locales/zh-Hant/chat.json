@@ -186,7 +186,7 @@
   "control-approving": "正在授權…",
   "control-approved-once-receipt": "已允許一次",
   "control-approved-run-receipt": "已在本次任務內允許",
-  "control-approved-space-receipt": "已在此 Space 中一律允許",
+  "control-approved-space-receipt": "已在此空間中一律允許",
   "control-rejected": "已拒絕",
   "control-redacted": "[已隱去]",
   "control-submitted": "[已送出]",
@@ -246,7 +246,7 @@
   "back-to-agent-details": "返回智能體詳細資料",
   "backend-not-ready": "❌ 後端服務尚未就緒。請稍候重試；如果問題持續，請重啓應用。",
   "browser-agent": "瀏覽器智能體",
-  "camel-agent": "CAMEL 智能體",
+  "camel-agent": "GEO Agent",
   "cancel-task-failed": "取消任務失敗",
   "cloud-model-key-failed": "無法獲取雲模型密鑰。請檢查帳戶或模型設定。",
   "cloud-model-switched": "模型 {{requestedModel}} 已不可用，已切換到 {{fallbackModel}}。",
@@ -433,5 +433,6 @@
   "notice-refresh-failed": "無法重新整理額度，請再試一次。",
   "notice-availability-unverified": "無法檢查服務狀態。如問題持續，請聯絡支援。",
   "notice-access-unverified": "方案已重新整理。請再次嘗試此模型以檢查存取權限。",
-  "notice-credits-unavailable": "額度暫時無法取得"
+  "notice-credits-unavailable": "額度暫時無法取得",
+  "run-details": "執行詳情"
 }

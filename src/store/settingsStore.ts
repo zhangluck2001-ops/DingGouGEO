@@ -28,6 +28,7 @@ export const SETTINGS_SECTIONS = [
   'geo-knowledge',
   'geo-probes',
   'geo-answers',
+  'geo-analysis',
   'geo-citations',
   'geo-drafts',
   'geo-published',

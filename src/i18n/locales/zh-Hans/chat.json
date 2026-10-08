@@ -186,7 +186,7 @@
   "control-approving": "正在授权…",
   "control-approved-once-receipt": "已允许一次",
   "control-approved-run-receipt": "已在本次任务内允许",
-  "control-approved-space-receipt": "已在此 Space 中始终允许",
+  "control-approved-space-receipt": "已在此空间中始终允许",
   "control-rejected": "已拒绝",
   "control-redacted": "[已隐去]",
   "control-submitted": "[已提交]",
@@ -246,7 +246,7 @@
   "back-to-agent-details": "返回智能体详情",
   "backend-not-ready": "❌ 后端服务尚未就绪。请稍候重试；如果问题持续，请重启应用。",
   "browser-agent": "浏览器智能体",
-  "camel-agent": "CAMEL 智能体",
+  "camel-agent": "GEO Agent",
   "cancel-task-failed": "取消任务失败",
   "cloud-model-key-failed": "无法获取云模型密钥。请检查账户或模型设置。",
   "cloud-model-switched": "模型 {{requestedModel}} 已不可用，已切换到 {{fallbackModel}}。",
@@ -433,5 +433,6 @@
   "notice-refresh-failed": "无法刷新额度，请重试。",
   "notice-availability-unverified": "无法检查服务状态。如问题持续，请联系支持。",
   "notice-access-unverified": "套餐已刷新。请再次尝试此模型以检查访问权限。",
-  "notice-credits-unavailable": "额度暂不可用"
+  "notice-credits-unavailable": "额度暂不可用",
+  "run-details": "运行详情"
 }

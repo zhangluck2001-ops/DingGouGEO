@@ -25,7 +25,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 export const GEO_STAGE_FOR_DATASET: Record<GeoDatasetKey, SettingsSectionId> = {
   facts: 'geo-knowledge',
   probes: 'geo-probes',
+  rounds: 'geo-answers',
   answers: 'geo-answers',
+  analyses: 'geo-analysis',
   citations: 'geo-citations',
   contents: 'geo-drafts',
 };

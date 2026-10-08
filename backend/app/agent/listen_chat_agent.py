@@ -207,10 +207,15 @@ class ListenChatAgent(ChatAgent):
         model_reload_callback: (
             Callable[[], BaseModelBackend | ModelManager] | None
         ) = None,
+        announce: bool = True,
         **kwargs: Any,
     ) -> None:
         self.api_task_id = api_task_id
         self.agent_name = agent_name
+        # False for background model calls (e.g. naming a session): they
+        # are not agents the user works with, so their turns stay out of
+        # the run's agent timeline. Token usage is still reported.
+        self.announce = announce
         self._user_on_request_usage = kwargs.pop("on_request_usage", None)
         if self._camel_has_request_usage:
             kwargs["on_request_usage"] = self._on_request_usage
@@ -585,6 +590,8 @@ class ListenChatAgent(ChatAgent):
             message: The accumulated message content
             tokens: The total token count used
         """
+        if not self.announce:
+            return
         if self._camel_has_request_usage:
             tokens = 0
         # A missing lock (task stopped mid-step) must not fail the step.
@@ -814,23 +821,24 @@ class ListenChatAgent(ChatAgent):
     ) -> ChatAgentResponse | StreamingChatAgentResponse:
         task_lock = get_task_lock(self.api_task_id)
         agent_turn_id = f"agent-turn:{uuid.uuid4().hex}"
-        _schedule_async_task(
-            task_lock.put_queue(
-                ActionActivateAgentData(
-                    data={
-                        "agent_name": self.agent_name,
-                        "process_task_id": self.process_task_id,
-                        "agent_id": self.agent_id,
-                        "agent_turn_id": agent_turn_id,
-                        "message": (
-                            input_message.content
-                            if isinstance(input_message, BaseMessage)
-                            else input_message
-                        ),
-                    },
+        if self.announce:
+            _schedule_async_task(
+                task_lock.put_queue(
+                    ActionActivateAgentData(
+                        data={
+                            "agent_name": self.agent_name,
+                            "process_task_id": self.process_task_id,
+                            "agent_id": self.agent_id,
+                            "agent_turn_id": agent_turn_id,
+                            "message": (
+                                input_message.content
+                                if isinstance(input_message, BaseMessage)
+                                else input_message
+                            ),
+                        },
+                    )
                 )
             )
-        )
         error_info = None
         message = None
         res = None
@@ -926,22 +934,23 @@ class ListenChatAgent(ChatAgent):
     ) -> ChatAgentResponse | AsyncStreamingChatAgentResponse:
         task_lock = get_task_lock(self.api_task_id)
         agent_turn_id = f"agent-turn:{uuid.uuid4().hex}"
-        await task_lock.put_queue(
-            ActionActivateAgentData(
-                action=Action.activate_agent,
-                data={
-                    "agent_name": self.agent_name,
-                    "process_task_id": self.process_task_id,
-                    "agent_id": self.agent_id,
-                    "agent_turn_id": agent_turn_id,
-                    "message": (
-                        input_message.content
-                        if isinstance(input_message, BaseMessage)
-                        else input_message
-                    ),
-                },
+        if self.announce:
+            await task_lock.put_queue(
+                ActionActivateAgentData(
+                    action=Action.activate_agent,
+                    data={
+                        "agent_name": self.agent_name,
+                        "process_task_id": self.process_task_id,
+                        "agent_id": self.agent_id,
+                        "agent_turn_id": agent_turn_id,
+                        "message": (
+                            input_message.content
+                            if isinstance(input_message, BaseMessage)
+                            else input_message
+                        ),
+                    },
+                )
             )
-        )
 
         error_info = None
         message = None
@@ -1666,6 +1675,8 @@ class ListenChatAgent(ChatAgent):
             step_timeout=self.step_timeout,
             stall_timeout=self.stall_timeout,
             stream_accumulate=self.stream_accumulate,
+            summarize_threshold=self.summarize_threshold,
+            announce=self.announce,
             **clone_kwargs,
         )
 

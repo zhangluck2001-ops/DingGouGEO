@@ -12,6 +12,12 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
+import type { GeoDatasetKey } from '@/api/geo';
+import {
+  getSessionPreviewSlice,
+  usePageTabStore,
+  WorkspaceTab,
+} from '@/store/pageTabStore';
 import type { SettingsSectionId } from '@/store/settingsStore';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
@@ -24,7 +30,7 @@ export const WORKBENCH_CHAT_MIN_WIDTH = 360;
 
 /** A filter or record another GEO stage should open with. */
 export interface GeoDrillRequest {
-  dataset: 'facts' | 'answers' | 'citations' | 'probes' | 'contents';
+  dataset: GeoDatasetKey;
   field?: string;
   value?: string;
   recordId?: number;
@@ -57,9 +63,51 @@ interface WorkbenchState {
 }
 
 /**
- * The workbench is the right-hand half of the Workspace page: the same
- * destinations as Home (models, skills, GEO boards, …) rendered beside the
- * AI chat so people and the agent look at the same surface.
+ * Inside a session the GEO pages are a tab of the session's right panel, so
+ * there is only ever one panel beside the chat. Elsewhere (the new-session
+ * page, Files, …) they show in the standalone workbench column.
+ */
+function inSessionPanel(): boolean {
+  const tabs = usePageTabStore.getState();
+  return (
+    tabs.activeWorkspaceTab === WorkspaceTab.Project &&
+    Boolean(tabs.sessionPreviewProjectId)
+  );
+}
+
+/** Whether the panel beside the chat is open (the top bar toggle). */
+export function useRightPanelOpen(): boolean {
+  const inSession = usePageTabStore(
+    (state) =>
+      state.activeWorkspaceTab === WorkspaceTab.Project &&
+      Boolean(state.sessionPreviewProjectId)
+  );
+  const sessionPanelOpen = usePageTabStore(
+    (state) => getSessionPreviewSlice(state).open
+  );
+  const workbenchOpen = useWorkbenchStore((state) => state.open);
+  return inSession ? sessionPanelOpen : workbenchOpen;
+}
+
+/** Whether the GEO pages are on screen, wherever they are shown. */
+export function useGeoVisible(): boolean {
+  const inSession = usePageTabStore(
+    (state) =>
+      state.activeWorkspaceTab === WorkspaceTab.Project &&
+      Boolean(state.sessionPreviewProjectId)
+  );
+  const geoTabShown = usePageTabStore((state) => {
+    const slice = getSessionPreviewSlice(state);
+    const active = slice.tabs.find((tab) => tab.id === slice.activeTabId);
+    return slice.open && active?.type === 'geo';
+  });
+  const workbenchOpen = useWorkbenchStore((state) => state.open);
+  return inSession ? geoTabShown : workbenchOpen;
+}
+
+/**
+ * GEO pipeline pages beside the AI chat, so people and the agent look at the
+ * same surface: the GEO tab in a session, the workbench column elsewhere.
  */
 export const useWorkbenchStore = create<WorkbenchState>()(
   persist(
@@ -68,9 +116,30 @@ export const useWorkbenchStore = create<WorkbenchState>()(
       section: 'geo-overview',
       width: WORKBENCH_DEFAULT_WIDTH,
       navCollapsed: false,
-      setOpen: (open) => set({ open }),
-      toggleOpen: () => set((state) => ({ open: !state.open })),
-      openSection: (section) => set({ section, open: true }),
+      setOpen: (open) => {
+        if (!inSessionPanel()) {
+          set({ open });
+          return;
+        }
+        const tabs = usePageTabStore.getState();
+        if (open) tabs.openPreviewTab('geo');
+        else tabs.closeSessionPreview();
+      },
+      toggleOpen: () => {
+        if (!inSessionPanel()) {
+          set((state) => ({ open: !state.open }));
+          return;
+        }
+        usePageTabStore.getState().toggleSessionPreview();
+      },
+      openSection: (section) => {
+        if (!inSessionPanel()) {
+          set({ section, open: true });
+          return;
+        }
+        set({ section });
+        usePageTabStore.getState().openPreviewTab('geo');
+      },
       setWidth: (width) =>
         set({ width: Math.max(WORKBENCH_MIN_WIDTH, Math.round(width)) }),
       toggleNavCollapsed: () =>

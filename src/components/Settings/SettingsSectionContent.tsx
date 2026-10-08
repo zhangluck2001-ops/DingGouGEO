@@ -34,6 +34,7 @@ const sectionLoaders = {
   'geo-knowledge': () => import('@/components/Geo/stages/Knowledge'),
   'geo-probes': () => import('@/components/Geo/stages/Probes'),
   'geo-answers': () => import('@/components/Geo/stages/Answers'),
+  'geo-analysis': () => import('@/components/Geo/stages/Analysis'),
   'geo-citations': () => import('@/components/Geo/stages/Citations'),
   'geo-drafts': () => import('@/components/Geo/stages/Drafts'),
   'geo-published': () => import('@/components/Geo/stages/Published'),
@@ -55,6 +56,7 @@ const GeoOverview = lazy(sectionLoaders['geo-overview']);
 const GeoKnowledge = lazy(sectionLoaders['geo-knowledge']);
 const GeoProbes = lazy(sectionLoaders['geo-probes']);
 const GeoAnswers = lazy(sectionLoaders['geo-answers']);
+const GeoAnalysis = lazy(sectionLoaders['geo-analysis']);
 const GeoCitations = lazy(sectionLoaders['geo-citations']);
 const GeoDrafts = lazy(sectionLoaders['geo-drafts']);
 const GeoPublished = lazy(sectionLoaders['geo-published']);
@@ -74,6 +76,7 @@ const SELF_HEADED_SECTIONS: ReadonlySet<SettingsSectionId> = new Set([
   'geo-knowledge',
   'geo-probes',
   'geo-answers',
+  'geo-analysis',
   'geo-citations',
   'geo-drafts',
   'geo-published',
@@ -144,6 +147,8 @@ function SettingsSection({ section }: { section: SettingsSectionId }) {
       return <GeoProbes />;
     case 'geo-answers':
       return <GeoAnswers />;
+    case 'geo-analysis':
+      return <GeoAnalysis />;
     case 'geo-citations':
       return <GeoCitations />;
     case 'geo-drafts':

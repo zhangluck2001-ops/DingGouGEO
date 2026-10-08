@@ -19,6 +19,7 @@ import {
   Globe,
   type LucideIcon,
   PanelsTopLeft,
+  Radar,
   Shapes,
   SquareTerminal,
 } from 'lucide-react';
@@ -43,6 +44,15 @@ export interface PreviewKindMeta {
  * version ships its content. Re-add its entry here when that lands.
  */
 export const PREVIEW_TAB_KINDS: PreviewKindMeta[] = [
+  {
+    kind: 'geo',
+    icon: Radar,
+    labelKey: 'layout.preview-kind-geo',
+    defaultLabel: 'GEO',
+    descriptionKey: 'layout.preview-kind-geo-desc',
+    defaultDescription:
+      "This Space's GEO pipeline: knowledge base, probes, captures, diagnosis, sources, and content.",
+  },
   {
     kind: 'browser',
     icon: Globe,
@@ -79,6 +89,7 @@ export const PREVIEW_TAB_KINDS: PreviewKindMeta[] = [
 ];
 
 const KIND_ICONS: Record<SessionPreviewTab['type'], LucideIcon> = {
+  geo: Radar,
   chooser: PanelsTopLeft,
   browser: Globe,
   file: FileText,

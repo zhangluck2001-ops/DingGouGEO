@@ -52,18 +52,16 @@ export const GEO_ALL = '__all__';
 export const GEO_PAGE_SIZE = 50;
 
 /**
- * Loads local GEO projects. The active Space's own project is the default;
- * picking another project is remembered per Space.
+ * The GEO project of the active Space. Every Space is one brand (or product)
+ * project and only ever shows its own data, kept in the Space's `GEO/`
+ * folder. `project` is null until the Space has been set up.
  */
-const chosenBySpace = new Map<string, number>();
-
-export function useGeoProjects(refreshKey = 0) {
+export function useGeoProject(refreshKey = 0) {
   const activeSpaceId = useSpaceStore((state) => state.activeSpaceId);
   const version = useWorkbenchStore((state) => state.geoProjectsVersion);
-  const [projects, setProjects] = useState<GeoProject[]>([]);
+  const [project, setProject] = useState<GeoProject | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [projectId, setProjectIdState] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,21 +70,11 @@ export function useGeoProjects(refreshKey = 0) {
       .projects()
       .then((response) => {
         if (cancelled) return;
-        const items = response?.items ?? [];
-        setProjects(items);
+        const own = (response?.items ?? []).find(
+          (item) => activeSpaceId && item.space_id === activeSpaceId
+        );
+        setProject(own ?? null);
         setError(null);
-        const chosen = activeSpaceId
-          ? chosenBySpace.get(activeSpaceId)
-          : undefined;
-        const own = items.find((item) => item.space_id === activeSpaceId);
-        const next =
-          (chosen && items.some((item) => item.id === chosen)
-            ? chosen
-            : undefined) ??
-          own?.id ??
-          items[0]?.id ??
-          null;
-        setProjectIdState(next);
       })
       .catch((reason: unknown) => {
         if (!cancelled) setError(String(reason));
@@ -99,48 +87,7 @@ export function useGeoProjects(refreshKey = 0) {
     };
   }, [refreshKey, version, activeSpaceId]);
 
-  const setProjectId = useCallback(
-    (id: number) => {
-      if (activeSpaceId) chosenBySpace.set(activeSpaceId, id);
-      setProjectIdState(id);
-    },
-    [activeSpaceId]
-  );
-
-  return { projects, projectId, setProjectId, loading, error };
-}
-
-export function GeoProjectSelect({
-  projects,
-  value,
-  onChange,
-}: {
-  projects: GeoProject[];
-  value: number | null;
-  onChange: (id: number) => void;
-}) {
-  const { t } = useTranslation();
-  if (projects.length === 0) return null;
-  return (
-    <Select
-      value={value == null ? undefined : String(value)}
-      onValueChange={(next) => onChange(Number(next))}
-    >
-      <SelectTrigger
-        size="xs"
-        aria-label={t('geo.project', { defaultValue: 'Project' })}
-      >
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {projects.map((project) => (
-          <SelectItem key={project.id} value={String(project.id)}>
-            {project.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-  );
+  return { project, projectId: project?.id ?? null, loading, error };
 }
 
 export function GeoFacetSelect({
@@ -176,8 +123,14 @@ export function GeoFacetSelect({
   );
 }
 
-/** Starts a Feishu → local import and polls until it finishes. */
-export function GeoSyncButton({ onFinished }: { onFinished: () => void }) {
+/** Starts this Space's Feishu → local import and polls until it finishes. */
+export function GeoSyncButton({
+  projectId,
+  onFinished,
+}: {
+  projectId: number;
+  onFinished: () => void;
+}) {
   const { t } = useTranslation();
   const [running, setRunning] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -191,7 +144,7 @@ export function GeoSyncButton({ onFinished }: { onFinished: () => void }) {
     stopPolling();
     timer.current = setInterval(() => {
       void geoApi
-        .importStatus()
+        .importStatus(projectId)
         .then((status) => {
           if (status.running) return;
           stopPolling();
@@ -212,11 +165,11 @@ export function GeoSyncButton({ onFinished }: { onFinished: () => void }) {
         })
         .catch(() => undefined);
     }, 3000);
-  }, [onFinished, stopPolling, t]);
+  }, [onFinished, projectId, stopPolling, t]);
 
   useEffect(() => {
     void geoApi
-      .importStatus()
+      .importStatus(projectId)
       .then((status) => {
         if (status.running) {
           setRunning(true);
@@ -225,13 +178,25 @@ export function GeoSyncButton({ onFinished }: { onFinished: () => void }) {
       })
       .catch(() => undefined);
     return stopPolling;
-  }, [poll, stopPolling]);
+  }, [poll, projectId, stopPolling]);
 
   const start = () => {
     setRunning(true);
     void geoApi
-      .startImport()
-      .then(() => poll())
+      .importStatus(projectId)
+      .then((status) => {
+        if (!status.configured) {
+          setRunning(false);
+          toast.info(
+            t('geo.sync-not-configured', {
+              defaultValue:
+                'This Space has no Feishu source yet. Add GEO/feishu_sources.json to the Space folder.',
+            })
+          );
+          return;
+        }
+        return geoApi.startImport(projectId).then(() => poll());
+      })
       .catch(() => {
         setRunning(false);
         toast.error(

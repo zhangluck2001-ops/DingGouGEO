@@ -249,7 +249,7 @@
   "back-to-agent-details": "Назад к сведениям об агенте",
   "backend-not-ready": "❌ Служба backend ещё не готова. Немного подождите и повторите попытку. Если проблема не исчезнет, перезапустите приложение.",
   "browser-agent": "Браузерный агент",
-  "camel-agent": "Агент CAMEL",
+  "camel-agent": "GEO Agent",
   "cancel-task-failed": "Не удалось отменить задачу",
   "cloud-model-key-failed": "Не удалось получить ключ облачной модели. Проверьте аккаунт или настройки модели.",
   "cloud-model-switched": "Модель {{requestedModel}} больше недоступна; выполнено переключение на {{fallbackModel}}.",
@@ -445,5 +445,6 @@
   "notice-refresh-failed": "Не удалось обновить кредиты. Повторите попытку.",
   "notice-availability-unverified": "Не удалось проверить доступность. Если проблема сохраняется, обратитесь в поддержку.",
   "notice-access-unverified": "Тариф обновлён. Попробуйте модель снова, чтобы проверить доступ.",
-  "notice-credits-unavailable": "Кредиты недоступны"
+  "notice-credits-unavailable": "Кредиты недоступны",
+  "run-details": "Run details"
 }

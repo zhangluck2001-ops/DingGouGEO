@@ -232,11 +232,11 @@ export function MemoryScopeDirectory({
           isSpace
             ? t('setting.memory-directory-space-description', {
                 defaultValue:
-                  'Shared notes for every Session in a Space. Select a Space to review or add them.',
+                  'Decisions, agreed wording, client feedback and references for this brand project, shared by every Session. Brand and product facts belong in the brand knowledge base, not here. Select a Space to review or add notes.',
               })
             : t('setting.memory-directory-session-description', {
                 defaultValue:
-                  'Session-specific notes learned or saved while work runs. Select a Session to manage them.',
+                  'Short-lived notes for one Session only. Promote anything worth keeping to the Space. Select a Session to manage them.',
               })
         }
       >

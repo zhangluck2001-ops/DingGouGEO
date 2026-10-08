@@ -37,10 +37,19 @@ export function useWorkbenchChrome() {
 }
 
 /**
- * The GEO panel beside the chat. It only shows GEO pipeline stages; model,
- * skill, and device settings live in Settings.
+ * The GEO pipeline pages. Shown beside the chat as the GEO tab of the
+ * session's right panel (``embedded``), or as the standalone GEO column on
+ * pages without a session panel. Model, skill, and device settings live in
+ * Settings.
  */
-export default function Workbench({ className }: { className?: string }) {
+export default function Workbench({
+  className,
+  embedded = false,
+}: {
+  className?: string;
+  /** Inside a tab: the tab strip closes it, so pages show no close button. */
+  embedded?: boolean;
+}) {
   const { t } = useTranslation();
   const stored = visibleSettingsSection(
     useWorkbenchStore((state) => state.section),
@@ -51,11 +60,14 @@ export default function Workbench({ className }: { className?: string }) {
   const item = getSettingsNavigationItem(section);
 
   return (
-    <WorkbenchChromeContext.Provider value={{ onClose: () => setOpen(false) }}>
+    <WorkbenchChromeContext.Provider
+      value={embedded ? null : { onClose: () => setOpen(false) }}
+    >
       <section
         aria-label={t(item.labelKey, { defaultValue: item.defaultLabel })}
         className={cn(
-          'flex h-full min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl bg-ds-neutral-subtle-default',
+          'flex h-full min-h-0 min-w-0 flex-col overflow-hidden',
+          !embedded && 'rounded-2xl bg-ds-neutral-subtle-default',
           className
         )}
       >

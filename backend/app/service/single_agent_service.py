@@ -24,6 +24,7 @@ from camel.responses import ChatAgentResponse
 from fastapi import Request
 
 from app.agent.factory.single_agent import single_agent
+from app.geo import agent_prompt as geo_agent_prompt
 from app.hands.interface import IHands
 from app.memory import (
     build_durable_context_projection_for_task_lock,
@@ -294,6 +295,14 @@ def _build_single_agent_prompt(
     context = _build_single_agent_context(
         task_lock, project_context, current_user_prompt=""
     )
+    # The Space's GEO status is recomputed every turn: the agent outlives
+    # turns, and the data it describes changes between them.
+    run_context = getattr(task_lock, "run_context", None)
+    space_status = geo_agent_prompt.space_status(
+        getattr(run_context, "space_id", None)
+    )
+    if space_status:
+        context = f"{space_status}\n\n{context}"
     attachment_context = ""
     if attaches:
         attachment_context = "Attachments:\n" + "\n".join(

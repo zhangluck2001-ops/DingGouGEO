@@ -115,14 +115,10 @@ def scaffold(geo_root: Path, brand: str) -> list[str]:
 
 
 def _project(project_id: int) -> dict:
-    with store.connect() as conn:
-        row = conn.execute(
-            "SELECT id, name, workspace_root FROM geo_project WHERE id = ?",
-            (project_id,),
-        ).fetchone()
+    row = store.project_row(project_id)
     if row is None:
         raise LookupError("GEO project not found")
-    return dict(row)
+    return row
 
 
 def _iso(timestamp: float) -> str:
@@ -168,7 +164,7 @@ def status(project_id: int) -> dict:
                 "modified_at": _iso(path.stat().st_mtime) if exists else None,
             }
         )
-    with store.connect() as conn:
+    with store.connect(project_id) as conn:
         known = {
             row["file_name"]: dict(row)
             for row in conn.execute(
@@ -201,6 +197,7 @@ def status(project_id: int) -> dict:
             )
     return {
         "project_id": project_id,
+        "db_path": str(store.project_db_path(project_id)),
         "root": str(root),
         "rules_path": str(root / RULES_FILE),
         "raw_path": str(raw),
@@ -228,7 +225,7 @@ def import_sources(project_id: int, paths: list[str]) -> list[str]:
     raw = kb_root(project["workspace_root"]) / RAW_FOLDER
     raw.mkdir(parents=True, exist_ok=True)
     imported: list[str] = []
-    with store.connect() as conn:
+    with store.connect(project_id) as conn:
         for item in paths:
             source = Path(item).expanduser()
             if not source.is_file():
@@ -248,7 +245,7 @@ def import_sources(project_id: int, paths: list[str]) -> list[str]:
 def set_source_status(project_id: int, file_name: str, value: str) -> None:
     if value not in SOURCE_STATUSES:
         raise ValueError(f"status must be one of {SOURCE_STATUSES}")
-    with store.connect() as conn:
+    with store.connect(project_id) as conn:
         conn.execute(
             "INSERT INTO geo_kb_source (project_id, file_name, status, cleaned_at)"
             " VALUES (?, ?, ?, CASE WHEN ? = '已清洗' THEN datetime('now') END)"

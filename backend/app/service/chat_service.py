@@ -48,6 +48,7 @@ from app.agent.factory.remote_sub_agent import (
     attach_remote_sub_agent_if_enabled,
     remote_sub_agent_enabled,
 )
+from app.agent.factory.single_agent import session_title_agent
 from app.agent.listen_chat_agent import ListenChatAgent
 from app.agent.prompt import (
     append_connected_app_mcp_notice,
@@ -58,6 +59,7 @@ from app.agent.toolkit.note_taking_toolkit import NoteTakingToolkit
 from app.agent.toolkit.skill_toolkit import SkillToolkit
 from app.agent.toolkit.terminal_toolkit import TerminalToolkit
 from app.agent.tools import get_mcp_tools, get_toolkits
+from app.geo import agent_prompt as geo_agent_prompt
 from app.hands.interface import IHands
 from app.memory import (
     build_durable_context_projection_for_task_lock,
@@ -152,18 +154,26 @@ async def _summarize_single_agent_task(
     question: str,
     task_id: str,
 ) -> str:
-    """Generate Single Agent project metadata with Workforce semantics."""
+    """Name the session and summarise the request as ``name|summary``.
 
-    task = Task(
-        content=question + options.summary_prompt,
-        id=task_id,
-    )
-    try:
-        summary_agent = task_summary_agent(options)
-        return await asyncio.wait_for(
-            summary_task(summary_agent, task),
-            timeout=10,
+    A background model call: it is not one of the run's agents.
+    """
+
+    async def title() -> str:
+        response = await _run_agent_step(
+            session_title_agent(options),
+            geo_agent_prompt.session_title_prompt(
+                question,
+                name_max=SUMMARY_TASK_NAME_MAX_LENGTH,
+                summary_max=SUMMARY_TASK_SUMMARY_MAX_LENGTH,
+            ),
         )
+        return normalize_summary_task(
+            _extract_agent_response_content(response) or "", question
+        )
+
+    try:
+        return await asyncio.wait_for(title(), timeout=10)
     except TimeoutError:
         logger.warning(
             "Single Agent summary_task timeout",
@@ -633,17 +643,6 @@ async def step_solve(options: Chat, request: Request, task_lock: TaskLock):
     if not hasattr(task_lock, "summary_generated"):
         task_lock.summary_generated = False
 
-    # Create or reuse persistent question_agent
-    if task_lock.question_agent is None:
-        task_lock.question_agent = question_confirm_agent(options)
-    else:
-        hist_len = len(task_lock.conversation_history)
-        logger.debug(
-            f"Reusing existing question_agent with {hist_len} history entries"
-        )
-
-    question_agent = task_lock.question_agent
-
     # Other variables
     camel_task = None
     workforce = None
@@ -682,6 +681,18 @@ async def step_solve(options: Chat, request: Request, task_lock: TaskLock):
         ):
             yield chunk
         return
+
+    # Workforce only: decides whether a question needs the workforce. Create
+    # or reuse the persistent question_agent.
+    if task_lock.question_agent is None:
+        task_lock.question_agent = question_confirm_agent(options)
+    else:
+        hist_len = len(task_lock.conversation_history)
+        logger.debug(
+            f"Reusing existing question_agent with {hist_len} history entries"
+        )
+
+    question_agent = task_lock.question_agent
 
     while True:
         loop_iteration += 1

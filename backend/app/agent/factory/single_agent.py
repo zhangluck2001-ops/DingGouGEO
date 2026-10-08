@@ -21,11 +21,10 @@ from camel.messages import BaseMessage
 
 from app.agent.agent_model import agent_model
 from app.agent.factory.toolkit_assembler import assemble_single_agent_toolkits
-from app.agent.prompt import (
-    SINGLE_AGENT_SYS_PROMPT,
-    append_connected_app_mcp_notice,
-)
+from app.agent.prompt import append_connected_app_mcp_notice
 from app.agent.utils import NOW_STR
+from app.geo.agent_prompt import SESSION_TITLE_SYS_PROMPT, build_system_prompt
+from app.geo.harness import context_budget
 from app.hands.interface import IHands
 from app.model.chat import Chat
 from app.service.task import Agents
@@ -42,6 +41,17 @@ class AgentRuntimeConfig:
     @property
     def can_delegate(self) -> bool:
         return self.depth < self.max_depth
+
+
+def session_title_agent(options: Chat):
+    """Names a DingGouGEO session. A background model call, not an agent of
+    the run: it is never registered and its turn is not published."""
+    return agent_model(
+        "task_summary_agent",
+        SESSION_TITLE_SYS_PROMPT,
+        options,
+        announce=False,
+    )
 
 
 async def single_agent(
@@ -70,7 +80,8 @@ async def single_agent(
         runtime_environment=runtime_environment,
     )
 
-    system_message = SINGLE_AGENT_SYS_PROMPT.format(
+    # DingGouGEO: the root agent is the GEO Agent.
+    system_message = build_system_prompt(
         platform_system=platform.system(),
         platform_machine=platform.machine(),
         working_directory=working_directory,
@@ -82,16 +93,20 @@ async def single_agent(
         if bundle_context:
             system_message = f"{system_message}\n\n{bundle_context}"
 
+    # Sub-agents are created from this agent and inherit its budget.
+    budget = context_budget(options.model_platform, options.model_type)
     agent = agent_model(
         Agents.single_agent,
         BaseMessage.make_assistant_message(
-            role_name="Single Agent",
+            role_name="GEO Agent",
             content=system_message,
         ),
         options,
         assembly.tools,
         tool_names=assembly.tool_names,
         toolkits_to_register_agent=assembly.toolkits_to_register_agent,
+        token_limit=budget.token_limit,
+        summarize_threshold=budget.summarize_threshold,
     )
     if pause_event is not None:
         agent.pause_event = pause_event

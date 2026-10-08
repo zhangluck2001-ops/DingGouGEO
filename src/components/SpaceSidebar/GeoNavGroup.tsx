@@ -14,17 +14,18 @@
 
 import { NavTab, SidebarNavGroup } from '@/components/Layout/AppSidebar';
 import { GEO_NAVIGATION } from '@/components/Settings/settingsNavigation';
-import { useWorkbenchStore } from '@/store/workbenchStore';
+import { useGeoVisible, useWorkbenchStore } from '@/store/workbenchStore';
 import { useTranslation } from 'react-i18next';
 import { SidebarAccordionSection } from './SidebarAccordionSection';
 
 /**
- * GEO pipeline stages in the Workspace sidebar. Each opens in the GEO panel
- * beside the chat, the way Claude opens an artifact next to a conversation.
+ * GEO pipeline stages in the Workspace sidebar. Each opens in the GEO tab of
+ * the panel beside the chat (one tab, switching stages), the way Claude opens
+ * an artifact next to a conversation.
  */
 export function GeoNavGroup() {
   const { t } = useTranslation();
-  const open = useWorkbenchStore((state) => state.open);
+  const open = useGeoVisible();
   const section = useWorkbenchStore((state) => state.section);
   const openSection = useWorkbenchStore((state) => state.openSection);
   const setOpen = useWorkbenchStore((state) => state.setOpen);

@@ -29,6 +29,10 @@ const mocks = vi.hoisted(() => ({
     setActiveWorkspaceTab: vi.fn(),
     closeSessionPreview: vi.fn(),
     setSessionPreviewProject: vi.fn(),
+    ensureDefaultSessionPreview: vi.fn(),
+    toggleSessionPreview: vi.fn(),
+    toggleWorkspaceSidebar: vi.fn(),
+    workspaceSidebarHidden: true,
     sessionPreviewProjectId: 'project-1',
     sessionSidePanelToggleRequestId: 0,
     previewSlice: { open: true, tabs: [], activeTabId: null },
@@ -170,8 +174,9 @@ async function renderResizableSession() {
     'after:bg-ds-accent-default-hover'
   );
 
+  // Opening the panel gives the chat 45% of the 1200px row.
   await waitFor(() =>
-    expect(row.style.getPropertyValue('--session-chat-width')).toBe('360px')
+    expect(row.style.getPropertyValue('--session-chat-width')).toBe('540px')
   );
 
   Object.defineProperties(separator, {
@@ -186,7 +191,7 @@ async function renderResizableSession() {
   fireEvent.pointerDown(separator, {
     button: 0,
     buttons: 1,
-    clientX: 360,
+    clientX: 540,
     isPrimary: true,
     pointerId: 7,
   });

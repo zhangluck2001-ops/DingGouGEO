@@ -12,6 +12,8 @@
 # limitations under the License.
 # ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
+import json
+
 from app.geo import knowledge, queries, space_bootstrap, store
 
 
@@ -109,3 +111,131 @@ def test_knowledge_base_scaffold_status_and_import(tmp_path, monkeypatch):
         "品牌手册 (2).pdf": "待清洗",
     }
     assert pdf.read_bytes() == b"%PDF-1.4"
+
+
+def test_space_keeps_its_data_in_its_own_folder(tmp_path, monkeypatch):
+    registry = tmp_path / "registry" / "geo.db"
+    monkeypatch.setenv("EIGENT_GEO_DB_PATH", str(registry))
+    # Imported from Feishu before any Space existed: data sits in the registry.
+    with store.connect() as conn:
+        pid = store.ensure_project(conn, "SMA敏护", "base")
+        store.upsert_rows(
+            conn,
+            "geo_answer",
+            [
+                {
+                    "project_id": pid,
+                    "record_id": "r1",
+                    "capture_code": "RUN_1",
+                    "capture_round": "第一轮",
+                }
+            ],
+        )
+    (registry.parent / "sources.json").write_text(
+        json.dumps(
+            [
+                {
+                    "name": "SMA敏护",
+                    "base_token": "base",
+                    "tables": [
+                        {"kind": "answer", "table_id": "t1", "batch": "第一轮"}
+                    ],
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    workspace = tmp_path / "space"
+    workspace.mkdir()
+    result = space_bootstrap.ensure_space_project(
+        "space-9", "SMA敏护", str(workspace)
+    )
+    assert result["project_id"] == pid
+    assert result["moved_rows"]["geo_answer"] == 1
+    geo = workspace / "GEO"
+    assert result["db_path"] == str(geo / "geo.db")
+    assert (geo / "03_AI采集" / "第一轮").is_dir()
+    # Feishu is an optional import, not part of a Space.
+    assert not (geo / "feishu_sources.json").exists()
+
+    with store.connect() as conn:  # the registry keeps only the project row
+        assert (
+            conn.execute("SELECT COUNT(*) FROM geo_answer").fetchone()[0] == 0
+        )
+    assert list(registry.parent.glob("geo.db.bak-*"))
+    answers = queries.list_records("answers", pid)
+    assert [a["capture_code"] for a in answers["items"]] == ["RUN_1"]
+    [project] = queries.list_projects()
+    assert project["counts"]["answers"] == 1
+    assert project["counts"]["rounds"] == 1
+
+    # A second brand Space has its own, empty database.
+    other = tmp_path / "space-b"
+    other.mkdir()
+    brand_b = space_bootstrap.ensure_space_project(
+        "space-b", "小安素", str(other)
+    )
+    assert queries.list_records("answers", brand_b["project_id"])["total"] == 0
+    assert (other / "GEO" / "geo.db").is_file()
+
+
+def test_history_under_another_name_merges_into_the_space(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("EIGENT_GEO_DB_PATH", str(tmp_path / "reg" / "geo.db"))
+    with store.connect() as conn:
+        old = store.ensure_project(conn, "SMA敏护", "base-token")
+        store.upsert_rows(
+            conn,
+            "geo_answer",
+            [
+                {
+                    "project_id": old,
+                    "record_id": "r1",
+                    "capture_code": "RUN_1",
+                    "capture_round": "第一轮",
+                }
+            ],
+        )
+    workspace = tmp_path / "space"
+    workspace.mkdir()
+    space = space_bootstrap.ensure_space_project(
+        "space-1", "雀巢SMA敏护", str(workspace)
+    )
+    assert space["project_id"] != old  # different name: not adopted
+
+    moved = store.merge_project_into(old, space["project_id"])
+
+    assert moved["geo_answer"] == 1
+    [project] = queries.list_projects()
+    assert (project["name"], project["counts"]["answers"]) == (
+        "雀巢SMA敏护",
+        1,
+    )
+    assert store.project_row(space["project_id"])["feishu_base_token"] == (
+        "base-token"
+    )
+    assert store.project_row(old) is None
+    answers = queries.list_records("answers", space["project_id"])["items"]
+    assert [a["capture_code"] for a in answers] == ["RUN_1"]
+
+
+def test_database_runtime_files_are_kept_out_of_workspace_git(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("EIGENT_GEO_DB_PATH", str(tmp_path / "geo.db"))
+    workspace = tmp_path / "space"
+    (workspace / ".git" / "info").mkdir(parents=True)
+    exclude = workspace / ".git" / "info" / "exclude"
+    exclude.write_text("# git default\n", encoding="utf-8")
+
+    space_bootstrap.ensure_space_project("s", "品牌", str(workspace))
+    space_bootstrap.ensure_space_project("s", "品牌", str(workspace))
+
+    text = exclude.read_text(encoding="utf-8")
+    assert text.startswith("# git default\n")
+    assert text.count("GEO/*.db-wal") == 1 and "GEO/*.db-shm" in text
+    # Spaces without version control are left alone.
+    plain = tmp_path / "plain"
+    plain.mkdir()
+    assert space_bootstrap.exclude_database_files_from_git(str(plain)) is False

@@ -246,7 +246,7 @@
   "back-to-agent-details": "에이전트 상세 정보로 돌아가기",
   "backend-not-ready": "❌ 백엔드 서비스가 준비되지 않았습니다. 잠시 후 다시 시도하거나 문제가 계속되면 애플리케이션을 다시 시작하세요.",
   "browser-agent": "브라우저 에이전트",
-  "camel-agent": "CAMEL 에이전트",
+  "camel-agent": "GEO Agent",
   "cancel-task-failed": "작업을 취소하지 못했습니다",
   "cloud-model-key-failed": "클라우드 모델 키를 가져오지 못했습니다. 계정 또는 모델 설정을 확인하세요.",
   "cloud-model-switched": "{{requestedModel}} 모델을 더 이상 사용할 수 없어 {{fallbackModel}}(으)로 전환했습니다.",
@@ -433,5 +433,6 @@
   "notice-refresh-failed": "크레딧을 새로고침하지 못했습니다. 다시 시도하세요.",
   "notice-availability-unverified": "서비스 상태를 확인하지 못했습니다. 문제가 계속되면 지원팀에 문의하세요.",
   "notice-access-unverified": "플랜이 새로고침되었습니다. 모델을 다시 시도하여 접근 권한을 확인하세요.",
-  "notice-credits-unavailable": "크레딧을 확인할 수 없음"
+  "notice-credits-unavailable": "크레딧을 확인할 수 없음",
+  "run-details": "Run details"
 }

@@ -43,26 +43,30 @@ _MAX_FAILURE_RETRIES = 5
 _MAX_RETRY_DELAY_SECONDS = 60.0
 _CONTINUATION_DELAY_SECONDS = 0.5
 
+# Only explicit "remember this" requests become Memory. Chinese scope phrases
+# need a colon ("这个空间：…"): without one, ordinary questions such as
+# "这个空间里有哪些数据" would be stored as notes.
 _EXPLICIT_MEMORY_PATTERNS = (
     re.compile(r"\b(?:please\s+)?remember(?:\s+that)?\s+(.+)", re.I | re.S),
     re.compile(r"\bI\s+prefer\s+(.+)", re.I | re.S),
     re.compile(r"\bmy\s+(?:preference|default)\s+is\s+(.+)", re.I | re.S),
     re.compile(
         r"\b(?:for|in)\s+(?:this|the\s+current)\s+"
-        r"(?:project|space|workspace)\s*[:,]?\s*(.+)",
+        r"(?:project|space|workspace|brand|session|conversation)\s*[:,：]?\s*(.+)",
         re.I | re.S,
     ),
     re.compile(
-        r"\b(?:for|across)\s+all\s+(?:projects|spaces)\s*[:,]?\s*(.+)",
+        r"\b(?:for|across)\s+all\s+(?:projects|spaces|brands)\s*[:,：]?\s*(.+)",
         re.I | re.S,
     ),
-    re.compile(r"(?:请)?记住[：,:]?\s*(.+)", re.S),
+    re.compile(r"(?:请)?记住[：,:，]?\s*(.+)", re.S),
     re.compile(
-        r"(?:这个|当前)(?:项目|空间|工作区)(?:中|里)?[：,:，]?\s*(.+)",
+        r"(?:这个|当前|本次?|这次)(?:项目|空间|品牌|工作区|会话)(?:中|里)?[：:]\s*(.+)",
         re.S,
     ),
-    re.compile(r"(?:所有项目|所有空间)(?:中|里)?[：,:，]?\s*(.+)", re.S),
-    re.compile(r"我(?:更)?(?:偏好|喜欢)[：,:，]?\s*(.+)", re.S),
+    re.compile(r"(?:所有项目|所有空间|所有品牌)(?:中|里)?[：:]\s*(.+)", re.S),
+    re.compile(r"我(?:偏好|更喜欢)[：,:，]?\s*(.+)", re.S),
+    re.compile(r"我喜欢[：:]\s*(.+)", re.S),
 )
 _USER_SCOPE_MARKERS = (
     "across all projects",
@@ -75,6 +79,7 @@ _USER_SCOPE_MARKERS = (
     "my personal preference",
     "所有项目",
     "所有空间",
+    "所有品牌",
     "所有 space",
     "以后都",
     "永远记住",
@@ -82,6 +87,24 @@ _USER_SCOPE_MARKERS = (
     "个人偏好",
     "我偏好",
     "我喜欢",
+)
+# In DingGouGEO a Space is the brand project, so in a Space a note with no
+# scope marker belongs to the Space (see ``default_scope``); only notes about
+# this one conversation stay with the conversation.
+_PROJECT_SCOPE_MARKERS = (
+    # Upstream English wording: a "Project" is one conversation. In the
+    # Chinese UI it is 会话, and 项目 means the brand project (the Space).
+    "this project",
+    "current project",
+    "this session",
+    "this conversation",
+    "this chat",
+    "这次会话",
+    "本次会话",
+    "这个会话",
+    "当前会话",
+    "这次对话",
+    "本次对话",
 )
 _SPACE_SCOPE_MARKERS = (
     "this space",
@@ -133,6 +156,7 @@ class MemoryExtractor(Protocol):
         active_memory: tuple,
         history_delta: tuple[HistoryQueryResult, ...],
         target_scope: str = "project",
+        default_scope: str = "project",
     ) -> tuple[ProposedMemoryMutation, ...]: ...
 
 
@@ -152,6 +176,7 @@ class ConservativeMemoryExtractor:
         active_memory: tuple,
         history_delta: tuple[HistoryQueryResult, ...],
         target_scope: str = "project",
+        default_scope: str = "project",
     ) -> tuple[ProposedMemoryMutation, ...]:
         known = {entry.content.casefold().strip() for entry in active_memory}
         proposals: list[ProposedMemoryMutation] = []
@@ -165,7 +190,7 @@ class ConservativeMemoryExtractor:
                 match = pattern.search(raw.strip())
                 if match is None:
                     continue
-                proposal_scope = self._target_scope(raw, match)
+                proposal_scope = self._target_scope(raw, match, default_scope)
                 if proposal_scope != target_scope:
                     continue
                 content = match.group(1).strip().rstrip()
@@ -200,15 +225,17 @@ class ConservativeMemoryExtractor:
         return tuple(proposals)
 
     @staticmethod
-    def _target_scope(raw: str, match: re.Match[str]) -> str:
+    def _target_scope(
+        raw: str, match: re.Match[str], default_scope: str = "project"
+    ) -> str:
         normalized = raw.casefold()
         if re.match(r"\bi\s+prefer\b", match.group(0), re.I):
             return "user"
         if any(marker in normalized for marker in _USER_SCOPE_MARKERS):
             return "user"
-        if any(marker in normalized for marker in _SPACE_SCOPE_MARKERS):
-            return "space"
-        return "project"
+        if any(marker in normalized for marker in _PROJECT_SCOPE_MARKERS):
+            return "project"
+        return default_scope
 
 
 class IncrementalMemoryMaintainer:
@@ -234,6 +261,7 @@ class IncrementalMemoryMaintainer:
         targets = [("project", project_id)]
         if space_id:
             targets.append(("space", space_id))
+        default_scope = "space" if space_id else "project"
         if user_id:
             targets.append(("user", user_id))
 
@@ -249,6 +277,7 @@ class IncrementalMemoryMaintainer:
                         source_project_id=project_id,
                         scope_type=scope_type,
                         scope_id=scope_id,
+                        default_scope=default_scope,
                     )
                     or more_work
                 )
@@ -285,6 +314,7 @@ class IncrementalMemoryMaintainer:
         source_project_id: str,
         scope_type: str,
         scope_id: str,
+        default_scope: str = "project",
     ) -> bool:
         state = self._service.scope(scope_type, scope_id)
         ratio = state.current_token_count / state.token_limit
@@ -353,6 +383,7 @@ class IncrementalMemoryMaintainer:
                     active_memory=active,
                     history_delta=page.items,
                     target_scope=scope_type,
+                    default_scope=default_scope,
                 )
                 if page.items
                 else ()

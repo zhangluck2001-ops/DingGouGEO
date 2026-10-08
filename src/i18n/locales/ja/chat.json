@@ -246,7 +246,7 @@
   "back-to-agent-details": "エージェントの詳細に戻る",
   "backend-not-ready": "❌ バックエンドサービスの準備ができていません。少し待ってから再試行してください。問題が続く場合はアプリを再起動してください。",
   "browser-agent": "ブラウザーエージェント",
-  "camel-agent": "CAMEL エージェント",
+  "camel-agent": "GEO Agent",
   "cancel-task-failed": "タスクをキャンセルできませんでした",
   "cloud-model-key-failed": "クラウドモデルのキーを取得できませんでした。アカウントまたはモデル設定を確認してください。",
   "cloud-model-switched": "モデル {{requestedModel}} は利用できないため、{{fallbackModel}} に切り替えました。",
@@ -433,5 +433,6 @@
   "notice-refresh-failed": "クレジットを更新できませんでした。再試行してください。",
   "notice-availability-unverified": "利用状況を確認できませんでした。問題が続く場合はサポートに連絡してください。",
   "notice-access-unverified": "プランを更新しました。モデルを再度試してアクセスを確認してください。",
-  "notice-credits-unavailable": "クレジットを取得できません"
+  "notice-credits-unavailable": "クレジットを取得できません",
+  "run-details": "Run details"
 }

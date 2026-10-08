@@ -24,6 +24,17 @@ export default function GeoProbes() {
       title={t('layout.geo-probes', { defaultValue: 'Intent probes' })}
       datasets={['probes']}
       views={['grid']}
+      agentTask={{
+        label: t('geo.agent-task', { defaultValue: 'Hand to AI' }),
+        prompt: ({ project, db, geoRoot }) =>
+          t('geo.agent-prompt-probes', {
+            defaultValue:
+              'Help me draft intent probes for {{project}}. Direction: (describe what you want to test). Read the brand knowledge base in {{geo}}/01_品牌知识库 for categories, selling points, competitors, and entry points, then propose questions real users would ask an AI assistant. Show them to me first; after I confirm, insert them into table geo_probe in {{db}} (code, text, cep, framework, direction, brand_pointer, selling_points, review_status).',
+            project,
+            db,
+            geo: geoRoot,
+          }),
+      }}
     />
   );
 }

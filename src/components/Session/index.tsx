@@ -13,10 +13,6 @@
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
 import ChatBox from '@/components/ChatBox';
-import {
-  RIGHT_RAIL_EXPANDED_OUTER_CLASS,
-  RIGHT_RAIL_FOLDED_OUTER_CLASS,
-} from '@/components/Layout/rightRail';
 import { HeaderBox } from '@/components/Session/HeaderBox';
 import { PreviewPanel } from '@/components/Session/PreviewPanel';
 import Workspace from '@/components/Workspace';
@@ -45,14 +41,13 @@ import {
   useRef,
   useState,
 } from 'react';
-import { SessionSidePanel } from './SidePanel';
 
 /** Maximum width the resizable chat column can reclaim while display is open. */
 const CHAT_PRIORITY_WIDTH = 680;
 /** Smallest the chat column may be dragged to. */
-const CHAT_MIN_WIDTH = 360;
+const CHAT_MIN_WIDTH = 420;
 /** Keep at least this much room for the preview when the chat is widened. */
-const PREVIEW_MIN_WIDTH = 320;
+const PREVIEW_MIN_WIDTH = 440;
 const DISPLAY_PANEL_SPRING = {
   type: 'spring' as const,
   duration: 0.5,
@@ -84,6 +79,9 @@ export default function Session({ isNewProject = false }: SessionProps) {
   const setSessionPreviewProject = usePageTabStore(
     (s) => s.setSessionPreviewProject
   );
+  const ensureDefaultSessionPreview = usePageTabStore(
+    (s) => s.ensureDefaultSessionPreview
+  );
   const sessionPreviewProjectId = usePageTabStore(
     (s) => s.sessionPreviewProjectId
   );
@@ -112,8 +110,6 @@ export default function Session({ isNewProject = false }: SessionProps) {
   // `null` = mode not yet determined (session still loading its events).
   const inferredSessionMode = inferSessionModeFromTask(activeTask, null);
 
-  const [isSidePanelVisible, setIsSidePanelVisible] = useState(!isNewProject);
-  const [isExpandedOverlayOpen, setIsExpandedOverlayOpen] = useState(false);
   const sessionSidePanelToggleRequestId = usePageTabStore(
     (s) => s.sessionSidePanelToggleRequestId
   );
@@ -121,21 +117,10 @@ export default function Session({ isNewProject = false }: SessionProps) {
     sessionSidePanelToggleRequestId
   );
 
-  // Default fold state is tab-specific. React reuses this component when switching
-  // between `project` and `new-project`, so reset when the shell or project changes.
-  useEffect(() => {
-    setIsSidePanelVisible(!isNewProject);
-    if (isNewProject) {
-      setIsExpandedOverlayOpen(false);
-    }
-  }, [isNewProject, activeProjectId]);
-
   const getAllChatStoresMemoized = useMemo(() => {
     if (!projectStore.activeProjectId) return [];
     return projectStore.getAllChatStores(projectStore.activeProjectId);
   }, [projectStore]);
-
-  const workforcePanelKey = chatStore?.activeTaskId ?? '';
 
   const hasSessionStarted = useMemo(() => {
     // The React-mirrored `chatStore` (via useChatStoreAdapter) lags the
@@ -236,19 +221,9 @@ export default function Session({ isNewProject = false }: SessionProps) {
       inferredSessionMode ??
       (hasSessionStarted ? null : SessionMode.SINGLE_AGENT));
 
-  useEffect(() => {
-    setIsExpandedOverlayOpen(false);
-  }, [projectStore.activeProjectId]);
-
-  useEffect(() => {
-    if (activeWorkspaceTab !== 'project') {
-      setIsExpandedOverlayOpen(false);
-    }
-  }, [activeWorkspaceTab]);
-
-  const toggleSidePanel = useCallback(() => {
-    setIsSidePanelVisible((prev) => !prev);
-  }, []);
+  // DingGouGEO has no separate summary column (run details live in the
+  // "worked for" log); its toggle command now toggles the panel beside chat.
+  const toggleSessionPreview = usePageTabStore((s) => s.toggleSessionPreview);
 
   useEffect(() => {
     if (
@@ -258,8 +233,12 @@ export default function Session({ isNewProject = false }: SessionProps) {
       return;
     }
     handledSidePanelToggleRequestId.current = sessionSidePanelToggleRequestId;
-    if (activeWorkspaceTab === WorkspaceTab.Project) toggleSidePanel();
-  }, [activeWorkspaceTab, sessionSidePanelToggleRequestId, toggleSidePanel]);
+    if (activeWorkspaceTab === WorkspaceTab.Project) toggleSessionPreview();
+  }, [
+    activeWorkspaceTab,
+    sessionSidePanelToggleRequestId,
+    toggleSessionPreview,
+  ]);
 
   // Chat/display sizing. When display opens the chat collapses to its minimum;
   // display takes the remaining room before the independently folded side panel.
@@ -276,18 +255,34 @@ export default function Session({ isNewProject = false }: SessionProps) {
   // setSessionPreviewSlice has no project to own them yet.
   useLayoutEffect(() => {
     setSessionPreviewProject(activeProjectId ?? null);
-  }, [activeProjectId, setSessionPreviewProject]);
+    // DingGouGEO: a session opens with the GEO tab beside the chat.
+    if (activeProjectId && !isNewProject) {
+      ensureDefaultSessionPreview(activeProjectId);
+    }
+  }, [
+    activeProjectId,
+    ensureDefaultSessionPreview,
+    isNewProject,
+    setSessionPreviewProject,
+  ]);
 
   // Last chat width the user dragged to; reopening display restores it instead
   // of resetting to the minimum.
   const userChatWidthRef = useRef<number | null>(null);
 
-  // Opening display auto-folds the session side panel and collapses chat
-  // (to the user's remembered width, if they resized before).
+  // Opening the panel narrows the chat (to the user's remembered width, if
+  // they resized before).
   useEffect(() => {
     if (previewOpen) {
-      setIsSidePanelVisible(false);
-      const restoredWidth = userChatWidthRef.current ?? CHAT_MIN_WIDTH;
+      // Opening the panel gives the chat a readable share instead of
+      // collapsing it to the minimum.
+      const rowWidth = chatRowRef.current?.getBoundingClientRect().width ?? 0;
+      const restoredWidth =
+        userChatWidthRef.current ??
+        Math.min(
+          CHAT_PRIORITY_WIDTH,
+          Math.max(CHAT_MIN_WIDTH, Math.round(rowWidth * 0.45))
+        );
       chatRowRef.current?.style.setProperty(
         '--session-chat-width',
         `${restoredWidth}px`
@@ -297,6 +292,38 @@ export default function Session({ isNewProject = false }: SessionProps) {
       previewResizeCleanupRef.current?.();
     }
   }, [previewOpen]);
+
+  // Narrow windows: when the chat and the panel can't both fit, fold the
+  // sidebar once per panel opening (people can bring it back themselves).
+  const workspaceSidebarHidden = usePageTabStore(
+    (s) => s.workspaceSidebarHidden
+  );
+  const toggleWorkspaceSidebar = usePageTabStore(
+    (s) => s.toggleWorkspaceSidebar
+  );
+  const sidebarAutoFoldedRef = useRef(false);
+  useEffect(() => {
+    if (!previewOpen) {
+      sidebarAutoFoldedRef.current = false;
+      return;
+    }
+    const row = chatRowRef.current;
+    if (!row) return;
+    const check = () => {
+      if (sidebarAutoFoldedRef.current || workspaceSidebarHidden) return;
+      if (
+        row.getBoundingClientRect().width <
+        CHAT_MIN_WIDTH + PREVIEW_MIN_WIDTH
+      ) {
+        sidebarAutoFoldedRef.current = true;
+        toggleWorkspaceSidebar();
+      }
+    };
+    check();
+    const observer = new ResizeObserver(check);
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [previewOpen, toggleWorkspaceSidebar, workspaceSidebarHidden]);
 
   // A drag can outlive the Session when the user switches Project or route.
   // Remove every native listener without scheduling state on an unmounted tree.
@@ -460,30 +487,10 @@ export default function Session({ isNewProject = false }: SessionProps) {
     [chatStore, setActiveWorkspaceTab, activeProjectId, closeSessionPreview]
   );
 
-  const toggleExpandedOverlay = useCallback(() => {
-    setIsExpandedOverlayOpen((prev) => !prev);
-  }, []);
-
-  const closeExpandedOverlay = useCallback(() => {
-    setIsExpandedOverlayOpen(false);
-  }, []);
-
   if (!isNewProject && !chatStore) {
     return null;
   }
 
-  const sessionSidePanel = displaySessionMode ? (
-    <SessionSidePanel
-      key={displaySessionMode}
-      mode={displaySessionMode}
-      workforcePanelKey={workforcePanelKey}
-      isSidePanelVisible={isSidePanelVisible}
-      onToggleSidePanel={toggleSidePanel}
-      isExpandedOverlayOpen={isExpandedOverlayOpen}
-      onToggleExpandedOverlay={toggleExpandedOverlay}
-      onCloseExpandedOverlay={closeExpandedOverlay}
-    />
-  ) : null;
   if (isNewProject) {
     return (
       // The new-project tab deliberately preserves the last active Project in
@@ -501,18 +508,6 @@ export default function Session({ isNewProject = false }: SessionProps) {
                 onSessionModeChange={handleNewProjectSessionModeChange}
               />
             </div>
-          </div>
-
-          <div
-            id="session-side-panel"
-            className={cn(
-              'flex min-h-0 shrink-0 flex-col overflow-hidden transition-[width] duration-200 ease-out',
-              isSidePanelVisible
-                ? RIGHT_RAIL_EXPANDED_OUTER_CLASS
-                : cn(RIGHT_RAIL_FOLDED_OUTER_CLASS, 'rounded-l-xl')
-            )}
-          >
-            {sessionSidePanel}
           </div>
         </div>
       </ProjectEventRuntimeProvider>
@@ -617,18 +612,6 @@ export default function Session({ isNewProject = false }: SessionProps) {
             </motion.div>
           )}
         </AnimatePresence>
-
-        <div
-          id="session-side-panel"
-          className={cn(
-            'flex min-h-0 shrink-0 flex-col overflow-hidden transition-[width] duration-200 ease-out',
-            isSidePanelVisible
-              ? RIGHT_RAIL_EXPANDED_OUTER_CLASS
-              : cn(RIGHT_RAIL_FOLDED_OUTER_CLASS, 'rounded-l-xl')
-          )}
-        >
-          {sessionSidePanel}
-        </div>
       </div>
     </ProjectEventRuntimeProvider>
   );

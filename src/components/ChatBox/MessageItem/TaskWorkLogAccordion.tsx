@@ -12,6 +12,7 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
+import { RunDetails } from '@/components/ChatBox/TimelineModes/RunDetails';
 import { Badge } from '@/components/ui/badge';
 import ShinyText from '@/components/ui/ShinyText/ShinyText';
 import { agentMap, type WorkflowAgentType } from '@/components/WorkFlow/agents';
@@ -152,7 +153,7 @@ export function mergeTaggedAgentLogs(
  * in-progress todo's `active_form` (e.g. "Searching Google for relevant
  * papers") is plumbed into that task's `content` in the store. Surface it as
  * the live header label so the user sees what the agent is doing *right now*
- * instead of a static "CAMEL Agent" tag.
+ * instead of a static "GEO Agent" tag.
  *
  * Falls back to the most recently completed step so the label never flashes
  * empty between todos or after the run finishes.
@@ -1625,7 +1626,7 @@ const AgentGroupRow = memo(function AgentGroupRow({
   );
 
   // Single agent: surface the live in-progress `active_form` in place of the
-  // static "CAMEL Agent" label. Fall back to the static label only when no
+  // static "GEO Agent" label. Fall back to the static label only when no
   // step description is available (never expected while running).
   const singleAgentLabel =
     useSingleAgentLiveHeader && singleAgentActiveForm
@@ -1904,6 +1905,8 @@ export interface TaskWorkLogAccordionProps {
   chatStore: VanillaChatStore;
   taskId: string | null;
   className?: string;
+  /** The latest turn folds the session's run details at the end of its log. */
+  showRunDetails?: boolean;
 }
 
 /** Bottom-only separator for the outer “Working on tasks for …” trigger. */
@@ -1914,6 +1917,7 @@ export function TaskWorkLogAccordion({
   chatStore,
   taskId,
   className,
+  showRunDetails = false,
 }: TaskWorkLogAccordionProps) {
   const { t: _t } = useTranslation();
   const snapshot = useTaskWorkStoreSnapshot(chatStore, taskId);
@@ -2097,6 +2101,8 @@ export function TaskWorkLogAccordion({
                   />
                 )
               )}
+              {/* DingGouGEO has no separate summary column. */}
+              {showRunDetails ? <RunDetails /> : null}
             </div>
           </motion.div>
         ) : null}

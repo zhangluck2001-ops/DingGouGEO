@@ -120,25 +120,36 @@ def agent_model(
     toolkits_to_register_agent: list[RegisteredAgentToolkit] | None = None,
     enable_snapshot_clean: bool = False,
     custom_model_config: AgentModelConfig | None = None,
+    announce: bool = True,
+    token_limit: int | None = None,
+    summarize_threshold: int | None = None,
 ):
+    """Build an agent on the task's model.
+
+    ``announce=False`` makes a background model call rather than an agent:
+    it is not registered with the run and its turns are not published.
+    ``token_limit`` and ``summarize_threshold`` set when the conversation is
+    compacted; left as None, CAMEL's own defaults apply.
+    """
     task_lock = get_task_lock(options.project_id)
     agent_id = str(uuid.uuid4())
     logger.info(
         f"Creating agent: {agent_name} with id: {agent_id} "
         f"for project: {options.project_id}"
     )
-    # Use thread-safe scheduling to support parallel agent creation
-    _schedule_async_task(
-        task_lock.put_queue(
-            ActionCreateAgentData(
-                data={
-                    "agent_name": agent_name,
-                    "agent_id": agent_id,
-                    "tools": tool_names or [],
-                }
+    if announce:
+        # Use thread-safe scheduling to support parallel agent creation
+        _schedule_async_task(
+            task_lock.put_queue(
+                ActionCreateAgentData(
+                    data={
+                        "agent_name": agent_name,
+                        "agent_id": agent_id,
+                        "tools": tool_names or [],
+                    }
+                )
             )
         )
-    )
 
     # Determine model configuration - use custom config if provided,
     # otherwise use task defaults
@@ -443,6 +454,12 @@ def agent_model(
 
     model = build_model()
 
+    context_kwargs: dict[str, Any] = {}
+    if token_limit is not None:
+        context_kwargs["token_limit"] = token_limit
+    if summarize_threshold is not None:
+        context_kwargs["summarize_threshold"] = summarize_threshold
+
     return ListenChatAgent(
         options.project_id,
         agent_name,
@@ -459,4 +476,6 @@ def agent_model(
             else None
         ),
         stream_accumulate=False,
+        announce=announce,
+        **context_kwargs,
     )

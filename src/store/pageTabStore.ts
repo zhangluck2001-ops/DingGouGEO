@@ -173,6 +173,16 @@ export interface SessionTerminalTab {
   agentSourceId?: string;
 }
 
+/**
+ * The Space's GEO pipeline (DingGouGEO). One per session; which stage it
+ * shows lives in the workbench store, so the title is derived when rendered.
+ */
+export interface SessionGeoTab {
+  id: string;
+  type: 'geo';
+  title: string;
+}
+
 /** Free-form React Flow canvas. */
 export interface SessionCanvasTab {
   id: string;
@@ -181,6 +191,7 @@ export interface SessionCanvasTab {
 }
 
 export type SessionPreviewTab =
+  | SessionGeoTab
   | SessionChooserTab
   | SessionBrowserTab
   | SessionFileTab
@@ -391,6 +402,8 @@ function createPreviewTabOfKind(
         shellId: `session-shell:${projectId ?? 'global'}:${id}`,
       };
     }
+    case 'geo':
+      return createGeoPreviewTab();
     case 'canvas':
       return {
         id: nextSessionPreviewTabId('canvas'),
@@ -402,13 +415,17 @@ function createPreviewTabOfKind(
   }
 }
 
+function createGeoPreviewTab(): SessionGeoTab {
+  return { id: nextSessionPreviewTabId('geo'), type: 'geo', title: 'GEO' };
+}
+
 function createInitialSessionPreviewTabs(): {
   tabs: SessionPreviewTab[];
   activeTabId: string;
 } {
-  // Open onto the chooser so the user picks what the first tab becomes.
-  const chooser = createChooserPreviewTab();
-  return { tabs: [chooser], activeTabId: chooser.id };
+  // DingGouGEO opens onto the Space's GEO pipeline; "+" adds other kinds.
+  const geo = createGeoPreviewTab();
+  return { tabs: [geo], activeTabId: geo.id };
 }
 
 /** Normalize Review tabs created before the task-focused title contract. */
@@ -595,8 +612,13 @@ interface PageTabState {
    */
   previewBrowserViewport: PreviewBrowserViewport | null;
   setPreviewBrowserViewport: (rect: PreviewBrowserViewport | null) => void;
-  /** Toggle the unified preview panel (opens onto the chooser tab). */
+  /** Toggle the unified preview panel (opens onto the GEO tab). */
   toggleSessionPreview: () => void;
+  /**
+   * DingGouGEO: a session seen for the first time opens its panel on the GEO
+   * tab. Sessions with saved panel state keep it.
+   */
+  ensureDefaultSessionPreview: (projectId: string) => void;
   /** Open and select a preview tab of the requested kind. */
   openPreviewTab: (kind: PreviewTabKind) => void;
   /** Add and activate a blank chooser tab (the "+" button). */
@@ -988,6 +1010,21 @@ export const usePageTabStore = create<PageTabState>()(
             open: true,
             tabs: initial.tabs,
             activeTabId: initial.activeTabId,
+          };
+        }),
+      ensureDefaultSessionPreview: (projectId) =>
+        set((state) => {
+          if (state.sessionPreviewByProject[projectId]) return state;
+          const initial = createInitialSessionPreviewTabs();
+          return {
+            sessionPreviewByProject: {
+              ...state.sessionPreviewByProject,
+              [projectId]: {
+                open: true,
+                tabs: initial.tabs,
+                activeTabId: initial.activeTabId,
+              },
+            },
           };
         }),
       openPreviewTab: (kind) =>

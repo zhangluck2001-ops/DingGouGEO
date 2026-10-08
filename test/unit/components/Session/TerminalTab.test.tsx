@@ -262,7 +262,7 @@ describe('collectTerminalSources', () => {
       {
         // Empty agent name falls back to the humanized type.
         id: 'chat-2:turn-2:todo_1',
-        agentName: 'CAMEL Agent',
+        agentName: 'GEO Agent',
         taskLabel: 'Run tests',
         lines: ['ok'],
         status: 'idle',

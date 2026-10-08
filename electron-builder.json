@@ -24,6 +24,7 @@
     "dist-electron",
     "dist",
     "resources",
+    "!resources/geo-capture-skills",
     "!backend",
     "!dist/images",
     "!**/__pycache__",

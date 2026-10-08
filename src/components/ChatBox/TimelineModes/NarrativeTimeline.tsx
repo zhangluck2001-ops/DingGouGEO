@@ -46,6 +46,7 @@ import { taskErrorReason } from '../taskErrorPresentation';
 
 import { actionIcon } from './actionIcon';
 import { CallRow, isCallActiveStatus, isCallErrorStatus } from './CallRow';
+import { RunDetails } from './RunDetails';
 import { RunFilesGroup } from './RunFiles';
 import {
   disclosureMotion,
@@ -886,12 +887,15 @@ function NarrativeRunWorkLog({
   paused,
   workforce,
   interactivePlan,
+  showRunDetails = false,
 }: {
   run: TimelineRunView;
   items: readonly TimelineNarrativeItem[];
   paused: boolean;
   workforce: boolean;
   interactivePlan?: InteractiveTimelinePlan;
+  /** The latest run folds the session's run details at its end. */
+  showRunDetails?: boolean;
 }) {
   const { t } = useTranslation();
   const fallbackAgentName = t('chat.agent', { defaultValue: 'Agent' });
@@ -1002,6 +1006,7 @@ function NarrativeRunWorkLog({
                   );
                 })}
               </AnimatePresence>
+              {showRunDetails ? <RunDetails /> : null}
             </div>
           </motion.div>
         ) : null}
@@ -1021,7 +1026,7 @@ export function NarrativeTimeline({
   const workforce = sessionMode === SessionMode.WORKFORCE;
   return (
     <div className="flex w-full flex-col gap-3" data-timeline-mode="narrative">
-      {runs.map((run) => {
+      {runs.map((run, runIndex) => {
         const projectedArtifacts = projectedArtifactsByRun[run.runId];
         const artifactManifest = artifactManifestsByRun[run.runId];
         const interactivePlan = interactivePlansByRun[run.runId];
@@ -1057,6 +1062,7 @@ export function NarrativeTimeline({
               run={run}
               workforce={workforce}
               interactivePlan={interactivePlan}
+              showRunDetails={runIndex === runs.length - 1}
             />
             {run.finalAssistantResponse ? (
               <AgentMessageCard

@@ -30,6 +30,7 @@ import {
   Send,
   Settings,
   Sparkles,
+  Stethoscope,
   WandSparkles,
 } from 'lucide-react';
 
@@ -146,6 +147,12 @@ export const GEO_NAVIGATION: SettingsNavigationItem[] = [
     labelKey: 'layout.geo-answers',
     defaultLabel: 'AI capture',
     icon: ScanSearch,
+  },
+  {
+    id: 'geo-analysis',
+    labelKey: 'layout.geo-analysis',
+    defaultLabel: 'Diagnosis',
+    icon: Stethoscope,
   },
   {
     id: 'geo-citations',
