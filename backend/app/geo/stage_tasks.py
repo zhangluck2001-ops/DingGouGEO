@@ -194,7 +194,9 @@ def _content(project_id: int, _round: str | None) -> str:
         "每篇先写对标模板卡，再写源稿、发布版（只含 p/strong）和 3 个标题，"
         "存到 `06_内容生产/<批次名>/`；过验收闸门，任一硬项不过不交付。"
         "每篇写一行 `geo_content`：批次、依据轮次、对应缺口、对标原文、目标渠道、"
-        "正文文件、验收状态，状态「草稿」；排进生产的缺口改为「已排产」。"
+        "正文文件、验收状态，状态「草稿」；排进生产的缺口改为「已排产」。\n"
+        "技能里如果要从采集 jsonl 选对标原文，在这里改用 `geo_benchmark`；"
+        "对标库为空时，按 `geo_citation` 里 URL 的被引次数排序来选。"
     )
 
 
@@ -252,9 +254,10 @@ def stage_task(key: str, project_id: int, capture_round: str | None) -> str:
     geo = Path(db).parent
     if key in ("analysis",) and not capture_round:
         capture_round = _latest_round(project_id)
+    names = harness.stage_skills(stage, project["workspace_root"])
     skills = (
-        f"先加载技能：{'、'.join(f'`{s}`' for s in stage.skills)}。\n"
-        if stage.skills
+        f"先加载技能：{'、'.join(f'`{s}`' for s in names)}。\n"
+        if names
         else ""
     )
     return (

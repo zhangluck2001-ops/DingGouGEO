@@ -91,3 +91,18 @@ def test_mentions_are_unknown_without_naming_entries(space):
 def test_unknown_stage_is_refused(space):
     with pytest.raises(stage_tasks.UnknownStage):
         stage_tasks.stage_task("nope", space, None)
+
+
+def test_a_space_adds_its_own_skills_to_a_stage(space, tmp_path):
+    (tmp_path / "space" / "GEO" / "stage_skills.json").write_text(
+        '{"content": ["sma-geo"], "analysis": "not a list"}', encoding="utf-8"
+    )
+    assert "先加载技能：`sma-geo`。" in stage_tasks.stage_task(
+        "content", space, None
+    )
+    assert "先加载技能" not in stage_tasks.stage_task("analysis", space, None)
+    # The roster shows the stage's own skills, which fit every Space.
+    content = next(
+        s for s in harness.agents_overview()["stages"] if s["key"] == "content"
+    )
+    assert content["skills"] == []

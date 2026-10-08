@@ -165,6 +165,27 @@ def stage(key: str) -> Stage | None:
     return next((s for s in STAGES if s.key == key), None)
 
 
+# Skills that only fit one brand (e.g. one carrying that brand's fact pack)
+# are configured per Space: ``GEO/stage_skills.json`` maps a stage key to
+# skill names, added after the stage's own.
+SPACE_SKILLS_FILE = "stage_skills.json"
+
+
+def stage_skills(stage: Stage, workspace_root: str | None) -> list[str]:
+    skills = list(stage.skills)
+    if not workspace_root:
+        return skills
+    path = (
+        Path(workspace_root).expanduser()
+        / store.GEO_ROOT_FOLDER
+        / SPACE_SKILLS_FILE
+    )
+    extra = _read_json(path).get(stage.key) or []
+    if isinstance(extra, list):
+        skills += [x for x in extra if isinstance(x, str) and x not in skills]
+    return skills
+
+
 def stage_for_subagent(subagent_type: str) -> Stage | None:
     wanted = (subagent_type or "").strip().lower()
     return next((s for s in STAGES if s.subagent_type == wanted), None)
@@ -230,26 +251,26 @@ class ContextBudget:
     summarize_threshold: int = _SUMMARIZE_THRESHOLD
 
 
-def _read_profiles(path: Path) -> dict:
+def _read_json(path: Path) -> dict:
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         return {}
     except (OSError, ValueError):
-        logger.warning("Unreadable model profiles: %s", path, exc_info=True)
+        logger.warning("Unreadable JSON file: %s", path, exc_info=True)
         return {}
     return data if isinstance(data, dict) else {}
 
 
 @lru_cache(maxsize=1)
 def _builtin_profiles() -> dict:
-    return _read_profiles(Path(__file__).with_name(_PROFILES_FILE))
+    return _read_json(Path(__file__).with_name(_PROFILES_FILE))
 
 
 def _user_profiles() -> dict:
     """Per-machine additions in ``~/.eigent/geo/model_profiles.json``, same
     shape as the built-in file; they win over it."""
-    return _read_profiles(store.registry_path().parent / _PROFILES_FILE)
+    return _read_json(store.registry_path().parent / _PROFILES_FILE)
 
 
 def _window(value: object) -> int | None:
