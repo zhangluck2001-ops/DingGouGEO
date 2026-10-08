@@ -209,17 +209,21 @@ export default function KnowledgeMaterials({
 
   const askAiToClean = async (sources: GeoKnowledgeSource[]) => {
     if (!state?.root || sources.length === 0) return;
-    sendToChat(
-      t('geo.ai-prompt-clean', {
-        defaultValue:
-          'Clean these brand materials into the knowledge base, following {{rules}}:\n{{files}}\nRules: keep the originals in 原始资料 untouched; write each fact atomically into the matching module file under {{root}} (products go to 02_产品库/[SKU].md); tag every entry as 事实/宣称/话术 with evidence grade A–E and the source page; mark conflicts as 存疑. Also insert every entry into table geo_fact (project_id {{project}}) in {{db}}, then set the file’s status to 已清洗 in table geo_kb_source.',
-        rules: state.rules_path,
-        root: state.root,
-        project: projectId,
-        db: state.db_path ?? 'GEO/geo.db',
-        files: sources.map((source) => `- ${source.path}`).join('\n'),
-      })
-    );
+    try {
+      const { text } = await geoApi.stageTask('knowledge', projectId);
+      sendToChat(
+        `${text}\n\n${t('geo.agent-task-these-files', {
+          defaultValue: 'This time, only these files:',
+        })}\n${sources.map((source) => `- ${source.path}`).join('\n')}`
+      );
+    } catch {
+      toast.error(
+        t('geo.agent-task-failed', {
+          defaultValue: "Couldn't prepare the task. Try again.",
+        })
+      );
+      return;
+    }
     await Promise.all(
       sources
         .filter((source) => source.status === '待清洗')

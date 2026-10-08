@@ -150,9 +150,11 @@ GEO_SUBAGENT_SYS_PROMPT = """\
 本次任务：{description}
 
 # 这一环
+- 输入：{inputs}
 - 做什么：{duty}
 - 结果写到：{writes}
-都在品牌空间的 `GEO/` 文件夹里（数据在 `GEO/geo.db`），具体路径以任务说明为准。
+- 完成标准：{done}
+{skills}都在品牌空间的 `GEO/` 文件夹里（数据在 `GEO/geo.db`），具体路径以任务说明为准。做完按完成标准逐条核对。
 
 # 事实与证据（最重要）
 {fact_rules}
@@ -208,8 +210,15 @@ def build_subagent_prompt(subagent_type: str, description: str) -> str | None:
         name=stage.name,
         seq=stage.seq,
         description=description,
+        inputs=stage.inputs,
         duty=stage.duty,
         writes=stage.writes,
+        done=stage.done,
+        skills=(
+            f"- 先加载技能：{'、'.join(f'`{x}`' for x in stage.skills)}\n"
+            if stage.skills
+            else ""
+        ),
         fact_rules=_FACT_RULES,
         data_rules=_DATA_RULES,
     )

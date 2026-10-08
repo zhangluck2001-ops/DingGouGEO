@@ -161,7 +161,6 @@
   "open-failed": "打不开，请到「文件」里查看。",
   "sources-imported": "已添加 {{count}} 份资料",
   "sources-import-failed": "添加失败，请重试。",
-  "ai-prompt-clean": "请按清洗规则（{{rules}}）把下面的品牌资料清洗进品牌知识库：\n{{files}}\n要求：原件留在「原始资料」里不改动；把每条信息原子化写进 {{root}} 下对应的模块文件（产品写到 02_产品库/[SKU名].md）；每条标注 事实/宣称/话术、证据等级 A–E 和来源页码；与标签或官方最新资料冲突的标「存疑」。同时把每条写入 {{db}} 的 geo_fact 表（project_id {{project}}），完成后把该资料在 geo_kb_source 表里的 status 改为「已清洗」。",
   "view-rounds": "采集轮次",
   "field-capture-round": "采集轮次",
   "field-probe-group": "探针分组",
@@ -180,11 +179,6 @@
   "space-not-ready-desc": "每个空间就是一个品牌项目，第一次打开空间时会自动建好它的 GEO 文件夹和数据库。",
   "agent-task": "交给 AI",
   "latest-round": "最新一个采集轮次",
-  "agent-prompt-analysis": "请诊断「{{project}}」{{round}}的采集回答。数据库：{{db}}。对 geo_answer 里还没有 geo_answer_analysis 记录的每条回答（按 capture_code + capture_round 关联），读完整回答后填写：mentions_own（是否提及自有品）、mentioned_brands、brand_count、top_brand（首推品牌）、own_in_top3、recommend_own（推荐/条件推荐/不推荐/未提及）、recommend_reason、reason_selling_points、not_recommend_reason、competitor_relation、sentiment、risk_tags。识别品牌和卖点以 {{geo}}/01_品牌知识库 为准。最后把本轮诊断结论（哪里没被提及、哪些竞品领先、原因）写到 {{geo}}/04_诊断分析/。",
-  "agent-prompt-probes": "帮我为「{{project}}」起草一批意图探针。方向：（在这里写你想测什么）。先读 {{geo}}/01_品牌知识库 里的品类词、卖点、竞品和用户切入点，再列出真实用户会问 AI 的问题。先给我看，我确认后再写入 {{db}} 的 geo_probe 表（code、text、cep、framework、direction、brand_pointer、selling_points、review_status）。",
-  "agent-prompt-citations": "请分析「{{project}}」{{round}}里 AI 引用的来源（{{db}} 的 geo_citation 表）：按站点和域名统计被引用次数，分 AI 平台和来源类型看，指出我们已发布的内容（geo_content 的链接）哪些被引用了，并给出下一步投放渠道建议。结果保存到 {{geo}}/05_引用来源/。",
-  "agent-prompt-drafts": "请为「{{project}}」生产 GEO 内容。依据最新诊断的缺口（{{geo}}/04_诊断分析 和 {{db}} 的 geo_answer_analysis 表）和 {{geo}}/05_引用来源 里的渠道建议来写；只写 {{geo}}/01_品牌知识库 里有依据的事实，遵守 06_合规红线。每篇底稿配多个标题，保存到 {{geo}}/06_内容生产/，并在 geo_content 表里各加一行，状态为「草稿」。",
-  "agent-prompt-tracking": "请为「{{project}}」写一份阶段报告：对比 {{db}} 里各采集轮次（geo_capture_round、geo_answer、geo_answer_analysis、geo_citation），说明相比基线有什么变化、哪些已发布内容（geo_content）开始被 AI 引用、下一轮该优化什么。报告保存到 {{geo}}/08_效果追踪/。",
   "view-round-compare": "轮次对比",
   "cmp-answers": "回答数",
   "cmp-answers-with-sources": "带引用的回答",
@@ -258,5 +252,9 @@
   "field-gap-ids": "对应缺口",
   "field-target-channel": "目标渠道",
   "field-benchmark-url": "对标原文",
-  "field-body-path": "正文文件"
+  "field-body-path": "正文文件",
+  "agent-task-failed": "准备任务失败，请重试。",
+  "agent-task-these-files": "这次只处理下面这些资料：",
+  "agents-inputs": "输入",
+  "agents-done": "完成标准"
 }

@@ -44,17 +44,34 @@ Every record table has `id`, `project_id`, `record_id` (`local_…` for rows mad
   fill it when asked to diagnose a round): `capture_code` + `capture_round` (join to `geo_answer` like citations), `mentions_own` (是/否),
   `mentioned_brands`, `brand_count`, `top_brand` (首推品牌), `own_in_top3` (是/否/无…), `recommend_own`
   (推荐/条件推荐/不推荐/未提及), `recommend_reason`, `reason_selling_points` (S-codes), `not_recommend_reason`,
-  `competitor_relation`, `sentiment`, `risk_tags`. Keep the wording consistent within a Space.
+  `competitor_relation`, `sentiment`, `risk_tags`, `own_rank` (our position in the answer's list), `anchor_same_para`
+  (是/否: an evidence anchor sits in the paragraph that names us), `absorbed_facts` (core facts the answer repeats),
+  `concerns` (concerns it raises about us). Keep the wording consistent within a Space.
+- `geo_gap` — the diagnosis's gaps, which content production works from: `capture_round`, `scene` (scene / CEP),
+  `gap_type` (未进候选 / 进了没首推 / 事实错误 / 负面顾虑), `platforms`, `evidence` (capture codes of the answers that show
+  it), `priority` (高/中/低), `direction` (what content should do), `status` (待处理 / 已排产 / 已发布 / 已验证), `note`.
+- `geo_benchmark` — highly cited articles to model content on (stage 5): `capture_round`, `title`, `url`, `site`,
+  `ai_platforms`, `cited_count`, `chars`, `structure` (section outline), `brand_count`, `archive_path` (saved copy under
+  `05_引用来源/`), `note`.
 - `geo_probe` — the question library: `code`, `text`, `review_status` (核心探针 = counts toward mention rate), `cep`,
   `direction` (正向/反向), `category_word`, `brand_pointer` (L1非品牌指向/L2品牌指向), `framework` (对比/排名榜单/求推荐/求验证),
-  `selling_points` (S-codes the probe targets), `no_go`, `panel` (固定盘 / 轮换-表N = which NO.N probe group it runs in), `note`.
+  `selling_points` (S-codes the probe targets), `no_go`, `panel` (固定盘 / 轮换-表N = which NO.N probe group it runs in),
+  `basis` (the real customer questions it is based on), `note`.
   The user decides which probes exist and which ones a round captures. Answers keep the question text they were asked with.
 - `geo_content` — published content log: `serial`, `title`, `url`, `channel` (自媒体 / 媒体), `account_platform`
-  (publishing platform or media outlet), `account_name` (self-media only), `status` (草稿/待发布/已发布).
-  A piece is "cited by AI" when its `url` equals some `geo_citation.url` (exact match for now).
+  (publishing platform or media outlet), `account_name` (self-media only), `status` (草稿/待发布/已发布), and for
+  pieces made in the pipeline: `batch`, `based_on_round`, `gap_ids` (`geo_gap` ids it answers), `benchmark_url`,
+  `target_channel`, `body_path` (its text file), `qc_status` (未验收 / 通过 / 未通过), `published_on`.
+  Whether a piece is cited is computed by the backend with normalised URLs (query strings and `www.` ignored).
 
 - `geo_fact` — the brand knowledge ledger (one atomic fact per row): `module` (00_总览 … 06_合规红线), `product`, `field`,
-  `content`, `claim_type` (事实/宣称/话术/存疑/待核实), `evidence_grade` (A–E), `source` (file + page), `note`.
+  `content`, `claim_type` (事实/宣称/话术/存疑/待核实), `evidence_grade` (A–E), `source` (file + page), `role`, `note`.
+  `role` marks the entries later stages compute with:
+  - naming — `标准名`, `首提全称`, `沿革句`, `别名`, `撞名排除`: the name itself goes in `content` (several: `|` between).
+    A mention of our brand is any of 标准名/首提全称/别名 in the answer text, after removing 撞名排除 names
+    (e.g. 「托菲儿敏护」 is not SMA敏护).
+  - metrics — `核心事实` (facts we want AI to repeat), `证据锚` (evidence we want next to our name), `扣分项`
+    (concerns): the match words go in `field` (several: `|` between), the full fact in `content`.
 - `geo_kb_source(project_id, file_name, status, imported_at, cleaned_at)` — raw materials in `01_品牌知识库/原始资料/`;
   `status` is 待清洗 / 清洗中 / 已清洗.
 
@@ -75,10 +92,12 @@ replace the example rows with real content and delete that marker line.
 
 1. Start with counts/grouping to size the question, then pull the specific rows. Quote record `id`s so the user can open them in the board.
 2. When the user's message lists rows as `[id=123] …`, those are `id`s in the named table — look them up for full fields (e.g. the full `answer`).
-3. For mention / TOP3 / recommendation questions, use the human-labelled `geo_answer_analysis` columns first
-   (e.g. mention rate = `mentions_own = '是'` over analysed answers) and say which column you used. Always state which
-   capture round(s) a number covers; never pool rounds unless asked — compare them side by side instead. Only fall back to
-   searching `answer` text when an answer has no analysis row, and say so.
+3. Metrics (mention, first mention, TOP3, evidence anchor, concern, absorbed fact, cited content) have one definition,
+   computed by the backend. A stage's task message carries them as a table — quote those numbers, don't recompute them
+   your own way. Their rules: only core probes (`review_status = '核心探针'`) count; rates are per platform, with answer
+   and distinct-probe counts; two rounds are compared only on the probes both captured. If the task says naming entries
+   are missing, fix stage 1 first. For other counts, state the column and the capture round(s) a number covers; never
+   pool rounds unless asked.
 4. Editing (only when asked): `UPDATE … SET …, local_edited = 1, updated_at = datetime('now')`; delete with
    `UPDATE … SET deleted = 1, updated_at = datetime('now')` — never `DELETE`. New rows need `project_id`,
    `record_id = 'local_' || lower(hex(randomblob(16)))`, `local_edited = 1`; new answers/sources/analyses also need

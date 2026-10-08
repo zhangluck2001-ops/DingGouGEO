@@ -161,7 +161,6 @@
   "open-failed": "打不開，請到「文件」裡查看。",
   "sources-imported": "已添加 {{count}} 份資料",
   "sources-import-failed": "添加失敗，請重試。",
-  "ai-prompt-clean": "請按清洗規則（{{rules}}）把下面的品牌資料清洗進品牌知識庫：\n{{files}}\n要求：原件留在「原始資料」裡不改动；把每條信息原子化寫進 {{root}} 下对应的模塊文件（產品寫到 02_產品庫/[SKU名].md）；每條標注 事實/宣稱/話術、證據等級 A–E 和來源頁碼；与標签或官方最新資料冲突的標「存疑」。同时把每條寫入 {{db}} 的 geo_fact 表（project_id {{project}}），完成后把该資料在 geo_kb_source 表裡的 status 改為「已清洗」。",
   "view-rounds": "採集輪次",
   "field-capture-round": "採集輪次",
   "field-probe-group": "探針分組",
@@ -180,11 +179,6 @@
   "space-not-ready-desc": "每個空間就是一個品牌專案，第一次開啟空間時會自動建好它的 GEO 資料夾和資料庫。",
   "agent-task": "交給 AI",
   "latest-round": "最新一個採集輪次",
-  "agent-prompt-analysis": "請診斷「{{project}}」{{round}}的採集回答。數據庫：{{db}}。對 geo_answer 裡還沒有 geo_answer_analysis 记錄的每條回答（按 capture_code + capture_round 關聯），讀完整回答後填寫：mentions_own（是否提及自有品）、mentioned_brands、brand_count、top_brand（首推品牌）、own_in_top3、recommend_own（推薦/條件推薦/不推薦/未提及）、recommend_reason、reason_selling_points、not_recommend_reason、competitor_relation、sentiment、risk_tags。識別品牌和賣點以 {{geo}}/01_品牌知識庫 為準。最後把本輪診斷結論（哪裡沒被提及、哪些競品領先、原因）寫到 {{geo}}/04_診斷分析/。",
-  "agent-prompt-probes": "帮我為「{{project}}」起草一批意圖探针。方向：（在這裡寫你想测什麼）。先讀 {{geo}}/01_品牌知識庫 裡的品類詞、賣點、競品和用戶切入點，再列出真實用戶會問 AI 的問題。先給我看，我確認後再寫入 {{db}} 的 geo_probe 表（code、text、cep、framework、direction、brand_pointer、selling_points、review_status）。",
-  "agent-prompt-citations": "請分析「{{project}}」{{round}}裡 AI 引用的來源（{{db}} 的 geo_citation 表）：按站點和域名統計被引用次數，分 AI 平臺和來源類型看，指出我們已發布的內容（geo_content 的鏈接）哪些被引用了，並給出下一步投放渠道建議。結果保存到 {{geo}}/05_引用來源/。",
-  "agent-prompt-drafts": "請為「{{project}}」生產 GEO 內容。依據最新診斷的缺口（{{geo}}/04_診斷分析 和 {{db}} 的 geo_answer_analysis 表）和 {{geo}}/05_引用來源 裡的渠道建議來寫；只寫 {{geo}}/01_品牌知識庫 裡有依據的事實，遵守 06_合規紅線。每篇底稿配多個標題，保存到 {{geo}}/06_內容生產/，並在 geo_content 表裡各加一行，状態為「草稿」。",
-  "agent-prompt-tracking": "請為「{{project}}」寫一份阶段報告：對比 {{db}} 裡各採集輪次（geo_capture_round、geo_answer、geo_answer_analysis、geo_citation），說明相比基線有什麼變化、哪些已發布內容（geo_content）開始被 AI 引用、下一輪該優化什麼。報告保存到 {{geo}}/08_效果追踪/。",
   "view-round-compare": "輪次對比",
   "cmp-answers": "回答數",
   "cmp-answers-with-sources": "帶引用的回答",
@@ -258,5 +252,9 @@
   "field-gap-ids": "對應缺口",
   "field-target-channel": "目標渠道",
   "field-benchmark-url": "對標原文",
-  "field-body-path": "正文檔案"
+  "field-body-path": "正文檔案",
+  "agent-task-failed": "準備任務失敗，請重試。",
+  "agent-task-these-files": "這次只處理下面這些資料：",
+  "agents-inputs": "輸入",
+  "agents-done": "完成標準"
 }

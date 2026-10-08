@@ -188,7 +188,7 @@ def _summarise(answers: list[dict], terms: dict) -> dict:
             for key in ("concern", "absorbed")
         },
     }
-    return {
+    result = {
         "answers": len(answers),
         "probes": len({a["probe_code"] for a in answers}),
         "analysed": len(analysed),
@@ -203,6 +203,22 @@ def _summarise(answers: list[dict], terms: dict) -> dict:
         "concern_rate": _rate(counts["concern"], len(mentioned)),
         "absorbed_rate": _rate(counts["absorbed"], len(mentioned)),
     }
+    if not terms["own"]:
+        # Without our names nothing can be read as a mention: unknown, not 0.
+        for key in (
+            "mentioned",
+            "mention_rate",
+            "first",
+            "first_rate",
+            "anchor",
+            "anchor_rate",
+            "concern",
+            "concern_rate",
+            "absorbed",
+            "absorbed_rate",
+        ):
+            result[key] = None
+    return result
 
 
 def _cited_content(

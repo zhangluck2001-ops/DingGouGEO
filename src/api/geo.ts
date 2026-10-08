@@ -177,8 +177,10 @@ export interface GeoStageAgent {
   key: string;
   name: string;
   folder: string;
+  inputs: string;
   duty: string;
   writes: string;
+  done: string;
   subagent_type: string;
   skills: string[];
 }
@@ -189,6 +191,17 @@ export interface GeoAgents {
 }
 
 export type GeoQuery = Record<string, string | number | undefined>;
+
+/** Pipeline stages, keyed as the backend's stage registry. */
+export type GeoStageKey =
+  | 'knowledge'
+  | 'probes'
+  | 'capture'
+  | 'analysis'
+  | 'citations'
+  | 'content'
+  | 'publish'
+  | 'tracking';
 
 function clean(params: GeoQuery) {
   return Object.fromEntries(
@@ -201,6 +214,17 @@ function clean(params: GeoQuery) {
 export const geoApi = {
   projects: (): Promise<{ items: GeoProject[] }> => fetchGet('/geo/projects'),
   agents: (): Promise<GeoAgents> => fetchGet('/geo/agents'),
+  /** The stage's hand-off instruction, rendered by the backend from its
+   * contract and the Space's current state. */
+  stageTask: (
+    stage: GeoStageKey,
+    projectId: number,
+    captureRound?: string | null
+  ): Promise<{ text: string }> =>
+    fetchGet(
+      `/geo/stages/${stage}/task`,
+      clean({ project_id: projectId, capture_round: captureRound ?? undefined })
+    ),
   ensureSpace: (body: {
     space_id: string;
     name: string;

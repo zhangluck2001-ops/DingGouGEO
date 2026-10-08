@@ -121,8 +121,12 @@ export default function GeoAgentsSettings() {
             }
           >
             <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-ds-control-gap gap-y-1 text-ds-text-meta text-ds-ink-muted-default">
+              <dt>{t('geo.agents-inputs', { defaultValue: 'Input' })}</dt>
+              <dd className="m-0">{plain(stage.inputs)}</dd>
               <dt>{t('geo.agents-writes', { defaultValue: 'Output' })}</dt>
               <dd className="m-0">{plain(stage.writes)}</dd>
+              <dt>{t('geo.agents-done', { defaultValue: 'Done when' })}</dt>
+              <dd className="m-0">{plain(stage.done)}</dd>
               <dt>{t('geo.agents-skills', { defaultValue: 'Skills' })}</dt>
               <dd className="m-0 flex flex-wrap gap-1">
                 {stage.skills.length

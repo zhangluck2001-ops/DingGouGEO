@@ -45,14 +45,7 @@ export default function GeoPublished() {
       }}
       agentTask={{
         label: t('geo.agent-task', { defaultValue: 'Hand to AI' }),
-        prompt: ({ project, db, geoRoot }) =>
-          t('geo.agent-prompt-tracking', {
-            defaultValue:
-              'Write a progress report for {{project}}: compare the capture rounds in {{db}} (geo_capture_round, geo_answer, geo_answer_analysis, geo_citation), say what changed since the baseline, which published pieces (geo_content) AI now cites, and what to optimize next. Save it to {{geo}}/08_效果追踪/.',
-            project,
-            db,
-            geo: geoRoot,
-          }),
+        stage: 'tracking',
       }}
     />
   );

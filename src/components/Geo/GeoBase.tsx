@@ -17,6 +17,7 @@ import {
   type GeoDatasetKey,
   type GeoFacetValue,
   type GeoRecord,
+  type GeoStageKey,
 } from '@/api/geo';
 import SearchInput from '@/components/Dashboard/SearchInput';
 import CollectionToolbar, {
@@ -98,20 +99,13 @@ export interface GeoCustomView {
 }
 
 /**
- * A stage's own job for the agent: the button drops an instruction into the
- * chat box, where people can adjust it before sending.
+ * A stage's own job for the agent: the button drops the stage's instruction
+ * into the chat box, where people can adjust it before sending. The text
+ * comes from the backend, which builds it from the stage's contract.
  */
 export interface GeoAgentTask {
   label: string;
-  prompt: (context: {
-    project: string;
-    /** The Space's database file. */
-    db: string;
-    /** The Space's GEO folder. */
-    geoRoot: string;
-    /** Capture round being looked at, if one is picked. */
-    round: string | null;
-  }) => string;
+  stage: GeoStageKey;
 }
 
 const TABLE_NAMES: Record<GeoDatasetKey, string> = {
@@ -288,21 +282,26 @@ export default function GeoBase({
 
   const projectName = project?.name ?? '';
   const dbPath = project?.db_path ?? 'GEO/geo.db';
-  const geoRoot = dbPath.replace(/\/geo\.db$/, '');
 
-  const sendAgentTask = () => {
-    if (!agentTask) return;
-    sendToChat(
-      agentTask.prompt({
-        project: projectName,
-        db: dbPath,
-        geoRoot,
-        round: filters.capture_round || null,
-      })
-    );
-    toast.success(
-      t('geo.sent-to-chat', { defaultValue: 'Added to the chat box' })
-    );
+  const sendAgentTask = async () => {
+    if (!agentTask || projectId == null) return;
+    try {
+      const { text } = await geoApi.stageTask(
+        agentTask.stage,
+        projectId,
+        filters.capture_round || null
+      );
+      sendToChat(text);
+      toast.success(
+        t('geo.sent-to-chat', { defaultValue: 'Added to the chat box' })
+      );
+    } catch {
+      toast.error(
+        t('geo.agent-task-failed', {
+          defaultValue: "Couldn't prepare the task. Try again.",
+        })
+      );
+    }
   };
 
   const describeFilters = () => {

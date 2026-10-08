@@ -29,6 +29,10 @@ export default function GeoAnswers() {
       datasets={['answers', 'rounds']}
       views={['grid', 'dashboard']}
       dashboardKind="data"
+      agentTask={{
+        label: t('geo.agent-task', { defaultValue: 'Hand to AI' }),
+        stage: 'capture',
+      }}
     />
   );
 }

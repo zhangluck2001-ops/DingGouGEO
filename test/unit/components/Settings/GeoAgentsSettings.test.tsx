@@ -34,8 +34,10 @@ const roster = {
       key: 'capture',
       name: 'AI 采集',
       folder: '03_AI采集',
+      inputs: '本轮探针集',
       duty: '负责建轮次、查进度',
       writes: '表 `geo_answer`',
+      done: '覆盖率 100%',
       subagent_type: 'geo-capture',
       skills: ['doubao-capture'],
     },
@@ -44,8 +46,10 @@ const roster = {
       key: 'analysis',
       name: '诊断分析',
       folder: '04_诊断分析',
+      inputs: '本轮回答',
       duty: '逐条读回答',
       writes: '表 `geo_answer_analysis`',
+      done: '100% 有逐条诊断',
       subagent_type: 'geo-analysis',
       skills: [],
     },
@@ -70,6 +74,7 @@ describe('GeoAgentsSettings', () => {
     // Prompt-style code marks are not shown to the user.
     expect(screen.getByText('表 geo_answer')).toBeInTheDocument();
     expect(screen.getByText('doubao-capture')).toBeInTheDocument();
+    expect(screen.getByText('覆盖率 100%')).toBeInTheDocument();
     // A stage without skills says so instead of looking finished.
     expect(screen.getByText('Not set up')).toBeInTheDocument();
   });

@@ -24,6 +24,7 @@ from app.geo import (
     queries,
     rounds,
     space_bootstrap,
+    stage_tasks,
 )
 from app.utils.workspace_resolver import get_workspace_resolver
 
@@ -89,6 +90,20 @@ def list_agents():
 def round_metrics(project_id: int, capture_round: str):
     """The contract's metrics for one capture round, per platform."""
     return metrics.round_metrics(project_id, capture_round)
+
+
+@router.get("/stages/{key}/task")
+def stage_task(key: str, project_id: int, capture_round: str | None = None):
+    """What a stage page's "hand to AI" button puts in the chat."""
+    try:
+        text = stage_tasks.stage_task(key, project_id, capture_round or None)
+    except stage_tasks.UnknownStage as exc:
+        raise HTTPException(
+            status_code=404, detail=f"Unknown stage: {key}"
+        ) from exc
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return {"text": text}
 
 
 @router.get("/metrics/compare")

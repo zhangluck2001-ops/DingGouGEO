@@ -98,6 +98,9 @@ def test_stage_sub_agent_gets_its_stage_and_the_shared_rules():
     assert prompt.startswith("你是 DingGouGEO 的「诊断分析」子智能体")
     assert "本次任务：诊断第一轮 {豆包} 回答" in prompt
     assert "geo_answer_analysis" in prompt
+    stage = harness.stage("analysis")
+    assert f"- 输入：{stage.inputs}" in prompt
+    assert f"- 完成标准：{stage.done}" in prompt
     # It cannot see the root's prompt, so it carries the same rules.
     assert agent_prompt._FACT_RULES in prompt
     assert agent_prompt._DATA_RULES in prompt
@@ -138,3 +141,19 @@ def test_reading_the_status_leaves_the_database_untouched(
     agent_prompt.space_status("space-1")
     agent_prompt.space_status("space-1")
     assert snapshot() == before
+
+
+def test_stage_sub_agent_is_told_to_load_its_skills(monkeypatch):
+    stage = harness.stage("content")
+    monkeypatch.setattr(
+        harness,
+        "STAGES",
+        tuple(
+            harness.Stage(**{**s.__dict__, "skills": ("sma-geo",)})
+            if s is stage
+            else s
+            for s in harness.STAGES
+        ),
+    )
+    prompt = agent_prompt.build_subagent_prompt("geo-content", "写一批稿")
+    assert "- 先加载技能：`sma-geo`" in prompt
