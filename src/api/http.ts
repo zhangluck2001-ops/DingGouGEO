@@ -17,7 +17,7 @@ import { createHost } from '@/host/createHost';
 import { getAccountEnvironmentKey } from '@/lib/authEnvironment';
 import { reportError } from '@/lib/notifyError';
 import { errorCopy, isUsageReason } from '@/lib/usageErrors';
-import { getAuthStore } from '@/store/authStore';
+import { getAuthStore, useAuthStore } from '@/store/authStore';
 import {
   getConnectionConfig,
   setConnectionConfig,
@@ -34,6 +34,103 @@ const defaultHeaders = {
 };
 const LOCAL_CONTROL_CAPABILITY_HEADER = 'X-Eigent-Local-Capability';
 let localControlCapabilityPromise: Promise<string> | null = null;
+
+// =============== Local session renewal ===============
+// The local server issues one-week access tokens and, in local mode, no
+// refresh token. Without renewal the app keeps sending an expired token and
+// every authenticated call fails with "Could not validate credentials".
+
+const IS_LOCAL_MODE = import.meta.env.VITE_USE_LOCAL_PROXY === 'true';
+/** Whether renewLocalSession can replace an expired token in this build. */
+export const CAN_RENEW_LOCAL_SESSION = IS_LOCAL_MODE;
+// Server codes: 12 = token_expired, 13 = token_invalid (expired JWTs land here).
+const TOKEN_ERROR_CODES = new Set([12, 13]);
+const TOKEN_RENEW_MARGIN_MS = 10 * 60 * 1000;
+
+/** The server rejected the token; the caller renews it and retries once. */
+class TokenRejectedError extends Error {}
+
+/** True when the token is missing an exp, unreadable, or expires within the renewal margin. */
+export function isTokenExpiring(
+  token: string | null,
+  now: number = Date.now()
+): boolean {
+  if (!token) return false;
+  try {
+    const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const { exp } = JSON.parse(atob(base64));
+    if (typeof exp !== 'number') return true;
+    return exp * 1000 - now < TOKEN_RENEW_MARGIN_MS;
+  } catch {
+    return true;
+  }
+}
+
+let renewPromise: Promise<string | null> | null = null;
+
+/**
+ * Local mode only: get a fresh token from the server's auto-login. Concurrent
+ * callers share one request. For the same user only the token is swapped, so
+ * the current Space and its loaded state are left alone. Returns the new
+ * token, or null when renewal is unavailable or failed.
+ */
+export function renewLocalSession(): Promise<string | null> {
+  if (!IS_LOCAL_MODE) return Promise.resolve(null);
+  if (!renewPromise) {
+    renewPromise = (async () => {
+      try {
+        const headers: Record<string, string> = { ...defaultHeaders };
+        if (import.meta.env.DEV && import.meta.env.VITE_BASE_URL) {
+          headers['X-Proxy-Target'] = import.meta.env.VITE_BASE_URL;
+        }
+        const res = await fetch(
+          `${await getProxyBaseURL()}/api/v1/user/auto-login`,
+          { method: 'POST', headers, body: '{}' }
+        );
+        const data = res.ok ? await res.json() : null;
+        if (!data?.token) return null;
+        const auth = getAuthStore();
+        if (auth.user_id != null && auth.user_id === data.user_id) {
+          useAuthStore.setState({ token: data.token });
+        } else {
+          auth.setAuth({ email: data.email, ...data });
+        }
+        return data.token as string;
+      } catch (error) {
+        console.warn('[auth] Local session renewal failed:', error);
+        return null;
+      } finally {
+        renewPromise = null;
+      }
+    })();
+  }
+  return renewPromise;
+}
+
+/** Renew the local session before a request when the token is about to expire. */
+export async function ensureFreshToken(): Promise<void> {
+  if (IS_LOCAL_MODE && isTokenExpiring(getAuthStore().token)) {
+    await renewLocalSession();
+  }
+}
+
+/**
+ * Run a request; if the server rejects the token, renew the local session and
+ * retry once. `send(true)` lets handleResponse signal the rejection instead of
+ * reporting it, so the user only sees an error when the retry also fails.
+ */
+async function withTokenRetry(
+  send: (allowTokenRetry: boolean) => Promise<any>
+): Promise<any> {
+  await ensureFreshToken();
+  try {
+    return await send(IS_LOCAL_MODE);
+  } catch (err) {
+    if (!(err instanceof TokenRejectedError)) throw err;
+    await renewLocalSession();
+    return send(false);
+  }
+}
 
 export async function getLocalControlCapability(): Promise<string> {
   const api = createHost().electronAPI;
@@ -93,6 +190,7 @@ async function buildBrainHeaders(
   customHeaders: Record<string, string> = {},
   includeContentType = true
 ): Promise<Record<string, string>> {
+  await ensureFreshToken();
   const { token, user_id } = getAuthStore();
   const conn = getConnectionConfig();
   const headers: Record<string, string> = {
@@ -200,7 +298,8 @@ async function fetchRequest(
 
 async function handleResponse(
   responsePromise: Promise<Response>,
-  requestData?: Record<string, any>
+  requestData?: Record<string, any>,
+  allowTokenRetry = false
 ): Promise<any> {
   const auth = getAuthStore();
   const requestAccount =
@@ -240,6 +339,9 @@ async function handleResponse(
       return null;
     }
     const { code, text } = resData;
+    if (allowTokenRetry && TOKEN_ERROR_CODES.has(code)) {
+      throw new TokenRejectedError(text);
+    }
     // showCreditsToast()
     if (code === 1 || code === 300) {
       return resData;
@@ -288,7 +390,7 @@ async function handleResponse(
 
     return resData;
   } catch (err: any) {
-    if (err?.name === 'AbortError') {
+    if (err?.name === 'AbortError' || err instanceof TokenRejectedError) {
       throw err;
     }
 
@@ -495,48 +597,55 @@ async function proxyFetchRequest(
   const baseURL = await getProxyBaseURL();
   const fullUrl = `${baseURL}${url}`;
   assertRequestAccount(requestOptions);
-  const { token } = getAuthStore();
 
-  const headers: Record<string, string> = {
-    ...defaultHeaders,
-    ...customHeaders,
-  };
+  return withTokenRetry((allowTokenRetry) => {
+    const { token } = getAuthStore();
 
-  if (!url.includes('http://') && !url.includes('https://') && token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
+    const headers: Record<string, string> = {
+      ...defaultHeaders,
+      ...customHeaders,
+    };
 
-  if (import.meta.env.DEV) {
-    const targetUrl = import.meta.env.VITE_BASE_URL;
-    if (targetUrl) {
-      headers['X-Proxy-Target'] = targetUrl;
+    if (!url.includes('http://') && !url.includes('https://') && token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
-  }
 
-  const options: RequestInit = {
-    method,
-    headers,
-    signal: requestOptions.signal,
-  };
+    if (import.meta.env.DEV) {
+      const targetUrl = import.meta.env.VITE_BASE_URL;
+      if (targetUrl) {
+        headers['X-Proxy-Target'] = targetUrl;
+      }
+    }
 
-  if (method === 'GET') {
-    const query = data
-      ? '?' +
-        Object.entries(data)
-          .map(
-            ([key, val]) =>
-              `${encodeURIComponent(key)}=${encodeURIComponent(val)}`
-          )
-          .join('&')
-      : '';
-    return handleResponse(fetch(fullUrl + query, options));
-  }
+    const options: RequestInit = {
+      method,
+      headers,
+      signal: requestOptions.signal,
+    };
 
-  if (data) {
-    options.body = JSON.stringify(data);
-  }
+    if (method === 'GET') {
+      const query = data
+        ? '?' +
+          Object.entries(data)
+            .map(
+              ([key, val]) =>
+                `${encodeURIComponent(key)}=${encodeURIComponent(val)}`
+            )
+            .join('&')
+        : '';
+      return handleResponse(
+        fetch(fullUrl + query, options),
+        undefined,
+        allowTokenRetry
+      );
+    }
 
-  return handleResponse(fetch(fullUrl, options));
+    if (data) {
+      options.body = JSON.stringify(data);
+    }
+
+    return handleResponse(fetch(fullUrl, options), undefined, allowTokenRetry);
+  });
 }
 
 export const proxyFetchGet = (url: string, params?: any, headers?: any) =>
@@ -566,35 +675,38 @@ export async function uploadFile(
 ): Promise<any> {
   const baseURL = await getProxyBaseURL();
   const fullUrl = `${baseURL}${url}`;
-  const { token } = getAuthStore();
 
-  const requestHeaders: Record<string, string> = {
-    ...headers,
-  };
+  return withTokenRetry((allowTokenRetry) => {
+    const { token } = getAuthStore();
 
-  // Remove Content-Type header to let browser set it with boundary for FormData
-  if (requestHeaders['Content-Type']) {
-    delete requestHeaders['Content-Type'];
-  }
+    const requestHeaders: Record<string, string> = {
+      ...headers,
+    };
 
-  if (!url.includes('http://') && !url.includes('https://') && token) {
-    requestHeaders['Authorization'] = `Bearer ${token}`;
-  }
-
-  if (import.meta.env.DEV) {
-    const targetUrl = import.meta.env.VITE_BASE_URL;
-    if (targetUrl) {
-      requestHeaders['X-Proxy-Target'] = targetUrl;
+    // Remove Content-Type header to let browser set it with boundary for FormData
+    if (requestHeaders['Content-Type']) {
+      delete requestHeaders['Content-Type'];
     }
-  }
 
-  const options: RequestInit = {
-    method: 'POST',
-    headers: requestHeaders,
-    body: formData,
-  };
+    if (!url.includes('http://') && !url.includes('https://') && token) {
+      requestHeaders['Authorization'] = `Bearer ${token}`;
+    }
 
-  return handleResponse(fetch(fullUrl, options));
+    if (import.meta.env.DEV) {
+      const targetUrl = import.meta.env.VITE_BASE_URL;
+      if (targetUrl) {
+        requestHeaders['X-Proxy-Target'] = targetUrl;
+      }
+    }
+
+    const options: RequestInit = {
+      method: 'POST',
+      headers: requestHeaders,
+      body: formData,
+    };
+
+    return handleResponse(fetch(fullUrl, options), undefined, allowTokenRetry);
+  });
 }
 
 // =============== Backend Health Check ===============

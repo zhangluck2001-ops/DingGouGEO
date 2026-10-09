@@ -12,7 +12,7 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
-import { proxyFetchPost } from '@/api/http';
+import { isTokenExpiring, proxyFetchPost, renewLocalSession } from '@/api/http';
 import { useAuthStore } from '@/store/authStore';
 import {
   SETTINGS_SECTIONS,
@@ -130,6 +130,17 @@ const ProtectedRoute = () => {
             payload: { isAuthenticated: false },
           });
         });
+      return;
+    }
+
+    // Local mode: swap an expired token before anything (e.g. the task
+    // listener) uses it. Success changes `token` and re-runs this effect.
+    if (IS_LOCAL_MODE && token && isTokenExpiring(token)) {
+      void renewLocalSession().then((fresh) => {
+        if (!fresh) {
+          dispatch({ type: 'INITIALIZE', payload: { isAuthenticated: true } });
+        }
+      });
       return;
     }
 

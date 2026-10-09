@@ -12,6 +12,11 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
+import {
+  CAN_RENEW_LOCAL_SESSION,
+  isTokenExpiring,
+  renewLocalSession,
+} from '@/api/http';
 import i18n from '@/i18n';
 import { notifyExecutionError } from '@/lib/notifyError';
 import { queryClient, queryKeys } from '@/lib/queryClient';
@@ -123,6 +128,9 @@ export function useExecutionSubscription(enabled: boolean = true) {
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastCloseTimestampRef = useRef<number>(0);
   const authFailedRef = useRef<boolean>(false);
+  // Token we already tried to renew after a rejection, so a renewed token
+  // that is rejected too ends in the sign-in error instead of a loop.
+  const renewedForTokenRef = useRef<string | null>(null);
   const maxReconnectAttempts = 5;
   const debounceDelay = 5000; // 5 seconds debounce period
   const baseReconnectDelay = 1000;
@@ -135,6 +143,7 @@ export function useExecutionSubscription(enabled: boolean = true) {
     setWsConnectionStatus,
     setLastPongTimestamp,
     setWsReconnectCallback,
+    wsConnectionStatus,
   } = useTriggerStore();
 
   // Store latest values in refs to avoid recreating connect function
@@ -190,6 +199,10 @@ export function useExecutionSubscription(enabled: boolean = true) {
     }
   }, []);
 
+  // Reconnect timers call the latest connect without referencing it before
+  // its declaration.
+  const connectRef = useRef<() => void>(() => {});
+
   const connect = useCallback(() => {
     // Prevent duplicate connections - check all non-closed states
     if (
@@ -217,6 +230,28 @@ export function useExecutionSubscription(enabled: boolean = true) {
     }
 
     setWsConnectionStatusRef.current('connecting');
+
+    // Local mode: renew an expiring token first; the new token re-runs the
+    // connect effect.
+    if (
+      CAN_RENEW_LOCAL_SESSION &&
+      isTokenExpiring(token) &&
+      renewedForTokenRef.current !== token
+    ) {
+      renewedForTokenRef.current = token;
+      void renewLocalSession().then((fresh) => {
+        if (!fresh) {
+          setWsConnectionStatusRef.current('disconnected');
+          notifyExecutionError(
+            i18n.t('triggers.listener-sign-in-failed', {
+              defaultValue:
+                "Couldn't sign in to the task listener. Try reconnecting.",
+            })
+          );
+        }
+      });
+      return;
+    }
 
     try {
       const baseURL = import.meta.env.DEV
@@ -449,17 +484,19 @@ export function useExecutionSubscription(enabled: boolean = true) {
                 '[ExecutionSubscription] Server error:',
                 message.message
               );
+              // Mark auth failure and close connection; onclose renews the
+              // session or reports the failure.
+              if (message.message?.toLowerCase().includes('authentication')) {
+                authFailedRef.current = true;
+                ws.close();
+                break;
+              }
               notifyExecutionError(
                 i18n.t('triggers.listener-error', {
                   defaultValue: 'Listener error: {{message}}',
                   message: message.message,
                 })
               );
-              // Mark auth failure and close connection
-              if (message.message?.toLowerCase().includes('authentication')) {
-                authFailedRef.current = true;
-                ws.close();
-              }
               break;
           }
         } catch (error) {
@@ -491,16 +528,26 @@ export function useExecutionSubscription(enabled: boolean = true) {
           event.reason?.toLowerCase().includes('auth') ||
           authFailedRef.current
         ) {
+          authFailedRef.current = false; // Reset flag
+          const notifySignInFailed = () =>
+            notifyExecutionError(
+              i18n.t('triggers.listener-sign-in-failed', {
+                defaultValue:
+                  "Couldn't sign in to the task listener. Try reconnecting.",
+              })
+            );
+          // Renew once per token; a fresh token re-runs the connect effect.
+          if (CAN_RENEW_LOCAL_SESSION && renewedForTokenRef.current !== token) {
+            renewedForTokenRef.current = token;
+            void renewLocalSession().then((fresh) => {
+              if (!fresh) notifySignInFailed();
+            });
+            return;
+          }
           console.error(
             '[ExecutionSubscription] Authentication failed - not reconnecting'
           );
-          notifyExecutionError(
-            i18n.t('triggers.listener-sign-in-failed', {
-              defaultValue:
-                "Couldn't sign in to the task listener. Try reconnecting.",
-            })
-          );
-          authFailedRef.current = false; // Reset flag
+          notifySignInFailed();
           return;
         }
 
@@ -536,7 +583,7 @@ export function useExecutionSubscription(enabled: boolean = true) {
 
               reconnectTimeoutRef.current = setTimeout(() => {
                 reconnectAttemptsRef.current++;
-                connect();
+                connectRef.current();
               }, delay);
             } else {
               console.error(
@@ -560,6 +607,10 @@ export function useExecutionSubscription(enabled: boolean = true) {
       setWsConnectionStatusRef.current('disconnected');
     }
   }, [enabled, token, startPingInterval, stopPingInterval]); // Only depend on enabled and token - primitives that rarely change
+
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -625,7 +676,7 @@ export function useExecutionSubscription(enabled: boolean = true) {
   }, [manualReconnect, setWsReconnectCallback]);
 
   return {
-    isConnected: wsRef.current?.readyState === WebSocket.OPEN,
+    isConnected: wsConnectionStatus === 'connected',
     disconnect,
     reconnect: manualReconnect,
   };
