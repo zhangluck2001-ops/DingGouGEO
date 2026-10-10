@@ -170,6 +170,8 @@
   "control-read-only": "Cette exécution est terminée, ses commandes ne sont plus disponibles.",
   "control-confirmation-note-label": "Note de confirmation",
   "control-response-options-label": "Options de réponse",
+  "control-custom-answer-label": "Votre réponse",
+  "control-custom-answer-placeholder": "Écrivez votre propre réponse",
   "control-feedback-label": "Commentaire",
   "control-response-placeholder": "Saisissez votre réponse",
   "control-field-required": "Renseignez ce champ pour continuer.",

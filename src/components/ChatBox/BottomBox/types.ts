@@ -93,6 +93,11 @@ export interface BottomBoxSelectionVariant extends ControlledVariantBase {
   options: readonly BottomBoxSelectionOption[];
   selectedIds: readonly string[];
   submitLabel?: string;
+  /** Option that, when picked, asks the user to write their own answer. */
+  customOptionId?: string;
+  customText?: string;
+  customPlaceholder?: string;
+  onCustomTextChange?: (text: string) => void;
   onSelectionChange: (selectedIds: string[]) => void;
   onSubmit: () => void;
 }

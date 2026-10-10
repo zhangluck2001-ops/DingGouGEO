@@ -170,6 +170,8 @@
   "control-read-only": "该任务已结束，相关操作不再可用。",
   "control-confirmation-note-label": "确认备注",
   "control-response-options-label": "可选答案",
+  "control-custom-answer-label": "你的回答",
+  "control-custom-answer-placeholder": "写下你的想法",
   "control-feedback-label": "反馈",
   "control-response-placeholder": "输入你的回复",
   "control-field-required": "请填写后继续。",

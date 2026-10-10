@@ -17,8 +17,10 @@ import {
   Dialog,
   DialogContent,
   DialogContentSection,
+  DialogFooter,
   DialogHeader,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import {
   ArrowRight,
@@ -44,13 +46,14 @@ const AgentPluginImportWizard = lazy(() =>
 );
 
 export type NewSpaceDialogPage =
-  'options' | 'import-options' | 'workspace-bundle' | 'agent-plugin';
+  'options' | 'name' | 'import-options' | 'workspace-bundle' | 'agent-plugin';
 type PendingOption = 'scratch' | 'folder' | null;
 
 export interface NewSpaceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onStartFromScratch: () => Promise<boolean>;
+  /** Creates a blank Space with the name the user typed. */
+  onStartFromScratch: (name: string) => Promise<boolean>;
   onUseLocalFolder: () => Promise<boolean>;
   initialPage?: NewSpaceDialogPage;
   initialWorkspaceBundleHandle?: string;
@@ -125,6 +128,7 @@ export default function NewSpaceDialog({
   const canImportAgentPlugin = isDesktop();
   const [page, setPage] = useState<NewSpaceDialogPage>(initialPage);
   const [pendingOption, setPendingOption] = useState<PendingOption>(null);
+  const [spaceName, setSpaceName] = useState('');
 
   useEffect(() => {
     if (open) setPage(initialPage);
@@ -134,6 +138,7 @@ export default function NewSpaceDialog({
     if (!nextOpen) {
       setPage('options');
       setPendingOption(null);
+      setSpaceName('');
     }
     onOpenChange(nextOpen);
   };
@@ -182,11 +187,8 @@ export default function NewSpaceDialog({
                         'Create an empty Space and start with a clean workspace.',
                     }
                   )}
-                  busy={pendingOption === 'scratch'}
                   disabled={pendingOption !== null}
-                  onClick={() =>
-                    void runCreationOption('scratch', onStartFromScratch)
-                  }
+                  onClick={() => setPage('name')}
                 />
                 <NewSpaceOption
                   icon={FolderOpen}
@@ -221,6 +223,66 @@ export default function NewSpaceDialog({
                 />
               </div>
             </DialogContentSection>
+          </>
+        ) : page === 'name' ? (
+          <>
+            <DialogHeader
+              title={t('layout.new-space-name-title', {
+                defaultValue: 'Name this Space',
+              })}
+              subtitle={t('layout.new-space-name-description', {
+                defaultValue:
+                  'Use the brand or product this Space is for. You can rename it later.',
+              })}
+              showBackButton
+              onBackClick={() => setPage('options')}
+            />
+            <DialogContentSection>
+              <Input
+                autoFocus
+                title={t('layout.new-space-name-label', {
+                  defaultValue: 'Space name',
+                })}
+                placeholder={t('layout.new-space-name-placeholder', {
+                  defaultValue: 'For example: SMA Advanced',
+                })}
+                value={spaceName}
+                maxLength={60}
+                disabled={pendingOption !== null}
+                onChange={(event) => setSpaceName(event.target.value)}
+                onEnter={() => {
+                  if (spaceName.trim()) {
+                    void runCreationOption('scratch', () =>
+                      onStartFromScratch(spaceName.trim())
+                    );
+                  }
+                }}
+              />
+            </DialogContentSection>
+            <DialogFooter
+              showCancelButton
+              showConfirmButton
+              cancelButtonText={t('layout.back', { defaultValue: 'Back' })}
+              confirmButtonText={
+                pendingOption === 'scratch'
+                  ? t('layout.new-space-name-creating', {
+                      defaultValue: 'Creating…',
+                    })
+                  : t('layout.new-space-name-create', {
+                      defaultValue: 'Create Space',
+                    })
+              }
+              confirmButtonDisabled={
+                !spaceName.trim() || pendingOption !== null
+              }
+              cancelButtonDisabled={pendingOption !== null}
+              onCancel={() => setPage('options')}
+              onConfirm={() =>
+                void runCreationOption('scratch', () =>
+                  onStartFromScratch(spaceName.trim())
+                )
+              }
+            />
           </>
         ) : page === 'import-options' ? (
           <>

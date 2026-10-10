@@ -170,6 +170,8 @@
   "control-read-only": "Dieser Vorgang hat abgeschlossen, sodass diese Kontrollen nicht mehr verfügbar sind.",
   "control-confirmation-note-label": "Notiz zur Bestätigung",
   "control-response-options-label": "Antwortoptionen",
+  "control-custom-answer-label": "Deine Antwort",
+  "control-custom-answer-placeholder": "Eigene Antwort schreiben",
   "control-feedback-label": "Feedback",
   "control-response-placeholder": "Antwort eingeben",
   "control-field-required": "Bitte ausfüllen, um fortzufahren.",

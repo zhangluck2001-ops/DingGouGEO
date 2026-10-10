@@ -430,6 +430,51 @@ describe('useEventNativeHumanControl', () => {
     );
   });
 
+  it('sends the written answer when an agent question is answered with "other"', async () => {
+    mocks.projection = projection([
+      interaction({
+        interactionId: 'choice-q',
+        interactionType: 'choice',
+        prompt: '先清洗哪份资料？',
+        approvalId: undefined,
+        actionDigest: undefined,
+        options: [
+          { id: 'option-1', label: '全部一起（推荐）', value: '全部一起' },
+          { id: 'custom', label: '其他（自己填写）', value: 'custom' },
+        ],
+      }),
+    ]);
+    const { result } = renderHook(() =>
+      useEventNativeHumanControl({
+        projectId: 'project-1',
+        activeRunId: 'run-1',
+      })
+    );
+
+    const variant = () =>
+      result.current.variant?.kind === 'selection'
+        ? result.current.variant
+        : null;
+    expect(variant()?.customOptionId).toBe('custom');
+    act(() => variant()?.onSelectionChange(['custom']));
+    act(() => variant()?.onCustomTextChange?.('  先清洗 xlsx  '));
+    await waitFor(() => expect(variant()?.customText).toBe('  先清洗 xlsx  '));
+    act(() => variant()?.onSubmit());
+
+    await waitFor(() =>
+      expect(mocks.decide).toHaveBeenCalledWith(
+        expect.objectContaining({ interaction_id: 'choice-q' }),
+        expect.objectContaining({
+          decision: {
+            option_id: 'custom',
+            value: 'custom',
+            reply: '先清洗 xlsx',
+          },
+        })
+      )
+    );
+  });
+
   it('submits the backend question interaction as a durable reply', async () => {
     mocks.projection = projection([
       interaction({

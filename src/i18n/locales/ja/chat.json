@@ -170,6 +170,8 @@
   "control-read-only": "この実行は終了したため、操作はできません。",
   "control-confirmation-note-label": "確認メモ",
   "control-response-options-label": "回答の選択肢",
+  "control-custom-answer-label": "あなたの回答",
+  "control-custom-answer-placeholder": "自由に回答を入力",
   "control-feedback-label": "フィードバック",
   "control-response-placeholder": "返信を入力",
   "control-field-required": "入力すると続行できます。",

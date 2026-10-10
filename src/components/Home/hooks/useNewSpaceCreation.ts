@@ -53,43 +53,47 @@ export function useNewSpaceCreation(createdFrom: string) {
     navigate('/');
   }, [navigate, requestWorkspaceChatFocus, setActiveWorkspaceTab]);
 
-  const createBlankSpace = useCallback(async () => {
-    try {
-      const spaceId = await createSpaceOnServer({
-        name: getDefaultNewSpaceName(t),
-        sourceType: 'blank',
-        setActive: false,
-        metadata: {
-          createdFrom,
-          autoCreatedPlaceholder: true,
-        },
-      });
-      await ensureScratchSpaceWorkspaceBinding({
-        email,
-        userId,
-        space: useSpaceStore.getState().getSpaceById(spaceId),
-      });
-      setActiveSpace(spaceId);
-      projectStore.setActiveProject(null);
-      goToWorkspace();
-      return true;
-    } catch (error) {
-      console.error('Failed to create Space:', error);
-      toast.error(t('layout.spaces-create-failed'), {
-        closeButton: true,
-      });
-      return false;
-    }
-  }, [
-    createSpaceOnServer,
-    createdFrom,
-    email,
-    goToWorkspace,
-    projectStore,
-    setActiveSpace,
-    t,
-    userId,
-  ]);
+  const createBlankSpace = useCallback(
+    async (name?: string) => {
+      try {
+        const spaceId = await createSpaceOnServer({
+          name: name?.trim() || getDefaultNewSpaceName(t),
+          sourceType: 'blank',
+          setActive: false,
+          metadata: {
+            createdFrom,
+            // A named Space is the user's, not a disposable placeholder.
+            autoCreatedPlaceholder: !name?.trim(),
+          },
+        });
+        await ensureScratchSpaceWorkspaceBinding({
+          email,
+          userId,
+          space: useSpaceStore.getState().getSpaceById(spaceId),
+        });
+        setActiveSpace(spaceId);
+        projectStore.setActiveProject(null);
+        goToWorkspace();
+        return true;
+      } catch (error) {
+        console.error('Failed to create Space:', error);
+        toast.error(t('layout.spaces-create-failed'), {
+          closeButton: true,
+        });
+        return false;
+      }
+    },
+    [
+      createSpaceOnServer,
+      createdFrom,
+      email,
+      goToWorkspace,
+      projectStore,
+      setActiveSpace,
+      t,
+      userId,
+    ]
+  );
 
   const createSpaceFromFolder = useCallback(async () => {
     try {

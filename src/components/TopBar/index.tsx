@@ -309,44 +309,48 @@ function HeaderWin() {
     [projectStore]
   );
 
-  const handleCreateBlankSpace = useCallback(async () => {
-    try {
-      const spaceId = await createSpaceOnServer({
-        name: getDefaultNewSpaceName(t),
-        sourceType: 'blank',
-        setActive: false,
-        metadata: {
-          createdFrom: 'top_bar',
-          autoCreatedPlaceholder: true,
-        },
-      });
-      await ensureScratchSpaceWorkspaceBinding({
-        email,
-        userId,
-        space: useSpaceStore.getState().getSpaceById(spaceId),
-      });
-      setActiveSpace(spaceId);
-      projectStore.setActiveProject(null);
-      setActiveWorkspaceTab('workforce');
-      requestWorkspaceChatFocus();
-      return true;
-    } catch (error) {
-      console.error('Failed to create Space:', error);
-      toast.error(t('layout.spaces-create-failed'), {
-        closeButton: true,
-      });
-      return false;
-    }
-  }, [
-    createSpaceOnServer,
-    email,
-    projectStore,
-    requestWorkspaceChatFocus,
-    setActiveSpace,
-    setActiveWorkspaceTab,
-    t,
-    userId,
-  ]);
+  const handleCreateBlankSpace = useCallback(
+    async (name?: string) => {
+      try {
+        const spaceId = await createSpaceOnServer({
+          name: name?.trim() || getDefaultNewSpaceName(t),
+          sourceType: 'blank',
+          setActive: false,
+          metadata: {
+            createdFrom: 'top_bar',
+            // A named Space is the user's, not a disposable placeholder.
+            autoCreatedPlaceholder: !name?.trim(),
+          },
+        });
+        await ensureScratchSpaceWorkspaceBinding({
+          email,
+          userId,
+          space: useSpaceStore.getState().getSpaceById(spaceId),
+        });
+        setActiveSpace(spaceId);
+        projectStore.setActiveProject(null);
+        setActiveWorkspaceTab('workforce');
+        requestWorkspaceChatFocus();
+        return true;
+      } catch (error) {
+        console.error('Failed to create Space:', error);
+        toast.error(t('layout.spaces-create-failed'), {
+          closeButton: true,
+        });
+        return false;
+      }
+    },
+    [
+      createSpaceOnServer,
+      email,
+      projectStore,
+      requestWorkspaceChatFocus,
+      setActiveSpace,
+      setActiveWorkspaceTab,
+      t,
+      userId,
+    ]
+  );
 
   const handleCreateSpaceFromFolder = useCallback(async () => {
     try {

@@ -170,6 +170,8 @@
   "control-read-only": "Этот запуск завершён, поэтому управление им больше недоступно.",
   "control-confirmation-note-label": "Примечание к подтверждению",
   "control-response-options-label": "Варианты ответа",
+  "control-custom-answer-label": "Ваш ответ",
+  "control-custom-answer-placeholder": "Напишите свой ответ",
   "control-feedback-label": "Отзыв",
   "control-response-placeholder": "Введите ответ",
   "control-field-required": "Заполните поле, чтобы продолжить.",

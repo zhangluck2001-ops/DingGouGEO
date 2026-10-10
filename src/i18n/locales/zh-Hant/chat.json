@@ -170,6 +170,8 @@
   "control-read-only": "該任務已結束，相關操作不再可用。",
   "control-confirmation-note-label": "確認備註",
   "control-response-options-label": "選用答案",
+  "control-custom-answer-label": "你的回答",
+  "control-custom-answer-placeholder": "寫下你的想法",
   "control-feedback-label": "回饋",
   "control-response-placeholder": "輸入你的回覆",
   "control-field-required": "請填寫後繼續。",

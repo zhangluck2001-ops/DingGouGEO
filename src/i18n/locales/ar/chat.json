@@ -170,6 +170,8 @@
   "control-read-only": "انتهى هذا التشغيل، لذا لم تعد أدوات التحكم فيه متاحة.",
   "control-confirmation-note-label": "ملاحظة التأكيد",
   "control-response-options-label": "خيارات الرد",
+  "control-custom-answer-label": "إجابتك",
+  "control-custom-answer-placeholder": "اكتب إجابتك",
   "control-feedback-label": "الملاحظات",
   "control-response-placeholder": "اكتب ردّك",
   "control-field-required": "أدخل قيمة للمتابعة.",

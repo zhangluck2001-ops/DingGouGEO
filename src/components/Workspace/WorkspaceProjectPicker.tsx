@@ -288,45 +288,49 @@ export function WorkspaceProjectPicker({
     [navigate, projectStore, setActiveSpace, t]
   );
 
-  const handleNewSpace = useCallback(async () => {
-    try {
-      const spaceId = await createSpaceOnServer({
-        name: getDefaultNewSpaceName(t),
-        sourceType: 'blank',
-        setActive: false,
-        metadata: {
-          createdFrom: 'workspace_space_picker',
-          autoCreatedPlaceholder: true,
-        },
-      });
-      await ensureScratchSpaceWorkspaceBinding({
-        email,
-        userId,
-        space: useSpaceStore.getState().getSpaceById(spaceId),
-      });
-      setActiveSpace(spaceId);
-      projectStore.setActiveProject(null);
-      setActiveWorkspaceTab('workforce');
-      requestWorkspaceChatFocus();
-      navigate('/');
-      setMenuOpen(false);
-      return true;
-    } catch (error) {
-      console.error('Failed to create Space:', error);
-      toast.error(t('layout.spaces-create-failed'));
-      return false;
-    }
-  }, [
-    createSpaceOnServer,
-    email,
-    navigate,
-    projectStore,
-    requestWorkspaceChatFocus,
-    setActiveSpace,
-    setActiveWorkspaceTab,
-    t,
-    userId,
-  ]);
+  const handleNewSpace = useCallback(
+    async (name?: string) => {
+      try {
+        const spaceId = await createSpaceOnServer({
+          name: name?.trim() || getDefaultNewSpaceName(t),
+          sourceType: 'blank',
+          setActive: false,
+          metadata: {
+            createdFrom: 'workspace_space_picker',
+            // A named Space is the user's, not a disposable placeholder.
+            autoCreatedPlaceholder: !name?.trim(),
+          },
+        });
+        await ensureScratchSpaceWorkspaceBinding({
+          email,
+          userId,
+          space: useSpaceStore.getState().getSpaceById(spaceId),
+        });
+        setActiveSpace(spaceId);
+        projectStore.setActiveProject(null);
+        setActiveWorkspaceTab('workforce');
+        requestWorkspaceChatFocus();
+        navigate('/');
+        setMenuOpen(false);
+        return true;
+      } catch (error) {
+        console.error('Failed to create Space:', error);
+        toast.error(t('layout.spaces-create-failed'));
+        return false;
+      }
+    },
+    [
+      createSpaceOnServer,
+      email,
+      navigate,
+      projectStore,
+      requestWorkspaceChatFocus,
+      setActiveSpace,
+      setActiveWorkspaceTab,
+      t,
+      userId,
+    ]
+  );
 
   const openRenameDialog = () => {
     if (!canRenameActiveSpace || !activeSpace) return;

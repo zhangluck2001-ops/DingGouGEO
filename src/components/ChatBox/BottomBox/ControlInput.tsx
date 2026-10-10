@@ -157,6 +157,9 @@ function SelectionInput({ variant }: { variant: BottomBoxSelectionVariant }) {
   const { t } = useTranslation();
   const multiple = variant.selectionMode === 'multiple';
   const selected = new Set(variant.selectedIds);
+  const customPicked =
+    variant.customOptionId !== undefined &&
+    selected.has(variant.customOptionId);
   const optionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [focusedIndex, setFocusedIndex] = useState(0);
 
@@ -274,6 +277,18 @@ function SelectionInput({ variant }: { variant: BottomBoxSelectionVariant }) {
           );
         })}
       </div>
+      {customPicked && (
+        <Textarea
+          variant="outlined"
+          aria-label={t('chat.control-custom-answer-label')}
+          value={variant.customText ?? ''}
+          placeholder={variant.customPlaceholder}
+          disabled={variant.disabled || variant.submitting}
+          autoFocus
+          onChange={(event) => variant.onCustomTextChange?.(event.target.value)}
+          onEnter={variant.customText?.trim() ? variant.onSubmit : undefined}
+        />
+      )}
       <ControlActions>
         <Button
           type="button"
@@ -283,7 +298,8 @@ function SelectionInput({ variant }: { variant: BottomBoxSelectionVariant }) {
           disabled={
             variant.disabled ||
             variant.submitting ||
-            variant.selectedIds.length === 0
+            variant.selectedIds.length === 0 ||
+            (customPicked && !variant.customText?.trim())
           }
           onClick={variant.onSubmit}
         >

@@ -170,6 +170,8 @@
   "control-read-only": "This task has finished, so these controls are no longer available.",
   "control-confirmation-note-label": "Confirmation note",
   "control-response-options-label": "Response options",
+  "control-custom-answer-label": "Your answer",
+  "control-custom-answer-placeholder": "Write your own answer",
   "control-feedback-label": "Feedback",
   "control-response-placeholder": "Type your response",
   "control-field-required": "Enter a value to continue.",

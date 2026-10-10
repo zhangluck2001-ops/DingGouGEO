@@ -40,6 +40,10 @@ type ControlledBottomBoxVariant = Exclude<BottomBoxVariant, { kind: 'input' }>;
 
 type SubmissionPhase = 'idle' | 'submitting' | 'reconciling';
 
+/** Option id the backend gives the write-your-own answer of a question. */
+const CUSTOM_OPTION_ID = 'custom';
+const CUSTOM_ANSWER_KEY = '__custom_answer__';
+
 type DraftState = {
   key: string;
   feedback: string;
@@ -708,6 +712,14 @@ export function useEventNativeHumanControl({
           message: t('chat.control-blocked-no-options'),
         };
       }
+      // Agent questions end with a write-your-own option (backend id
+      // "custom"); picking it opens a text field.
+      const customOptionId = interaction.options.some(
+        (option) => option.id === CUSTOM_OPTION_ID
+      )
+        ? CUSTOM_OPTION_ID
+        : undefined;
+      const customText = activeDraft.formValues[CUSTOM_ANSWER_KEY] ?? '';
       return {
         kind: 'selection',
         ...common,
@@ -718,6 +730,14 @@ export function useEventNativeHumanControl({
           description: option.description,
         })),
         selectedIds: activeDraft.selectedIds,
+        customOptionId,
+        customText,
+        customPlaceholder: t('chat.control-custom-answer-placeholder'),
+        onCustomTextChange: (text) =>
+          updateDraft((current) => ({
+            ...current,
+            formValues: { ...current.formValues, [CUSTOM_ANSWER_KEY]: text },
+          })),
         onSelectionChange: (selectedIds) =>
           updateDraft((current) => ({ ...current, selectedIds })),
         onSubmit: () => {
@@ -725,6 +745,15 @@ export function useEventNativeHumanControl({
             (option) => option.id === activeDraft.selectedIds[0]
           );
           if (!selected) return;
+          if (selected.id === customOptionId) {
+            if (!customText.trim()) return;
+            void submit({
+              option_id: selected.id,
+              value: selected.value,
+              reply: customText.trim(),
+            });
+            return;
+          }
           void submit({ option_id: selected.id, value: selected.value });
         },
       };

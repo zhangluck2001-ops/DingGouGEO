@@ -170,6 +170,8 @@
   "control-read-only": "L'attività è finita, quindi questi controlli non sono più disponibili.",
   "control-confirmation-note-label": "Nota di conferma",
   "control-response-options-label": "Opzioni di risposta",
+  "control-custom-answer-label": "La tua risposta",
+  "control-custom-answer-placeholder": "Scrivi la tua risposta",
   "control-feedback-label": "Feedback",
   "control-response-placeholder": "Scrivi la tua risposta",
   "control-field-required": "Compila questo campo per continuare.",
