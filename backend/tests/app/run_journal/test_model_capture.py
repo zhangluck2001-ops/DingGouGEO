@@ -1111,3 +1111,27 @@ def test_best_effort_terminal_persistence_gap_returns_provider_response(
     assert returned is response
     gaps = journal.list_attempt_evidence_gaps(attempt.attempt_id)
     assert len(gaps) == 1
+
+
+def test_sub_agent_calls_are_recorded_under_the_sub_agent(
+    tmp_path: Path,
+) -> None:
+    from app.run_journal.model_capture import capture_agent_scope
+
+    journal = _journal(tmp_path)
+    model = instrument_model_backend(
+        _FakeModel(_Response()),
+        agent_id="root-agent",
+        provider="openai",
+        model_name="gpt-test",
+        journal=journal,
+    )
+
+    with run_context_scope(_context(tmp_path)):
+        model.run([{"role": "user", "content": "root"}], None, None)
+        with capture_agent_scope("geo-knowledge-1"):
+            model.run([{"role": "user", "content": "child"}], None, None)
+        model.run([{"role": "user", "content": "root again"}], None, None)
+
+    agents = [r.agent_id for r in journal.list_model_invocations("run-1")]
+    assert sorted(agents) == ["geo-knowledge-1", "root-agent", "root-agent"]

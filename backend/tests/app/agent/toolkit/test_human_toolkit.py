@@ -172,3 +172,77 @@ def test_send_message_notice_uses_current_tool_call_identity():
     assert notice.purpose == "progress"
     assert notice.severity == "info"
     assert notice.tool_call_id == "tool-call-1"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("reply", "expected"),
+    [
+        (
+            '{"option_id":"option-2","value":"只清洗 PDF"}',
+            "用户选择：只清洗 PDF",
+        ),
+        (
+            '{"option_id":"custom","value":"custom","reply":"先清洗 xlsx"}',
+            "用户没有选给出的选项，自己写道：先清洗 xlsx",
+        ),
+    ],
+)
+async def test_ask_human_with_options_creates_a_choice(
+    tmp_path, reply, expected
+):
+    task_lock = MagicMock()
+    task_lock.run_context = _run_context(tmp_path)
+    task_lock.add_human_input_listen = MagicMock()
+    task_lock.put_queue = AsyncMock()
+    task_lock.get_human_input = AsyncMock(return_value=reply)
+
+    with SQLiteRunJournal(tmp_path / "journal.sqlite3") as journal:
+        journal.ensure_run(run_id="run-1", project_id="project-1")
+        journal.create_run_attempt(
+            "run-1",
+            request_id="initial",
+            reason="initial_execution",
+            activate=True,
+            now=1,
+        )
+        with (
+            patch(
+                "app.agent.toolkit.human_toolkit.get_task_lock",
+                return_value=task_lock,
+            ),
+            patch(
+                "app.utils.listen.toolkit_listen.get_task_lock",
+                return_value=task_lock,
+            ),
+            patch(
+                "app.agent.toolkit.human_toolkit.get_default_run_journal",
+                return_value=journal,
+            ),
+            patch("app.run_sync.runtime.notify_default_cloud_sync_worker"),
+        ):
+            toolkit = HumanToolkit("project-1", "worker")
+            answer = await toolkit.ask_human_via_gui(
+                "先清洗哪份？",
+                options=["全部一起：一次写完", "只清洗 PDF：先看配料表"],
+            )
+
+        assert answer == expected
+        interaction = journal.list_human_interactions("run-1")[0]
+        assert interaction.interaction_type == "choice"
+        labels = [
+            o.label
+            for o in journal.list_human_interaction_options(
+                interaction.interaction_id
+            )
+        ]
+        assert labels == ["全部一起（推荐）", "只清洗 PDF", "其他（自己填写）"]
+
+
+def test_fewer_than_two_options_stay_an_open_question():
+    from app.agent.toolkit.human_toolkit import _choice_options
+
+    assert _choice_options(None) is None
+    assert _choice_options(["只有一个"]) is None
+    many = _choice_options([f"选项{i}" for i in range(6)])
+    assert len(many) == 5  # four options plus the free-text one

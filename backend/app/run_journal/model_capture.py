@@ -28,6 +28,9 @@ import logging
 import os
 import threading
 import uuid
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from types import MethodType
 from typing import Any
 from weakref import WeakKeyDictionary
@@ -780,6 +783,23 @@ def _record_capture_gap(
             )
 
 
+# Sub-agents share their parent's model backend, which was instrumented with
+# the parent's id; while a sub-agent runs, its own id is recorded instead.
+_CAPTURE_AGENT_ID: ContextVar[str | None] = ContextVar(
+    "model_capture_agent_id", default=None
+)
+
+
+@contextmanager
+def capture_agent_scope(agent_id: str | None) -> Iterator[None]:
+    """Record model calls made inside this scope under ``agent_id``."""
+    token = _CAPTURE_AGENT_ID.set(agent_id)
+    try:
+        yield
+    finally:
+        _CAPTURE_AGENT_ID.reset(token)
+
+
 def _start_capture(
     *,
     journal: SQLiteRunJournal,
@@ -794,6 +814,7 @@ def _start_capture(
     context = get_current_run_context()
     if context is None:
         return None
+    agent_id = _CAPTURE_AGENT_ID.get() or agent_id
     # Import locally to keep the capture adapter independent from runtime
     # initialization order. The ContextVar value is copied into asyncio worker
     # threads, so async and sync dispatch observe the same authored Step.

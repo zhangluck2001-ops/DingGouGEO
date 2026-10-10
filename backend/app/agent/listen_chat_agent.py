@@ -20,6 +20,7 @@ import threading
 import uuid
 from collections.abc import Callable
 from contextlib import AsyncExitStack
+from contextvars import Context, copy_context
 from threading import Event
 from typing import Any
 
@@ -48,6 +49,7 @@ from app.permission_policy import (
     ToolPermissionRejectedError,
     authorize_tool_checkpoint,
 )
+from app.run_context.context import get_current_run_context
 from app.run_runtime.active_timeout import (
     ActiveExecutionTimeout,
     refresh_active_execution_timeout,
@@ -60,6 +62,7 @@ from app.run_runtime.timeout_config import (
 from app.run_runtime.tool_checkpoint import (
     ToolCheckpointError,
     ToolInvocationNotDispatchedError,
+    copy_tool_safety,
     declared_tool_safety,
     dispatch_tool_checkpoint,
     finish_tool_checkpoint,
@@ -466,6 +469,11 @@ class ListenChatAgent(ChatAgent):
         """Restore fail-closed semantics after CAMEL logs worker errors."""
 
         self._reset_tool_checkpoint_error()
+        # CAMEL runs these tools on a ThreadPoolExecutor, whose threads start
+        # with an empty Context: without this, a sync streaming step (how
+        # delegated sub-agents run) has no RunContext and every tool is
+        # refused by its checkpoint. _execute_tool runs inside a copy.
+        self._sync_tool_context = copy_context()
         try:
             yield from super()._execute_tools_sync_with_status_accumulator(
                 *args, **kwargs
@@ -1059,6 +1067,13 @@ class ListenChatAgent(ChatAgent):
     def _execute_tool(
         self, tool_call_request: ToolCallRequest
     ) -> ToolCallingRecord:
+        context: Context | None = getattr(self, "_sync_tool_context", None)
+        if (
+            context is not None
+            and get_current_run_context() is None
+            and context.run(get_current_run_context) is not None
+        ):
+            return context.copy().run(self._execute_tool, tool_call_request)
         func_name = tool_call_request.tool_name
         tool: FunctionTool = self._internal_tools[func_name]
         # Route async functions to async execution
@@ -1539,6 +1554,18 @@ class ListenChatAgent(ChatAgent):
         except Exception as e:
             logger.error(f"Error processing async streaming tool call: {e}")
             return None
+
+    def _clone_tools(self):
+        """CAMEL's clone, keeping each tool's trusted safety declaration."""
+        tools, toolkits_to_register = super()._clone_tools()
+        originals = {
+            tool.get_function_name(): tool
+            for tool in self._internal_tools.values()
+        }
+        for tool in tools:
+            if isinstance(tool, FunctionTool):
+                copy_tool_safety(originals.get(tool.get_function_name()), tool)
+        return tools, toolkits_to_register
 
     def clone(self, with_memory: bool = False) -> ChatAgent:
         """Please see super.clone()"""

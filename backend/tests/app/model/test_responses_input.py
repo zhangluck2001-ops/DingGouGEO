@@ -955,3 +955,26 @@ async def test_effort_and_image_request_matrix(
                         assert "reasoning" not in body
                         assert body["messages"] == messages
     assert sent_requests == (100 if transport == "responses" else 80)
+
+
+def test_responses_cache_hits_survive_the_chat_usage_conversion():
+    from camel.models import openai_responses_adapter as adapter
+
+    from app.model.responses_input import _keep_cached_token_usage
+
+    _keep_cached_token_usage()
+    _keep_cached_token_usage()  # idempotent
+
+    usage = adapter._usage_to_openai(
+        {
+            "input_tokens": 30000,
+            "output_tokens": 300,
+            "total_tokens": 30300,
+            "input_tokens_details": {"cached_tokens": 28000},
+        }
+    )
+    assert usage["prompt_tokens"] == 30000
+    assert usage["prompt_tokens_details"] == {"cached_tokens": 28000}
+    assert "prompt_tokens_details" not in adapter._usage_to_openai(
+        {"input_tokens": 10, "output_tokens": 1}
+    )

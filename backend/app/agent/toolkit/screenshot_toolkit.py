@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 
 from camel.agents import ChatAgent
+from camel.agents.chat_agent import StreamingChatAgentResponse
 from camel.messages import BaseMessage
 from camel.toolkits import ScreenshotToolkit as BaseScreenshotToolkit
 from PIL import Image
@@ -107,6 +108,12 @@ class ScreenshotToolkit(BaseScreenshotToolkit, AbstractToolkit):
                 ),
             )
             response = vision_agent.step(message)
+            # A streaming backend in delta mode returns a lazy response whose
+            # final message is empty: the answer is the sum of the deltas.
+            deltas: list[str] = []
+            if isinstance(response, StreamingChatAgentResponse):
+                for chunk in response:
+                    deltas.extend(m.content for m in chunk.msgs if m.content)
             # CAMEL can return streaming model exceptions as a terminated
             # response with info.error instead of raising them.
             info = getattr(response, "info", None)
@@ -119,6 +126,8 @@ class ScreenshotToolkit(BaseScreenshotToolkit, AbstractToolkit):
             content = getattr(message, "content", None)
             if isinstance(content, str) and content.strip():
                 return content
+            if "".join(deltas).strip():
+                return "".join(deltas)
             raise RuntimeError("empty image response")
         except Exception as e:
             raise RuntimeError(f"Error reading screenshot: {e}") from e

@@ -44,3 +44,41 @@ def test_image_review_preserves_unbounded_parent_step_timeout():
         assert toolkit.read_image("/tmp/preview.png") == "image reviewed"
 
     assert chat_agent.call_args.kwargs["step_timeout"] is None
+
+
+def test_image_review_joins_a_delta_mode_stream():
+    from camel.agents.chat_agent import StreamingChatAgentResponse
+    from camel.messages import BaseMessage
+    from camel.responses import ChatAgentResponse
+
+    def chunks():
+        for piece in ("SMA ", "Advanced 1段", ""):
+            yield ChatAgentResponse(
+                msgs=[
+                    BaseMessage.make_assistant_message(
+                        role_name="vision", content=piece
+                    )
+                ],
+                terminated=False,
+                info={},
+            )
+
+    toolkit = object.__new__(ScreenshotToolkit)
+    toolkit._agent = SimpleNamespace(
+        model_backend=MagicMock(), step_timeout=None
+    )
+    with (
+        patch(
+            "app.agent.toolkit.screenshot_toolkit.os.path.exists",
+            return_value=True,
+        ),
+        patch("app.agent.toolkit.screenshot_toolkit.Image.open"),
+        patch(
+            "app.agent.toolkit.screenshot_toolkit.BaseMessage.make_user_message"
+        ),
+        patch("app.agent.toolkit.screenshot_toolkit.ChatAgent") as chat_agent,
+    ):
+        chat_agent.return_value.step.return_value = StreamingChatAgentResponse(
+            chunks()
+        )
+        assert toolkit.read_image("/tmp/pack.jpg") == "SMA Advanced 1段"

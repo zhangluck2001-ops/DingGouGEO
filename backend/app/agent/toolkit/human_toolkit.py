@@ -13,6 +13,7 @@
 # ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
 import asyncio
+import json
 import logging
 import uuid
 
@@ -36,6 +37,72 @@ from app.utils.listen.toolkit_listen import auto_listen_toolkit, listen_toolkit
 
 logger = logging.getLogger("human_toolkit")
 
+# The free-text choice added after the agent's options.
+CUSTOM_OPTION_ID = "custom"
+CUSTOM_OPTION_LABEL = "其他（自己填写）"
+MAX_OPTIONS = 4
+
+
+def _choice_options(options: list[str] | None) -> list[dict] | None:
+    """The agent's options as interaction options, recommended first, plus a
+    free-text option. None when there are fewer than two usable options."""
+    labels: list[tuple[str, str]] = []
+    for raw in options or []:
+        text = str(raw).strip()
+        if not text:
+            continue
+        for sep in ("：", ":"):
+            if sep in text:
+                label, description = text.split(sep, 1)
+                break
+        else:
+            label, description = text, ""
+        labels.append((label.strip(), description.strip()))
+    labels = labels[:MAX_OPTIONS]
+    if len(labels) < 2:
+        return None
+    built = [
+        {
+            "option_id": f"option-{index + 1}",
+            "label": f"{label}（推荐）" if index == 0 else label,
+            "value": label,
+            "description": description or None,
+        }
+        for index, (label, description) in enumerate(labels)
+    ]
+    built.append(
+        {
+            "option_id": CUSTOM_OPTION_ID,
+            "label": CUSTOM_OPTION_LABEL,
+            "value": CUSTOM_OPTION_ID,
+            "description": "在下面写你的想法",
+        }
+    )
+    return built
+
+
+def _reply_text(reply: str, options: list[dict] | None) -> str:
+    """What the agent reads back: the picked option's wording or the user's
+    own text, not the raw decision JSON."""
+    if not options:
+        return reply
+    try:
+        decision = json.loads(reply)
+    except (TypeError, ValueError):
+        return reply
+    if not isinstance(decision, dict):
+        return reply
+    text = str(decision.get("reply") or "").strip()
+    picked = next(
+        (o for o in options if o["option_id"] == decision.get("option_id")),
+        None,
+    )
+    if picked is None:
+        return text or reply
+    if picked["option_id"] == CUSTOM_OPTION_ID:
+        return f"用户没有选给出的选项，自己写道：{text}" if text else reply
+    return f"用户选择：{picked['value']}"
+
 
 @auto_listen_toolkit(BaseToolkit)
 class HumanToolkit(BaseToolkit, AbstractToolkit):
@@ -56,8 +123,10 @@ class HumanToolkit(BaseToolkit, AbstractToolkit):
         task_lock = get_task_lock(self.api_task_id)
         task_lock.add_human_input_listen(self.agent_name)
 
-    @listen_toolkit(inputs=lambda _, question: question)
-    async def ask_human_via_gui(self, question: str) -> str:
+    @listen_toolkit(inputs=lambda _, question, options=None: question)
+    async def ask_human_via_gui(
+        self, question: str, options: list[str] | None = None
+    ) -> str:
         """Use this tool to ask a question to the user when you are stuck,
         need clarification, or require a decision to be made. This is a
         two-way communication channel that will wait for the user's response.
@@ -67,13 +136,26 @@ class HumanToolkit(BaseToolkit, AbstractToolkit):
         credentials, file paths).
         - Ask for a decision when there are multiple viable options.
         - Seek help when you encounter an error you cannot resolve on your own.
+        Do not ask for permission the user's message already gives.
+
+        Whenever the answer is a decision, pass 2-4 `options` so the user can
+        click instead of typing. Put the option you recommend first; the user
+        also gets an "other" choice to write their own answer, so don't add
+        one yourself.
+
         Args:
             question (str): The question to ask the user.
+            options (list[str] | None): 2-4 answers to choose from, the
+                recommended one first. Each is "short label：one-sentence
+                consequence", e.g. "按产品拆文件：每个 SKU 一个文件，方便后面引用".
+                Leave empty only for open questions (a path, a name, a
+                number).
 
         Returns:
-            str: The user's response to the question.
+            str: The user's response, e.g. "用户选择：…" or their own text.
         """
         logger.info(f"Question: {question}")
+        choices = _choice_options(options)
         task_lock = get_task_lock(self.api_task_id)
         run_context = getattr(task_lock, "run_context", None)
         interaction_id: str | None = None
@@ -91,9 +173,14 @@ class HumanToolkit(BaseToolkit, AbstractToolkit):
                 interaction_id=interaction_id,
                 run_id=run_context.run_id,
                 attempt_id=run.active_attempt_id,
-                interaction_type="question",
+                interaction_type="choice" if choices else "question",
                 request={"question": question, "agent": self.agent_name},
-                response_schema={"type": "string", "minLength": 1},
+                response_schema=(
+                    {"type": "object"}
+                    if choices
+                    else {"type": "string", "minLength": 1}
+                ),
+                options=choices,
                 requested_by=f"agent:{self.agent_name}",
             )
             try:
@@ -112,7 +199,9 @@ class HumanToolkit(BaseToolkit, AbstractToolkit):
         }
         if interaction_id is not None:
             ask_payload["interaction_id"] = interaction_id
-            ask_payload["interaction_type"] = "question"
+            ask_payload["interaction_type"] = (
+                "choice" if choices else "question"
+            )
             ask_payload["run_id"] = run_context.run_id
             ask_payload["version"] = 0
         await task_lock.put_queue(
@@ -140,7 +229,7 @@ class HumanToolkit(BaseToolkit, AbstractToolkit):
                 "Task cleanup interrupted human input wait"
             )
         logger.info(f"User reply: {reply}")
-        return reply
+        return _reply_text(reply, choices)
 
     @listen_toolkit()
     def send_message_to_user(

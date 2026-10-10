@@ -627,6 +627,35 @@ def declare_tool_safety(
     return tool
 
 
+def copy_tool_safety(source: Any, target: Any) -> None:
+    """Carry a trusted safety declaration from a tool to its clone.
+
+    CAMEL clones an agent's tools as new FunctionTool objects, which drops
+    the declaration: a cloned read-only tool (``read_image``) then falls back
+    to UNSAFE_WRITE, and any error it raises is recorded as an unknown
+    outcome that ends the whole run.
+    """
+    for holder in (source, getattr(source, "func", None)):
+        attributes = getattr(holder, "__dict__", None)
+        if not isinstance(attributes, dict):
+            continue
+        raw = attributes.get(_TOOL_SAFETY_ATTRIBUTE)
+        if raw is None:
+            continue
+        try:
+            safety = ToolSafetyClass(raw)
+        except (TypeError, ValueError):
+            return
+        declare_tool_safety(
+            target,
+            safety,
+            idempotency_argument=attributes.get(
+                _TOOL_IDEMPOTENCY_ARGUMENT_ATTRIBUTE
+            ),
+        )
+        return
+
+
 def declared_tool_safety(
     tool: Any,
     tool_name: str,

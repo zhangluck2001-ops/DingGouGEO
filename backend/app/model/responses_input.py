@@ -102,6 +102,36 @@ def normalize_responses_content(item: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _keep_cached_token_usage() -> None:
+    """Carry Responses cache hits into the Chat-style usage CAMEL reports.
+
+    CAMEL's converter keeps only input/output totals, so every model call was
+    journaled with no cache reads and prompt caching could not be measured.
+    The Responses usage reports hits as ``input_tokens_details.cached_tokens``;
+    pass them through as Chat's ``prompt_tokens_details.cached_tokens``.
+    """
+    try:
+        from camel.models import openai_responses_adapter as adapter
+    except ImportError:
+        return
+    original = adapter._usage_to_openai  # noqa: SLF001
+    if getattr(original, "_eigent_keeps_cached_tokens", False):
+        return
+
+    def usage_to_openai(usage: Any):
+        converted = original(usage)
+        if not converted:
+            return converted
+        details = adapter._get(usage, "input_tokens_details")  # noqa: SLF001
+        cached = adapter._get(details, "cached_tokens") if details else None  # noqa: SLF001
+        if cached is not None:
+            converted["prompt_tokens_details"] = {"cached_tokens": int(cached)}
+        return converted
+
+    usage_to_openai._eigent_keeps_cached_tokens = True  # type: ignore[attr-defined]
+    adapter._usage_to_openai = usage_to_openai  # noqa: SLF001
+
+
 def configure_responses_input(model_backend: Any) -> None:
     """Adapt one backend without modifying CAMEL classes or transport config.
 
@@ -114,6 +144,7 @@ def configure_responses_input(model_backend: Any) -> None:
         model_backend, "_eigent_responses_input_configured", False
     ):
         return
+    _keep_cached_token_usage()
     convert = getattr(
         model_backend, "_convert_messages_to_responses_input", None
     )

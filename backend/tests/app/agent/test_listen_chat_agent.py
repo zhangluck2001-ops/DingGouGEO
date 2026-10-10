@@ -1239,3 +1239,123 @@ class TestAgentWithLLM:
         # This test would run complete conversation workflow
         # Marked as very_slow for execution only in full test mode
         assert True  # Placeholder
+
+
+def test_sync_tool_threads_keep_the_run_context(tmp_path):
+    """CAMEL runs sync streaming tools on fresh pool threads; the tool
+    checkpoint must still see the run (sub-agents run this way)."""
+    import threading
+    from contextvars import copy_context
+
+    from camel.agents._types import ToolCallRequest
+    from camel.models import BaseModelBackend
+
+    from app.run_context import RunContext
+    from app.run_context.context import (
+        get_current_run_context,
+        run_context_scope,
+    )
+
+    def lookup(name: str) -> str:
+        """Look something up."""
+        return name
+
+    seen: list = []
+
+    class Stop(Exception):
+        pass
+
+    def fake_prepare(**_kwargs):
+        seen.append(get_current_run_context())
+        raise Stop
+
+    with (
+        patch(f"{_LCA}.get_task_lock"),
+        patch("camel.models.ModelFactory.create") as create_model,
+        patch(f"{_LCA}.prepare_tool_checkpoint", side_effect=fake_prepare),
+    ):
+        backend = MagicMock(spec=BaseModelBackend)
+        backend.model_type = "gpt-4"
+        backend.token_limit = 100_000
+        create_model.return_value = backend
+        agent = ListenChatAgent(
+            api_task_id="task-1",
+            agent_name="geo-knowledge",
+            model="gpt-4",
+            system_message="child",
+            tools=[FunctionTool(lookup)],
+        )
+        run = RunContext(
+            space_id="space-1",
+            project_id="project-1",
+            run_id="run-1",
+            task_id="task-1",
+            email="user@example.com",
+            user_id="user-1",
+            working_directory=tmp_path,
+            task_output_root=tmp_path,
+            camel_log_dir=tmp_path / "camel_logs",
+            binding_source="test",
+            workdir_mode="workspace",
+            browser_port=9222,
+        )
+        with run_context_scope(run):
+            agent._sync_tool_context = copy_context()
+
+        def pool_thread():
+            try:
+                agent._execute_tool(
+                    ToolCallRequest(
+                        tool_name="lookup",
+                        args={"name": "x"},
+                        tool_call_id="c1",
+                    )
+                )
+            except Exception:  # noqa: BLE001 — Stop or its wrapper
+                pass
+
+        thread = threading.Thread(target=pool_thread)
+        thread.start()
+        thread.join(5)
+
+    assert seen and seen[0] is not None
+    assert seen[0].run_id == "run-1"
+
+
+def test_cloned_tools_keep_their_safety_declaration():
+    from camel.models import BaseModelBackend
+
+    from app.run_policy import ToolSafetyClass
+    from app.run_runtime.tool_checkpoint import (
+        declare_tool_safety,
+        declared_tool_safety,
+    )
+
+    def peek(path: str) -> str:
+        """Read a file."""
+        return path
+
+    with (
+        patch(f"{_LCA}.get_task_lock"),
+        patch("camel.models.ModelFactory.create") as create_model,
+    ):
+        backend = MagicMock(spec=BaseModelBackend)
+        backend.model_type = "gpt-4"
+        backend.token_limit = 100_000
+        create_model.return_value = backend
+        tool = declare_tool_safety(
+            FunctionTool(peek), ToolSafetyClass.SAFE_READ
+        )
+        agent = ListenChatAgent(
+            api_task_id="task-1",
+            agent_name="root",
+            model="gpt-4",
+            system_message="root",
+            tools=[tool],
+        )
+        cloned, _ = agent._clone_tools()
+
+    (copy,) = cloned
+    assert copy is not tool
+    safety, _key = declared_tool_safety(copy, "peek", {"path": "a"})
+    assert safety is ToolSafetyClass.SAFE_READ
