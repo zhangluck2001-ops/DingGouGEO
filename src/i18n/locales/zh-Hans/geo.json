@@ -254,7 +254,6 @@
   "field-benchmark-url": "对标原文",
   "field-body-path": "正文文件",
   "agent-task-failed": "准备任务失败，请重试。",
-  "agent-task-these-files": "这次只处理下面这些资料：",
   "agents-inputs": "输入",
   "agents-done": "完成标准",
   "view-pipeline": "链路进度",

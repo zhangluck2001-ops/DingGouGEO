@@ -210,12 +210,14 @@ export default function KnowledgeMaterials({
   const askAiToClean = async (sources: GeoKnowledgeSource[]) => {
     if (!state?.root || sources.length === 0) return;
     try {
-      const { text } = await geoApi.stageTask('knowledge', projectId);
-      sendToChat(
-        `${text}\n\n${t('geo.agent-task-these-files', {
-          defaultValue: 'This time, only these files:',
-        })}\n${sources.map((source) => `- ${source.path}`).join('\n')}`
+      // The task lists the picked files with their parsed text.
+      const { text } = await geoApi.stageTask(
+        'knowledge',
+        projectId,
+        null,
+        sources.map((source) => source.name)
       );
+      sendToChat(text);
     } catch {
       toast.error(
         t('geo.agent-task-failed', {

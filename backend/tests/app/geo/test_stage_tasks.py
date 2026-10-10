@@ -12,6 +12,8 @@
 # limitations under the License.
 # ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
+from pathlib import Path
+
 import pytest
 
 from app.geo import harness, metrics, space_bootstrap, stage_tasks, store
@@ -106,3 +108,24 @@ def test_a_space_adds_its_own_skills_to_a_stage(space, tmp_path):
         s for s in harness.agents_overview()["stages"] if s["key"] == "content"
     )
     assert content["skills"] == []
+
+
+def test_knowledge_task_lists_the_picked_files_with_their_parsed_text(space):
+    project = store.project_row(space)
+    raw = (
+        Path(project["workspace_root"]) / "GEO" / "01_品牌知识库" / "原始资料"
+    )
+    (raw / "品牌介绍.md").write_text("SMA 源于惠氏", encoding="utf-8")
+    (raw / "其他.md").write_text("不处理", encoding="utf-8")
+
+    text = stage_tasks.stage_task("knowledge", space, None, ["品牌介绍.md"])
+
+    parsed = raw.parent / "原始资料解析" / "品牌介绍.md" / "内容.md"
+    assert parsed.is_file()
+    assert f"读这个：`{parsed}`" in text
+    assert "其他.md" not in text
+    # The click is the go-ahead: the agent must not ask again or decode files.
+    assert "不用再问" in text
+    assert "需要我同意的先问我" not in text
+    assert "不要自己写程序解析原件" in text
+    assert "`geo-knowledge`" in text

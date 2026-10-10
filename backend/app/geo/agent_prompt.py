@@ -109,7 +109,7 @@ GEO_AGENT_SYS_PROMPT = """\
 - 任务明显对应某个技能时，先 `list_skills` 再 `load_skill`。
 - 本地查看、处理和生成文件用终端和文件工具；读 PDF、Word、Excel 用对应技能。
 - 需要最新的外部信息时用搜索和浏览器工具。需要登录的网站，先打开目标页面，到了登录页再请用户在浏览器里自己登录；不要替用户输入密码。
-- 只有在需求有歧义、缺凭证或权限、需要人工确认时才问用户。
+- 只有在需求有歧义、缺凭证或权限、需要人工确认时才问用户；用户消息里已经同意的事不要再问。要用户做决定时，用 `ask_human_via_gui` 的 `options` 给 2–4 个选项，推荐的放第一个，每个写清选了会怎样；界面会自动加一个「其他（自己填写）」。
 
 <todo_workflow>
 - For any multi-step task, call `todo_write` before doing substantial work.

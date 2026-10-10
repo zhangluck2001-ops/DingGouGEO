@@ -25,7 +25,7 @@ from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 
-from app.geo import store
+from app.geo import source_parse, store
 
 KB_FOLDER = "01_品牌知识库"
 LEGACY_KB_FOLDER = "01_品牌资料"
@@ -193,6 +193,7 @@ def status(project_id: int) -> dict:
                     "imported_at": record.get("imported_at")
                     or _iso(path.stat().st_mtime),
                     "cleaned_at": record.get("cleaned_at"),
+                    "parsed": parse_summary(path),
                 }
             )
     return {
@@ -204,6 +205,25 @@ def status(project_id: int) -> dict:
         "modules": modules,
         "sources": sources,
         "fact_count": fact_count,
+    }
+
+
+def parse_summary(source: Path) -> dict | None:
+    """What the upload parser made of a file; None until it has run."""
+    found = source_parse.manifest(source)
+    if not found:
+        return None
+    return {
+        "content_path": str(
+            source_parse.output_folder(source) / source_parse.CONTENT_FILE
+        ),
+        "current": source_parse.is_current(source),
+        "pages": found.get("pages", 0),
+        "sheets": found.get("sheets", 0),
+        "tables": found.get("tables", 0),
+        "attachments": len(found.get("attachments", [])),
+        "images_to_look": found.get("images_to_look", 0),
+        "errors": found.get("errors", []),
     }
 
 
@@ -239,6 +259,9 @@ def import_sources(project_id: int, paths: list[str]) -> list[str]:
                 (project_id, target.name, target.stat().st_size),
             )
             imported.append(target.name)
+    # Parse once here, so the cleaning agent reads text instead of decoding
+    # files itself.
+    source_parse.ensure_parsed(raw, imported)
     return imported
 
 

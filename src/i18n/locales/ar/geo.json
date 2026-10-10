@@ -254,7 +254,6 @@
   "field-benchmark-url": "Modelled on",
   "field-body-path": "Text file",
   "agent-task-failed": "Couldn't prepare the task. Try again.",
-  "agent-task-these-files": "This time, only these files:",
   "agents-inputs": "Input",
   "agents-done": "Done when",
   "view-pipeline": "Pipeline",

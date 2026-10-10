@@ -20,7 +20,7 @@ metrics are computed here because the agent can't reach the backend.
 
 from pathlib import Path
 
-from app.geo import harness, knowledge, metrics, rounds, store
+from app.geo import harness, knowledge, metrics, rounds, source_parse, store
 
 _PERCENT_KEYS = (
     ("mention_rate", "提及率"),
@@ -108,22 +108,59 @@ def _terms_note(terms: dict) -> str:
     )
 
 
-def _knowledge(project_id: int, _round: str | None) -> str:
+def _parsed_line(name: str, found: dict, content: Path) -> str:
+    line = f"- {name}（{source_parse.describe(found)}）\n  读这个：`{content}`"
+    if found.get("errors"):
+        line += "\n  解析问题：" + "；".join(found["errors"])
+    return line
+
+
+def _knowledge(
+    project_id: int, _round: str | None, files: list[str] | None = None
+) -> str:
     state = knowledge.status(project_id)
-    pending = [s["name"] for s in state["sources"] if s["status"] != "已清洗"]
-    files = (
-        "\n".join(f"- {name}" for name in pending) or "- （没有待清洗的资料）"
+    chosen = [
+        s
+        for s in state["sources"]
+        if (s["name"] in files if files else s["status"] != "已清洗")
+    ]
+    if not chosen:
+        return (
+            "待清洗的资料：没有。先在「资料与模块」上传资料，"
+            "再点「交给 AI 清洗」派给 `geo-knowledge`。"
+        )
+    raw = Path(state["raw_path"])
+    parsed = source_parse.ensure_parsed(raw, [s["name"] for s in chosen])
+    listing = "\n".join(
+        _parsed_line(
+            s["name"],
+            parsed.get(s["name"], {}),
+            source_parse.output_folder(raw / s["name"])
+            / source_parse.CONTENT_FILE,
+        )
+        for s in chosen
     )
-    return (
-        f"待清洗的资料：\n{files}\n"
-        "写入 `geo_fact` 时：每条写模块、产品、字段、内容、类型（事实／宣称／话术）、"
-        "证据等级 A–E、来源（DOI 或官方 URL）。另外补两类条目，后面的诊断和写稿靠它们：\n"
-        "- 命名条目：role 填 标准名、首提全称、沿革句、别名、撞名排除，名称写在「内容」里，"
-        "多个用 | 分隔；\n"
-        "- 指标条目：role 填 核心事实、证据锚、扣分项，匹配词写在「字段」里，多个用 | 分隔，"
-        "完整的事实写在「内容」里。\n"
-        "每份资料清洗完，把它在 `geo_kb_source` 里的状态改成「已清洗」。原件不改。"
-    )
+    names = "、".join(f"「{s['name']}」" for s in chosen)
+    kb = Path(state["root"])
+    return f"""这次清洗的资料（原件在 `{raw}`，上传时程序已解析好）：
+{listing}
+
+用户点「交给 AI 清洗」就是同意下面这些操作，不用再问：清洗上面 {len(chosen)} 份资料；填写七个模块文件（替换模板）；在 `02_产品库/` 按产品新建文件；往 `geo_fact` 写入新条目；把这些资料在 `geo_kb_source` 的状态改成「已清洗」。只有资料之间对不上又无法判断、或资料不是这个品牌的，才停下来问。
+
+GEO Agent 怎么做：
+1. 把下面「给 geo-knowledge 的任务」整段原样写进 `agent_run_subagent` 的 prompt（`subagent_type` 填 `geo-knowledge`，`wait` 填 true），并写明上面的同意范围。一次派完，不拆。
+2. 你自己不读资料、不加载 pdf、xlsx、docx 技能，也不先查库。
+3. 子智能体返回后核对：`geo_fact` 条数、七个模块还有没有模板标记、随机挑 5 条对照解析文字里的位置；然后按完成标准逐条汇报，没达标的写清缺什么。
+
+给 geo-knowledge 的任务：
+- 先读 `{kb / knowledge.RULES_FILE}`，再加载技能 `geo-database`（表结构和写入规范）。
+- 读资料：只读上面列出的「读这个」文件；文末「需要看图」列出的图片用 `read_image` 逐张看，没列出的不用看。不要自己写程序解析原件，不要编译或安装任何工具（OCR、Swift 等）；临时文件放 `$EIGENT_INTERMEDIATE_DIR`。
+- 写 `geo_fact`：一条一个原子事实。module 填 00_总览…06_合规红线；product 填产品名（通用信息留空）；claim_type 填 事实、宣称、话术之一，资料之间矛盾的填「存疑」并在 note 写冲突点，完全找不到出处的才填「待核实」；evidence_grade 按清洗规则定 A–E（标签原件、注册证、检测报告、资质证书是 B，品牌方整理的介绍、配料表文字版是 C）。品牌方给的数字照原文记成「事实」，不要因为没有标签照片就整批标「待核实」。source 写「原件文件名 + 位置」，如「配料表.pdf 第2页」「SMA品牌介绍.xlsx Sheet1!C9」「SMA品牌介绍.xlsx 嵌入附件 COO080521.pdf 第1页」；资料里有 DOI 或官方网址就一并写上。功效、临床类宣称没有 DOI 或官方网址的，在 note 写「缺公开来源」。
+- 命名条目：role 填 标准名、首提全称、沿革句、别名、撞名排除，名称写在 content 里，多个用 | 分隔。
+- 指标条目：role 填 核心事实、证据锚、扣分项，匹配词写在 field 里，多个用 | 分隔，完整事实写在 content 里。
+- 模块文件：七个模块写成能直接阅读的整理稿，替换模板并删掉模板标记行；每个产品写一个 `02_产品库/<产品名>.md`，不要改 `_SKU模板.md`。`{kb}` 里除了这些不要新建别的文件或文件夹；原件和 `原始资料解析/` 不改。
+- 每份资料清洗完，把 {names} 在 `geo_kb_source` 的状态改成「已清洗」。
+- 返回：每份资料写了多少条；各模块条数；类型和证据等级分布；看了哪几张图、读出了什么；需要用户补的资料（缺公开来源的宣称、资料冲突、看不清的图）。"""
 
 
 def _probes(_project_id: int, _round: str | None) -> str:
@@ -243,7 +280,19 @@ _EXTRA = {
 }
 
 
-def stage_task(key: str, project_id: int, capture_round: str | None) -> str:
+# What the root agent is told to do with a stage task. Stage 1 spells out
+# what the click already allows, so the agent doesn't ask again.
+_HANDOFF = {
+    "knowledge": "做完按完成标准逐条核对并汇报。",
+}
+
+
+def stage_task(
+    key: str,
+    project_id: int,
+    capture_round: str | None,
+    files: list[str] | None = None,
+) -> str:
     stage = harness.stage(key)
     if stage is None:
         raise UnknownStage(key)
@@ -254,6 +303,11 @@ def stage_task(key: str, project_id: int, capture_round: str | None) -> str:
     geo = Path(db).parent
     if key in ("analysis",) and not capture_round:
         capture_round = _latest_round(project_id)
+    extra = (
+        _knowledge(project_id, capture_round, files)
+        if key == "knowledge"
+        else _EXTRA[key](project_id, capture_round)
+    )
     names = harness.stage_skills(stage, project["workspace_root"])
     skills = (
         f"先加载技能：{'、'.join(f'`{s}`' for s in names)}。\n"
@@ -268,7 +322,10 @@ def stage_task(key: str, project_id: int, capture_round: str | None) -> str:
         f"结果写到：{stage.writes}\n"
         f"完成标准：{stage.done}\n"
         f"{skills}"
-        f"\n{_EXTRA[key](project_id, capture_round)}\n\n"
-        f"开始前先说计划：哪些自己做，哪些派给 `{stage.subagent_type}`；"
-        "需要我同意的先问我。做完按完成标准逐条核对并汇报。"
+        f"\n{extra}\n\n"
+        + _HANDOFF.get(
+            key,
+            f"开始前先说计划：哪些自己做，哪些派给 `{stage.subagent_type}`；"
+            "需要我同意的先问我。做完按完成标准逐条核对并汇报。",
+        )
     )

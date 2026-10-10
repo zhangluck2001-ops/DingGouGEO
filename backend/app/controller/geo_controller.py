@@ -13,6 +13,8 @@
 # ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 """Local GEO boards backed by SQLite: records, dashboard, and Feishu sync."""
 
+from typing import Annotated
+
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
@@ -103,10 +105,18 @@ def pipeline(project_id: int):
 
 
 @router.get("/stages/{key}/task")
-def stage_task(key: str, project_id: int, capture_round: str | None = None):
-    """What a stage page's "hand to AI" button puts in the chat."""
+def stage_task(
+    key: str,
+    project_id: int,
+    capture_round: str | None = None,
+    files: Annotated[list[str] | None, Query()] = None,
+):
+    """What a stage page's "hand to AI" button puts in the chat. ``files``
+    narrows the knowledge stage to the materials the user picked."""
     try:
-        text = stage_tasks.stage_task(key, project_id, capture_round or None)
+        text = stage_tasks.stage_task(
+            key, project_id, capture_round or None, files or None
+        )
     except stage_tasks.UnknownStage as exc:
         raise HTTPException(
             status_code=404, detail=f"Unknown stage: {key}"

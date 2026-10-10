@@ -206,7 +206,7 @@ export interface GeoAgents {
   stages: GeoStageAgent[];
 }
 
-export type GeoQuery = Record<string, string | number | undefined>;
+export type GeoQuery = Record<string, string | number | string[] | undefined>;
 
 /** Pipeline stages, keyed as the backend's stage registry. */
 export type GeoStageKey =
@@ -237,11 +237,16 @@ export const geoApi = {
   stageTask: (
     stage: GeoStageKey,
     projectId: number,
-    captureRound?: string | null
+    captureRound?: string | null,
+    files?: string[]
   ): Promise<{ text: string }> =>
     fetchGet(
       `/geo/stages/${stage}/task`,
-      clean({ project_id: projectId, capture_round: captureRound ?? undefined })
+      clean({
+        project_id: projectId,
+        capture_round: captureRound ?? undefined,
+        files: files?.length ? files : undefined,
+      })
     ),
   ensureSpace: (body: {
     space_id: string;
