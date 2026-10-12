@@ -95,7 +95,7 @@ Construído sobre o aclamado projeto open source da [CAMEL-AI][camel-site], noss
 
 A forma recomendada de executar o Eigent — totalmente independente, com controle completo sobre seus dados, sem necessidade de conta em nuvem.
 
-👉 **[Guia Completo de Implantação Local](./server/README_PT-BR.md)**
+👉 **[Guia Completo de Implantação Local](../../server/README_PT-BR.md)**
 
 Esta configuração inclui:
 
@@ -324,7 +324,7 @@ Para mais informações, entre em contato pelo e-mail info@eigent.ai
 - **Comunidade WeChat:** Escaneie o QR code abaixo para adicionar nosso assistente no WeChat e entrar no grupo da comunidade WeChat.
 
 <div align="center">
-  <img src="./src/assets/wechat_qr.jpg" width="200" style="display: inline-block; margin: 10px;">
+  <img src="../../src/assets/wechat_qr.jpg" width="200" style="display: inline-block; margin: 10px;">
 </div>
 
 <!-- LINK GROUP -->

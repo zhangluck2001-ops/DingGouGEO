@@ -94,7 +94,7 @@
 
 Eigentを実行する推奨方法 — データを完全に制御でき、クラウドアカウント不要で完全にスタンドアロンで動作します。
 
-👉 **[ローカルデプロイメント完全ガイド](./server/README_EN.md)**
+👉 **[ローカルデプロイメント完全ガイド](../../server/README_EN.md)**
 
 このセットアップには以下が含まれます：
 
@@ -323,7 +323,7 @@ Eigentは[CAMEL-AI.org][camel-ai-org-github]の研究とインフラストラク
 - **WeChatコミュニティ:** 以下のQRコードをスキャンしてWeChatアシスタントを追加し、WeChatコミュニティグループに参加してください。
 
 <div align="center">
-  <img src="./src/assets/wechat_qr.jpg" width="200" style="display: inline-block; margin: 10px;">
+  <img src="../../src/assets/wechat_qr.jpg" width="200" style="display: inline-block; margin: 10px;">
 </div>
 
 <!-- LINK GROUP -->

@@ -130,7 +130,7 @@ npm run dev
 
 #### 3. 本地开发(使用完全和云端服务分离的版本)
 
-[server/README_CN.md](./server/README_CN.md)
+[server/README_CN.md](../../server/README_CN.md)
 
 #### 4. 更新依赖
 
@@ -318,7 +318,7 @@ Eigent 基于 [CAMEL-AI.org][camel-ai-org-github] 的研究和基础设施构建
 - **微信社区：** 扫描下方二维码添加我们的微信助手，加入我们的微信社区群。
 
 <div align="center">
-  <img src="./src/assets/wechat_qr.jpg" width="200" style="display: inline-block; margin: 10px;">
+  <img src="../../src/assets/wechat_qr.jpg" width="200" style="display: inline-block; margin: 10px;">
 </div>
 
 <!-- LINK GROUP -->

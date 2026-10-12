@@ -1,10 +1,11 @@
 node_modules
 CONTRIBUTING.md
 README.md
-README_CN.md
-README_JA.md
-README_PT-BR.md
+docs/upstream-eigent/README_CN.md
+docs/upstream-eigent/README_JA.md
+docs/upstream-eigent/README_PT-BR.md
 server/README_CN.md
 server/README_EN.md
 docs/troubleshooting/bug.md
 backend/benchmark/answer/
+docs/upstream-eigent/README.md

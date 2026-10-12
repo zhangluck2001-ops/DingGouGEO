@@ -1,369 +1,204 @@
-<div align="center"><a name="readme-top"></a>
-
-[![][image-head]][eigent-site]
-
-[![][image-seperator]][eigent-site]
-
-### Eigent: The Open Source Cowork Desktop to Unlock Your Exceptional Productivity
-
-<!-- SHIELD GROUP -->
-
-[![][download-shield]][eigent-download]
-[![][github-star]][eigent-github]
-[![][social-x-shield]][social-x-link]
-[![][discord-image]][discord-url]<br>
-[![Reddit][reddit-image]][reddit-url]
-[![Wechat][wechat-image]][wechat-url]
-[![][sponsor-shield]][sponsor-link]
-[![][built-with-camel]][camel-github]
-[![][join-us-image]][join-us]
-
-</div>
-
-<hr/>
 <div align="center">
 
-**English** · [Português](./README_PT-BR.md) · [简体中文](./README_CN.md) · [日本語](./README_JA.md) · [Official Site][eigent-site] · [Documents][docs-site] · [Feedback][github-issue-link]
+# DingGouGEO
+
+**品牌的生成式引擎优化（GEO）工作台**
+
+让品牌在豆包、DeepSeek、千问、元宝等 AI 助手的回答里被提及、被推荐、被引用。
+
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey)
+![Node](https://img.shields.io/badge/node-22%20LTS-339933)
+![Python](https://img.shields.io/badge/python-3.11-3776AB)
+[![Based on Eigent](https://img.shields.io/badge/based%20on-Eigent-6b4fbb)](https://github.com/eigent-ai/eigent)
 
 </div>
-<br/>
 
-**Eigent** is the open source Cowork desktop application, empowering you to build, manage, and deploy a custom AI workforce that can turn your most complex workflows into automated tasks. As a leading open-source Cowork product, Eigent brings together the best of open-source collaboration and AI-powered automation.
+---
 
-Built on [CAMEL-AI][camel-site]'s acclaimed open-source project, our system introduces a **Multi-Agent Workforce** that **boosts productivity** through parallel execution, customization, and privacy protection.
+## 目录
 
-### ⭐ 100% Open Source - 🥇 Local Deployment - 🏆 MCP Integration
+- [简介](#简介)
+- [功能](#功能)
+- [GEO 链路](#geo-链路)
+- [架构](#架构)
+- [快速开始](#快速开始)
+- [使用流程](#使用流程)
+- [开发与测试](#开发与测试)
+- [项目结构](#项目结构)
+- [文档](#文档)
+- [致谢与许可](#致谢与许可)
 
-- ✅ **Zero Setup** - No technical configuration required
-- ✅ **Multi-Agent Coordination** - Handle complex multi-agent workflows
-- ✅ **Single-Agent Harness** - Run focused tasks with one meta agent
-- ✅ **Local Deployment**
-- ✅ **Open Source**
-- ✅ **Model Agnostic** - Support any model of your choice
-- ✅ **MCP Integration**
-- ✅ **Skill Integration**
-- ✅ **Built-in Browser & Terminal Toolkits**
-- ✅ **Enterprise Features** - SSO, access control, and custom enquiries
+## 简介
 
-<br/>
+DingGouGEO 是一个本地运行的桌面应用，把 GEO 的整条工作链路放进一个工作台：整理品牌资料、设计问题探针、采集 AI 回答、诊断提及与推荐情况、研究被引用的来源、生产内容、发布并追踪效果。
 
-[![][image-join-us]][join-us]
+每个**空间**对应一个品牌或产品。空间里的资料、数据和产出都放在空间自己的文件夹里，GEO Agent 在其中按链路一环一环完成工作，每一步都写回空间，能核对、能追溯。
 
-<details>
-<summary><kbd>Table of contents</kbd></summary>
+## 功能
 
-#### TOC
+- **GEO Agent**：唯一和你对话的智能体，按链路判断当前在哪一环、该做什么，自己完成并核对结果；大批量工作才拆给子智能体。
+- **上传即解析**：PDF（含扫描页）、Excel（含单元格图片和嵌入附件）、Word、PowerPoint、图片在上传时由程序解析成带位置标注的文字，AI 只读解析结果，每条知识都能追到「文件 + 页码 / 单元格」。
+- **品牌知识库**：七个模块（总览、品牌实体、产品库、资质合规、FAQ、竞品对比、合规红线）＋知识条目表，按 A–E 证据等级管理，含命名和撞名排除条目。
+- **统一指标**：提及率、首提率、TOP3 率等只在后端定义一处，按平台、按轮次分列。
+- **可观察**：每次运行的模型调用、工具调用、token 与缓存命中都记在运行日志里；`scripts/geo_observe.py` 可在每步前后拍快照对比。
+- **人在回路**：需要你决定时给 2–4 个选项（推荐项在前）并可自填；写文件、写库、对外动作按权限策略确认。
+- **本地优先**：数据保存在本机；模型可用 Codex 订阅或任意 OpenAI 兼容服务。
 
-- [🚀 Getting Started with Open Source Cowork](#-getting-started-with-open-source-Cowork)
-  - [🏠 Local Deployment (Recommended)](#-local-deployment-recommended)
-  - [⚡ Quick Start (Cloud-Connected)](#-quick-start-cloud-connected)
-  - [🏢 Enterprise](#-enterprise)
-  - [☁️ Cloud Version](#%EF%B8%8F-cloud-version)
-- [✨ Key features - Open Source Cowork](#-key-features---open-source-Cowork)
-  - [🧑‍💻 Cowork with Single Agent](#-cowork-with-single-agent)
-  - [🏭 Cowork with Workforce](#-cowork-with-workforce)
-  - [⏰ Automation](#-automation)
-  - [🔒 Local & Secure](#-local--secure)
-  - [🧠 Model Agnostic](#-model-agnostic)
-  - [👐 100% Open Source](#-100-open-source)
-- [🧩 Use Cases - Open Source Cowork](#-use-cases---open-source-Cowork)
-  - [For Developers](#for-developers)
-  - [Featured](#featured)
-- [🛠️ Tech Stack](#-tech-stack)
-  - [Backend](#backend)
-  - [Frontend](#frontend)
-- [🌟 Staying ahead - Open Source Cowork](#-staying-ahead---open-source-Cowork)
-- [🗺️ Roadmap - Open Source Cowork](#%EF%B8%8F-roadmap---open-source-Cowork)
-- [📖 Contributing](#-contributing)
-  - [Main Contributors](#main-contributors)
-  - [Distinguished ambassador](#distinguished-ambassador)
-- [Ecosystem](#ecosystem)
-- [📄 Open Source License](#-open-source-license)
-- [🌐 Community & contact](#-community--contact)
+## GEO 链路
 
-####
+| 环节 | 做什么 | 结果写到 |
+|---|---|---|
+| 1 品牌知识库 | 把原始资料清洗成带证据等级和来源的原子事实 | 七个模块文件、`geo_fact` |
+| 2 意图探针 | 按用户给的方向起草求推荐型、非品牌指向的问题 | `geo_probe` |
+| 3 AI 采集 | 按轮次导入各平台的回答与引用来源 | `geo_answer`、`geo_citation` |
+| 4 诊断分析 | 逐条标注提及、首推、TOP3、情感、风险，归纳缺口 | `geo_answer_analysis`、`geo_gap` |
+| 5 引用来源 | 统计被引站点，拆解高被引原文入对标库 | `geo_benchmark` |
+| 6 内容生产 | 照对标结构写稿，只用知识库事实，过验收闸门 | `06_内容生产/`、`geo_content` |
+| 7 内容发布 | 记录各平台发布 | `geo_content` |
+| 8 效果追踪 | 轮次对比与阶段报告 | `08_效果追踪/` |
 
-<br/>
+各环节的输入、产出、完成标准见 [GEO 链路契约](docs/GEO-链路契约.md)。
 
-</details>
+## 架构
 
-## **🚀 Getting Started with Open Source Cowork**
+```
+┌──────────────────────── 桌面应用（Electron + React） ────────────────────────┐
+│  src/ 界面：空间、对话、GEO 面板        electron/ 主进程：窗口、内置浏览器、拉起后端  │
+└──────────────┬───────────────────────────────────────────┬──────────────────┘
+               │ HTTP / SSE                                │ HTTP
+               ▼                                           ▼
+┌──────── 本地后端 backend/ ────────┐        ┌──── 本地服务 server/（Docker） ────┐
+│ FastAPI + CAMEL                   │        │ FastAPI + Postgres + Redis + Celery │
+│ GEO Agent、工具、技能、运行日志、  │        │ 账户、模型服务商配置、自动化、        │
+│ 资料解析、GEO 数据与指标            │        │ 连接器授权、空间登记                  │
+└───────────────────────────────────┘        └─────────────────────────────────────┘
+```
 
-> **🔓 Build in Public** — Eigent is **100% open source** from day one. Every feature, every commit, every decision is transparent. We believe the best AI tools should be built openly with the community, not behind closed doors.
+| 数据 | 位置 |
+|---|---|
+| 一个品牌的 GEO 数据 | 空间文件夹 `GEO/geo.db`（SQLite） |
+| 一个品牌的 GEO 文件 | 空间文件夹 `GEO/01_品牌知识库` … `08_效果追踪` |
+| 运行日志 | `~/.eigent/run-journal.sqlite3` |
+| 技能 | `resources/example-skills/`，启动时同步到 `~/.eigent/skills/` |
 
-### 🏠 Local Deployment (Recommended)
+详见 [工程架构](docs/DingGouGEO-工程架构.md)。
 
-The recommended way to run Eigent — fully standalone with complete control over your data, no cloud account required.
+## 快速开始
 
-👉 **[Full Local Deployment Guide](./server/README_EN.md)**
+### 环境要求
 
-This setup includes:
+| 依赖 | 版本 | 说明 |
+|---|---|---|
+| Node.js | 22 LTS（`>=18 <23`） | 前端与 Electron |
+| Python | 3.11 | 本地后端，首次启动由 [uv](https://docs.astral.sh/uv/) 自动建虚拟环境 |
+| uv | 最新版 | 管理 Python 依赖 |
+| Docker Desktop | 最新版 | 本地服务 |
+| Git | 任意 | 空间文件版本记录 |
 
-- Local backend server with full API
-- Local model integration (vLLM, Ollama, LM Studio, etc.)
-- Complete isolation from cloud services
-- Zero external dependencies
+macOS 和 Windows 均可运行，以下命令在两种系统的终端里通用。
 
-### ⚡ Quick Start (Cloud-Connected)
-
-For a quick preview using our cloud backend — get started in seconds:
-
-#### Prerequisites
-
-- Node.js (version 18-22) and npm
-
-#### Steps
+### 安装与启动
 
 ```bash
-git clone https://github.com/eigent-ai/eigent.git
-cd eigent
+git clone https://github.com/zhangluck2001-ops/DingGouGEO.git
+cd DingGouGEO
+```
+
+启动本地服务（模型配置、账户等保存在这里；没启动时对话框会提示「请选择模型」）：
+
+```bash
+cd server
+cp .env.example .env
+docker compose up -d
+cd ..
+```
+
+安装依赖并以开发模式启动桌面应用：
+
+```bash
 npm install
 npm run dev
 ```
 
-> Note: This mode connects to Eigent cloud services and requires account registration. For a fully standalone experience, use [Local Deployment](#-local-deployment-recommended) instead.
+首次启动会自动准备后端的 Python 环境，需要几分钟。
 
-#### Updating Dependencies
+### 配置模型
 
-After pulling new code (`git pull`), update both frontend and backend dependencies:
+在应用 **设置 → 模型** 中选择 Codex 订阅，或添加任意 OpenAI 兼容服务的地址与密钥。需要走代理时，在 `~/.eigent/.env` 里设置 `HTTP_PROXY`。
+
+### 打包
 
 ```bash
-# 1. Update frontend dependencies (in project root)
-npm install
-
-# 2. Update backend/Python dependencies (in backend directory)
-cd backend
-uv sync
+npm run build
 ```
 
-### 🏢 Enterprise
-
-For organizations requiring maximum security, customization, and control:
-
-- **Exclusive Features** (like SSO & custom development)
-- **Scalable Enterprise Deployment**
-- **Negotiated SLAs** & implementation services
-
-📧 For further details, [contact our sales team](https://www.eigent.ai/contact-sales).
-
-### ☁️ Cloud Version
-
-For teams who prefer managed infrastructure, we also offer a cloud platform. The fastest way to experience Eigent's multi-agent AI capabilities without setup complexity. We'll host the models, APIs, and cloud storage, ensuring Eigent runs flawlessly.
-
-- **Instant Access** - Start building multi-agent workflows in minutes.
-- **Managed Infrastructure** - We handle scaling, updates, and maintenance.
-- **Premium Support** - Subscribe and get priority assistance from our engineering team.
-
-<br/>
-
-[![image-public-beta]][eigent-download]
-
-<div align="right">
-<a href="https://www.eigent.ai/download">Get started at Eigent.ai →</a>
-</div>
-
-## **✨ Key features - Open Source Cowork**
-
-### 🧑‍💻 Cowork with Single Agent
-
-Start with one focused agent for direct tasks. Research, write, debug, and operate alongside it in your desktop workspace.
-
-### 🏭 Cowork with Workforce
-
-Scale to multiple specialized agents that divide work, collaborate in parallel, and execute complex multi-step workflows together.
-
-### ⏰ Automation
-
-Schedule recurring workflows and let agents run tasks at the right time—so work continues even when you step away.
-
-### 🔒 Local & Secure
-
-Run agents on your machine with local-first execution. Your files, credentials, and context stay under your control.
-
-### 🧠 Model Agnostic
-
-Connect the models you already use—cloud APIs, enterprise gateways, or local inference—without locking into one vendor.
-
-### 👐 100% Open Source
-
-Eigent is completely open-sourced. You can download, inspect, and modify the code, ensuring transparency and fostering a community-driven ecosystem for multi-agent innovation.
-
-## 🧩 Use Cases - Open Source Cowork
-
-Explore how Eigent turns complex desktop work into repeatable agent workflows.
-
-### For Developers
-
-#### [Build 10 Chinese New Year HTML5 Games with Eigent](https://www.eigent.ai/use-cases/build-10-cny-horse-themed-html5-games)
-
-Coordinate parallel agents to build ten polished, mobile-friendly browser games across genres, complete with scoring, increasing difficulty, and restart flows.
-
-[View demo →](https://www.eigent.ai/use-cases/build-10-cny-horse-themed-html5-games/video)
-
-[View guide →](https://www.eigent.ai/use-cases/build-10-cny-horse-themed-html5-games)
-
-#### [Build a 3D Snow Bros Platformer with Gemini 3.1 Pro](https://www.eigent.ai/use-cases/build-3d-snow-bros-platformer-gemini)
-
-Create a complete browser-based 3D platformer with snowball combat, enemy chains, scoring, lives, scaling difficulty, and layered environments.
-
-[View demo →](https://www.eigent.ai/use-cases/build-3d-snow-bros-platformer-gemini/video)
-
-[View guide →](https://www.eigent.ai/use-cases/build-3d-snow-bros-platformer-gemini)
-
-#### [Automate Monthly Dev Reports with DeepSeek via Ollama](https://www.eigent.ai/use-cases/monthly-dev-reports-automated-eigent-with-deepseek-v4-pro-via-ollama)
-
-Review a month of GitHub pull requests with a locally hosted model, generate a Word summary, and prepare the corresponding Slack release update.
-
-[View demo →](https://www.eigent.ai/use-cases/monthly-dev-reports-automated-eigent-with-deepseek-v4-pro-via-ollama/video)
-
-[View guide →](https://www.eigent.ai/use-cases/monthly-dev-reports-automated-eigent-with-deepseek-v4-pro-via-ollama)
-
-### Featured
-
-#### [Organize Desktop Files](https://www.eigent.ai/use-cases/organize-desktop-files)
-
-Ask Eigent to inspect a cluttered desktop and organize files into a cleaner, more useful structure directly on your machine.
-
-[View demo →](https://www.eigent.ai/use-cases/organize-desktop-files/video)
-
-[View guide →](https://www.eigent.ai/use-cases/organize-desktop-files)
-
-#### [Audit ML CI Failures with Gemini 3.5 Flash on Eigent](https://www.eigent.ai/use-cases/eigent-gemini-managed-agents)
-
-Orchestrate a multi-agent CI investigation that fetches logs, compares golden values, traces evidence, delegates deep reasoning, and produces structured audit reports.
-
-[View demo →](https://www.eigent.ai/use-cases/eigent-gemini-managed-agents/video)
-
-[View guide →](https://www.eigent.ai/use-cases/eigent-gemini-managed-agents)
-
-#### [Ticket Management System Integration and Reporting](https://www.eigent.ai/use-cases/ticket-management-system-integration-and-reporting)
-
-Import local ticket data into a browser-based management system, then generate a statistical report with charts and visual summaries.
-
-[View demo →](https://www.eigent.ai/use-cases/ticket-management-system-integration-and-reporting/video)
-
-[View guide →](https://www.eigent.ai/use-cases/ticket-management-system-integration-and-reporting)
-
-[Explore more use cases →](https://www.eigent.ai/use-cases)
-
-## 🛠️ Tech Stack
-
-Eigent open-source Cowork desktop is built on modern, reliable technologies that ensure scalability, performance, and extensibility.
-
-### Backend
-
-- **Framework:** FastAPI
-- **Package Manager:** uv
-- **Async Server:** Uvicorn
-- **Authentication:** OAuth 2.0, Passlib.
-- **Multi-agent framework:** CAMEL
-
-### Frontend
-
-- **Framework:** React
-- **Desktop App Framework:** Electron
-- **Language:** TypeScript
-- **UI:** Tailwind CSS, Radix UI, Lucide React, Framer Motion
-- **State Management:** Zustand
-- **Flow Editor:** React Flow
-
-## 🌟 Staying ahead - Open Source Cowork
-
-> [!IMPORTANT]
->
-> **Star Eigent**, You will receive all release notifications from GitHub without any delay ~ ⭐️
-
-![][image-star-us]
-
-## 🗺️ Roadmap - Open Source Cowork
-
-Our open-source Cowork continues to evolve with input from the community. Here's what's coming next:
-
-| Topics                      | Issues                                                                                                                         | Discord Channel                                             |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| **Context Engineering**     | - Prompt caching<br> - System prompt optimize<br> - Toolkit docstring optimize<br> - Context compression                       | [**Join Discord →**](https://discord.com/invite/CNcNpquyDc) |
-| **Multi-modal Enhancement** | - More accurate image understanding when using browser<br> - Advanced video generation                                         | [**Join Discord →**](https://discord.com/invite/CNcNpquyDc) |
-| **Multi-agent system**      | - Workforce support fixed workflow<br> - Workforce support multi-round conversion                                              | [**Join Discord →**](https://discord.com/invite/CNcNpquyDc) |
-| **Browser Toolkit**         | - BrowseComp integration<br> - Benchmark improvement<br> - Forbid repeated page visiting<br> - Automatic cache button clicking | [**Join Discord →**](https://discord.com/invite/CNcNpquyDc) |
-| **Document Toolkit**        | - Support dynamic file editing                                                                                                 | [**Join Discord →**](https://discord.com/invite/CNcNpquyDc) |
-| **Terminal Toolkit**        | - Benchmark improvement<br> - Terminal-Bench integration                                                                       | [**Join Discord →**](https://discord.com/invite/CNcNpquyDc) |
-| **Environment & RL**        | - Environment design<br> - Data-generation<br> - RL framework integration (VERL, TRL, OpenRLHF)                                | [**Join Discord →**](https://discord.com/invite/CNcNpquyDc) |
-
-## [🤝 Contributing][contribution-link]
-
-We believe in building trust and embracing all forms of open-source collaborations. Your creative contributions help drive the innovation of `Eigent`. Explore our GitHub issues and projects to dive in and show us what you’ve got 🤝❤️ [Contribution Guideline][contribution-link]
-
-## Contributors
-
-<a href="https://github.com/eigent-ai/eigent/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=eigent-ai/eigent" />
-</a>
-
-Made with [contrib.rocks](https://contrib.rocks).
-
-<br>
-
-## [❤️ Sponsor][sponsor-link]
-
-Eigent is built on top of [CAMEL-AI.org][camel-ai-org-github]'s research and infrastructures. [Sponsoring CAMEL-AI.org][sponsor-link] will make `Eigent` better.
-
-## **📄 Open Source License**
-
-This repository is licensed under the [Apache License 2.0](LICENSE).
-
-## 🌐 Community & Contact
-
-For more information please contact info@eigent.ai
-
-- **GitHub Issues:** Report bugs, request features, and track development. [Submit an issue][github-issue-link]
-
-- **Discord:** Get real-time support, chat with the community, and stay updated. [Join us](https://discord.com/invite/CNcNpquyDc)
-
-- **X (Twitter):** Follow for updates, AI insights, and key announcements. [Follow us][social-x-link]
-
-- **WeChat Community:** Scan the QR code below to add our WeChat assistant, and join our WeChat community group.
-
-<div align="center">
-  <img src="./src/assets/wechat_qr.jpg" width="200" style="display: inline-block; margin: 10px;">
-</div>
-
-<!-- LINK GROUP -->
-
-<!-- Social -->
-
-<!-- camel & eigent -->
-
-<!-- marketing -->
-
-<!-- feature -->
-
-[built-with-camel]: https://img.shields.io/badge/-Built--with--CAMEL-4C19E8.svg?logo=data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQ4IiBoZWlnaHQ9IjI3MiIgdmlld0JveD0iMCAwIDI0OCAyNzIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxwYXRoIGQ9Ik04LjgzMTE3IDE4LjU4NjVMMCAzMC44MjY3QzUuNDY2OTIgMzUuMDQzMiAxNS4xMzkxIDM4LjgyNTggMjQuODExNCAzNi4yOTU5QzMwLjY5ODggNDAuOTM0MSAzOS42NzAyIDQwLjIzMTMgNDQuMTU1OSA0MC4wOTA4QzQzLjQ1NSA0Ny4zOTk0IDQyLjQ3MzcgNzAuOTU1OCA0NC4xNTU5IDEwNi43MTJDNDUuODM4IDE0Mi40NjggNzEuNzcwOCAxNjYuODY4IDg0LjUyNjkgMTc0LjU5OEw3Ni4wMDAyIDIyMEw4NC41MjY5IDI3MkgxMDguOTE4TDk4LjAwMDIgMjIwTDEwOC45MTggMTc0LjU5OEwxMjkuOTQ0IDI3MkgxNTQuNzU2TDEzNC4xNSAxNzQuNTk4SDE4Ny4xMzdMMTY2LjUzMSAyNzJIMTkxLjc2M0wyMTIuMzY5IDE3NC41OThMMjI2IDIyMEwyMTIuMzY5IDI3MkgyMzcuNjAxTDI0OC4wMDEgMjIwTDIzNy4xOCAxNzQuNTk4QzIzOS4yODMgMTY5LjExNyAyNDAuNDAxIDE2Ni45NzYgMjQxLjgwNiAxNjEuMTA1QzI0OS4zNzUgMTI5LjQ4MSAyMzUuMDc3IDEwMy45MDEgMjI2LjY2NyA5NC40ODRMMjA2LjQ4MSA3My44MjNDMTk3LjY1IDY0Ljk2ODMgMTgyLjUxMSA2NC41NDY3IDE3Mi44MzkgNzIuNTU4MUMxNjUuNzI4IDc4LjQ0NzcgMTYxLjcwMSA3OC43NzI3IDE1NC43NTYgNzIuNTU4MUMxNTEuODEyIDcwLjAyODEgMTQ0LjUzNSA2MS40ODg5IDEzNC45OTEgNTMuNTgzN0MxMjUuMzE5IDQ1LjU3MjMgMTA4LjQ5NyA0OC45NDU1IDEwMi4xODkgNTUuNjkxOUw3My41OTMxIDg0LjM2NDRWNy42MjM0OUw3OS4xMjczIDBDNjAuOTA0MiAzLjY1NDMzIDIzLjgwMjEgOS41NjMwOSAxOS43NjUgMTAuNTc1MUMxNS43Mjc5IDExLjU4NyAxMC43OTM3IDE2LjMzNzcgOC44MzExNyAxOC41ODY1WiIgZmlsbD0id2hpdGUiLz4KPHBhdGggZD0iTTQzLjIwMzggMTguNzE4N0w0OS4wOTEyIDEzLjA0OTNMNTQuOTc4NyAxOC43MTg3TDQ5LjA5MTIgMjQuODI0Mkw0My4yMDM4IDE4LjcxODdaIiBmaWxsPSIjNEMxOUU4Ii8+Cjwvc3ZnPgo=
-[camel-ai-org-github]: https://github.com/camel-ai
-[camel-github]: https://github.com/camel-ai/camel
-[camel-site]: https://www.camel-ai.org
-[contribution-link]: https://github.com/eigent-ai/eigent/blob/main/CONTRIBUTING.md
-[discord-image]: https://img.shields.io/discord/1082486657678311454?logo=discord&labelColor=%20%235462eb&logoColor=%20%23f5f5f5&color=%20%235462eb
-[discord-url]: https://discord.com/invite/CNcNpquyDc
-[docs-site]: https://docs.eigent.ai
-[download-shield]: https://img.shields.io/badge/Download%20Eigent-363AF5?style=plastic
-[eigent-download]: https://www.eigent.ai/download
-[eigent-github]: https://github.com/eigent-ai/eigent
-[eigent-site]: https://www.eigent.ai
-[github-issue-link]: https://github.com/eigent-ai/eigent/issues
-[github-star]: https://img.shields.io/github/stars/eigent-ai?color=F5F4F0&labelColor=gray&style=plastic&logo=github
-[image-head]: https://eigent-ai.github.io/.github/assets/head.png
-[image-join-us]: https://camel-ai.github.io/camel_asset/graphics/join_us.png
-[image-opensource]: https://eigent-ai.github.io/.github/assets/opensource.png
-[image-public-beta]: https://eigent-ai.github.io/.github/assets/banner.png
-[image-seperator]: https://eigent-ai.github.io/.github/assets/seperator.png
-[image-star-us]: https://eigent-ai.github.io/.github/assets/star-us.gif
-[join-us]: https://www.eigent.ai/careers
-[join-us-image]: https://img.shields.io/badge/Join%20Us-yellow?style=plastic
-[reddit-image]: https://img.shields.io/reddit/subreddit-subscribers/CamelAI?style=plastic&logo=reddit&label=r%2FCAMEL&labelColor=white
-[reddit-url]: https://www.reddit.com/r/CamelAI/
-[social-x-link]: https://x.com/Eigent_AI
-[social-x-shield]: https://img.shields.io/badge/-%40Eigent_AI-white?labelColor=gray&logo=x&logoColor=white&style=plastic
-[sponsor-link]: https://github.com/sponsors/camel-ai
-[sponsor-shield]: https://img.shields.io/badge/-Sponsor%20CAMEL--AI-1d1d1d?logo=github&logoColor=white&style=plastic
-[wechat-image]: https://img.shields.io/badge/WeChat-CamelAIOrg-brightgreen?logo=wechat&logoColor=white
-[wechat-url]: https://ghli.org/camel/wechat.png
+日常使用建议运行打包后的应用；`npm run dev` 带有热更新服务器，只在改代码时使用。
+
+## 使用流程
+
+1. **新建空间**：首页「新建空间 → 从零开始」，填品牌或产品名。应用会在空间里生成 `GEO/` 目录、八个环节文件夹和知识库模板。
+2. **上传资料**：右侧 GEO 面板「品牌知识库 → 上传资料」，选择品牌方提供的 PDF、Excel、Word 或图片。上传时自动解析，可在 `原始资料解析/` 查看。
+3. **交给 AI 清洗**：点「交给 AI 清洗」并发送。GEO Agent 读解析结果、看需要看的图，写七个模块、产品文件和知识条目，最后按完成标准汇报。
+4. **往下推进**：在左侧「GEO 链路」进入下一环，「总览 → 链路进度」显示每一环是否达到完成标准。
+
+## 开发与测试
+
+```bash
+# 前端
+npm run type-check
+npx vitest run --config vitest.config.ts
+
+# 后端
+cd backend
+uv sync
+uv run pytest tests
+```
+
+冒烟测试用虚构品牌「晨禾」的资料，不触碰客户数据：
+
+```bash
+cd backend
+uv run python tests/fixtures/geo_smoke/make_fixture.py <输出目录>
+```
+
+把生成的三份资料放进一个测试空间的 `GEO/01_品牌知识库/原始资料/`，在应用里点「交给 AI 清洗」，用观察脚本对比前后：
+
+```bash
+python3 scripts/geo_observe.py snap "清洗前"
+python3 scripts/geo_observe.py snap "清洗后"
+python3 scripts/geo_observe.py diff
+```
+
+改了后端代码后，需要重启应用才会生效。
+
+## 项目结构
+
+```
+.
+├── src/                    # 前端（React）
+│   └── components/Geo/     # GEO 面板、链路进度、知识库
+├── electron/               # Electron 主进程与预加载脚本
+├── backend/                # 本地后端（FastAPI + CAMEL）
+│   ├── app/geo/            # GEO：链路登记、提示词、资料解析、指标、数据库
+│   ├── app/agent/          # 智能体与工具
+│   └── tests/              # 后端测试与冒烟测试资料
+├── server/                 # 本地服务（Docker）
+├── resources/example-skills/  # 内置技能
+├── scripts/                # 开发脚本（含 geo_observe.py）
+└── docs/                   # 链路契约、工程架构、实测记录
+```
+
+## 文档
+
+- [GEO 链路契约](docs/GEO-链路契约.md)：八个环节的输入、产出、完成标准
+- [工程架构](docs/DingGouGEO-工程架构.md)：进程、数据位置、模块职责
+- [提示词与记忆设计](docs/GEO-Agent-提示词与记忆设计.md)
+- [改动日志](docs/DingGouGEO-改动日志.md)
+- [实测记录](docs/实测/SMA-从零实测记录.md)：按真实用户路径的测试过程与问题清单
+
+## 致谢与许可
+
+DingGouGEO 基于开源项目 [Eigent](https://github.com/eigent-ai/eigent) 改造，智能体框架来自 [CAMEL-AI](https://github.com/camel-ai/camel)。上游的原始说明保存在 [docs/upstream-eigent/](docs/upstream-eigent/README.md)。
+
+本项目沿用 [Apache License 2.0](LICENSE)。
