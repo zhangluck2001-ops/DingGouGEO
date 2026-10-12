@@ -147,7 +147,7 @@ def _knowledge(
 
 用户点「交给 AI 清洗」就是同意下面这些操作，不用再问：清洗上面 {len(chosen)} 份资料；填写七个模块文件（替换模板）；在 `02_产品库/` 按产品新建文件；往 `geo_fact` 写入新条目；把这些资料在 `geo_kb_source` 的状态改成「已清洗」。只有资料之间对不上又无法判断、或资料不是这个品牌的，才停下来问。
 
-这一环你直接做，不派子智能体。步骤已经在下面列好：不要用 todo_write、step_update、send_message_to_user，不用 list_skills，不要加载 pdf、xlsx、docx 技能。少来回：同类操作在同一轮里一起做——几份资料的「读这个」文件一起读，要看的图一起看，七个模块和产品文件在同一轮里一起写，`geo_fact` 用一条 `sqlite3` 命令批量插入（多行 INSERT 写在一个 SQL 里）。
+这一环你直接做，不派子智能体。步骤已经在下面列好：不要用 todo_write、step_update、send_message_to_user，不用 list_skills，不要加载 pdf、xlsx、docx 技能。少来回：同类操作在同一轮里一起做——几份资料的「读这个」文件一起读，要看的图一起看，七个模块和产品文件在同一轮里一起写，`geo_fact` 用一条 `sqlite3` 命令批量插入（多行 INSERT 写在一个 SQL 里）。查库（看表结构、数条数、抽查）一律用 `geo_query`，不要用 `sqlite3` 查。
 
 做法：
 - 先读 `{kb / knowledge.RULES_FILE}`，再加载技能 `geo-database`（表结构和写入规范）。

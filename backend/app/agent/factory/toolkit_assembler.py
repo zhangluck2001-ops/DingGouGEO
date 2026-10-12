@@ -34,6 +34,7 @@ from app.agent.toolkit.depth_limited_agent_toolkit import (
     DepthLimitedAgentToolkit,
 )
 from app.agent.toolkit.file_write_toolkit import FileToolkit
+from app.agent.toolkit.geo_database_toolkit import GeoDatabaseToolkit
 from app.agent.toolkit.human_toolkit import HumanToolkit
 from app.agent.toolkit.hybrid_browser_toolkit import HybridBrowserToolkit
 from app.agent.toolkit.memory_toolkit import add_memory_tools
@@ -83,6 +84,9 @@ _SAFE_READ_TOOLKIT_FUNCTIONS: dict[str, frozenset[str] | None] = {
     # None means every exposed function in this code-owned toolkit is read-only.
     "searchtoolkit": None,
     "webfetchtoolkit": None,
+    # geo_query opens the database read-only and an SQLite authorizer
+    # refuses every write, so reading a Space's GEO data needs no approval.
+    "geodatabasetoolkit": frozenset({"geo_query"}),
     "screenshottoolkit": frozenset({"read_image"}),
     "workspacegittoolkit": None,
     # Exact code-owned discovery functions. Loading skill instructions can
@@ -476,6 +480,14 @@ async def assemble_single_agent_toolkits(
         toolkit.agent_name = Agents.single_agent
         toolkit = message_integration.register_toolkits(toolkit)
         assembly.add_tools(toolkit.get_tools(), FileToolkit.toolkit_name())
+
+    if _enabled(config, "geo_database"):
+        geo_database_toolkit = GeoDatabaseToolkit(options.project_id)
+        geo_database_toolkit.agent_name = Agents.single_agent
+        assembly.add_tools(
+            geo_database_toolkit.get_tools(),
+            GeoDatabaseToolkit.toolkit_name(),
+        )
 
     if _enabled(config, "screenshot"):
         screenshot_options = {

@@ -14,8 +14,9 @@ The workbench boards and you read the same file. Messages sent from the board na
 (`SELECT id, name, space_id, workspace_root FROM geo_project`) — it lists every project; projects that have no Space
 folder yet still keep their rows there.
 
-Query it with the `sqlite3` CLI, e.g. `sqlite3 -header -column GEO/geo.db "SELECT ..."`.
-Open it read-only (`sqlite3 -readonly`) unless the user explicitly asked you to change data.
+Read it with the `geo_query` tool (`db_path` = the absolute path of `GEO/geo.db`, one SELECT or schema PRAGMA per call):
+it opens the database read-only and never needs the user's approval. Use the `sqlite3` CLI only to change data
+(`sqlite3 GEO/geo.db "INSERT ..."`), and only when the user or the stage task asked for the change.
 
 ## Tables
 
