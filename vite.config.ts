@@ -128,6 +128,28 @@ export default defineConfig(({ command, mode }) => {
     ],
     server: {
       open: false,
+      // Watch only what the renderer bundles. The repo also holds the Python
+      // backend (with its 30k-file .venv), the local server, resources and
+      // build output; watching them made the watcher fall back to polling
+      // tens of thousands of files and kept several CPU cores busy on both
+      // macOS and Windows. Backend changes need a backend restart anyway.
+      watch: {
+        ignored: [
+          '**/backend/**',
+          '**/server/**',
+          '**/resources/**',
+          '**/docs/**',
+          '**/build/**',
+          '**/package/**',
+          '**/licenses/**',
+          '**/dist/**',
+          '**/dist-electron/**',
+          '**/test-results/**',
+          '**/test/**',
+          '**/.venv/**',
+          '**/__pycache__/**',
+        ],
+      },
       ...(process.env.VSCODE_DEBUG &&
         (() => {
           const url = new URL(pkg.debug.env.VITE_DEV_SERVER_URL);
