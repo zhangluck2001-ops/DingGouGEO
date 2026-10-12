@@ -62,6 +62,7 @@ from app.run_runtime.timeout_config import (
 from app.run_runtime.tool_checkpoint import (
     ToolCheckpointError,
     ToolInvocationNotDispatchedError,
+    UnsafeToolOutcomeError,
     copy_tool_safety,
     declared_tool_safety,
     dispatch_tool_checkpoint,
@@ -107,6 +108,34 @@ def default_agent_stall_timeout() -> float | None:
         "AGENT_STALL_TIMEOUT_SECONDS",
         default=1800,
     )
+
+
+_UNKNOWN_OUTCOME_NOTE = (
+    "注意：这个操作报错前可能已经部分生效（例如已写入文件或数据，"
+    "或子任务仍在运行）。重试前先检查当前状态，不要重复执行同一个写操作。"
+)
+
+
+def _finish_failed_tool(
+    checkpoint: Any, *, result: Any, error: BaseException, outcome_known: bool
+) -> str | None:
+    """Journal a failed tool call; return a note for the model when its
+    outcome is unknown.
+
+    Like Claude Code and Codex, a tool error is information for the model,
+    not the end of the Run: the journal still marks the call
+    ``outcome_unknown`` (so a later resume stays fail-closed), but the live
+    turn gets the error back and decides what to do. Raising here ended the
+    whole Run on one failed write or delegation, and left the call without
+    an output, which the next model request then rejected.
+    """
+    try:
+        finish_tool_checkpoint(
+            checkpoint, result=result, error=error, outcome_known=outcome_known
+        )
+    except UnsafeToolOutcomeError:
+        return _UNKNOWN_OUTCOME_NOTE
+    return None
 
 
 def _reported_tool_error(result: Any) -> RuntimeError | None:
@@ -1225,7 +1254,7 @@ class ListenChatAgent(ChatAgent):
             raise
         except Exception as e:
             rejection = prewrite_validation_result(e)
-            finish_tool_checkpoint(
+            note = _finish_failed_tool(
                 checkpoint,
                 result=rejection,
                 error=e,
@@ -1240,6 +1269,8 @@ class ListenChatAgent(ChatAgent):
             # Capture the error message to prevent framework crash
             error_msg = f"Error executing tool '{func_name}': {e!s}"
             result = rejection or f"Tool execution failed: {error_msg}"
+            if note and isinstance(result, str):
+                result = f"{result}\n{note}"
             mask_flag = False
             logger.error(
                 f"Tool execution failed for {func_name}: {e}", exc_info=True
@@ -1461,8 +1492,8 @@ class ListenChatAgent(ChatAgent):
         except Exception as e:
             execution_error = e
             rejection = prewrite_validation_result(e)
-            await asyncio.to_thread(
-                finish_tool_checkpoint,
+            note = await asyncio.to_thread(
+                _finish_failed_tool,
                 checkpoint,
                 result=rejection,
                 error=e,
@@ -1477,6 +1508,8 @@ class ListenChatAgent(ChatAgent):
             # Capture the error message to prevent framework crash
             error_msg = f"Error executing async tool '{func_name}': {e!s}"
             result = rejection or {"error": error_msg}
+            if note and isinstance(result, dict):
+                result = {**result, "note": note}
             logger.error(
                 f"Async tool execution failed for {func_name}: {e}",
                 exc_info=True,

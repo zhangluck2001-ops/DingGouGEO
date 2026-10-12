@@ -147,12 +147,9 @@ def _knowledge(
 
 用户点「交给 AI 清洗」就是同意下面这些操作，不用再问：清洗上面 {len(chosen)} 份资料；填写七个模块文件（替换模板）；在 `02_产品库/` 按产品新建文件；往 `geo_fact` 写入新条目；把这些资料在 `geo_kb_source` 的状态改成「已清洗」。只有资料之间对不上又无法判断、或资料不是这个品牌的，才停下来问。
 
-GEO Agent 怎么做：
-1. 把下面「给 geo-knowledge 的任务」整段原样写进 `agent_run_subagent` 的 prompt（`subagent_type` 填 `geo-knowledge`，`wait` 填 true），并写明上面的同意范围。一次派完，不拆。
-2. 你自己不读资料、不加载 pdf、xlsx、docx 技能，也不先查库。
-3. 子智能体返回后核对：`geo_fact` 条数、七个模块还有没有模板标记、随机挑 5 条对照解析文字里的位置；然后按完成标准逐条汇报，没达标的写清缺什么。
+这一环你直接做，不派子智能体。不要加载 pdf、xlsx、docx 技能。
 
-给 geo-knowledge 的任务：
+做法：
 - 先读 `{kb / knowledge.RULES_FILE}`，再加载技能 `geo-database`（表结构和写入规范）。
 - 读资料：只读上面列出的「读这个」文件；文末「需要看图」列出的图片用 `read_image` 逐张看，没列出的不用看。不要自己写程序解析原件，不要编译或安装任何工具（OCR、Swift 等）；临时文件放 `$EIGENT_INTERMEDIATE_DIR`。
 - 写 `geo_fact`：一条一个原子事实。module 填 00_总览…06_合规红线；product 填产品名（通用信息留空）；claim_type 填 事实、宣称、话术之一，资料之间矛盾的填「存疑」并在 note 写冲突点，完全找不到出处的才填「待核实」；evidence_grade 按清洗规则定 A–E（标签原件、注册证、检测报告、资质证书是 B，品牌方整理的介绍、配料表文字版是 C）。品牌方给的数字照原文记成「事实」，不要因为没有标签照片就整批标「待核实」。source 写「原件文件名 + 位置」，如「配料表.pdf 第2页」「SMA品牌介绍.xlsx Sheet1!C9」「SMA品牌介绍.xlsx 嵌入附件 COO080521.pdf 第1页」；资料里有 DOI 或官方网址就一并写上。功效、临床类宣称没有 DOI 或官方网址的，在 note 写「缺公开来源」。
@@ -160,7 +157,8 @@ GEO Agent 怎么做：
 - 指标条目：role 填 核心事实、证据锚、扣分项，匹配词写在 field 里，多个用 | 分隔，完整事实写在 content 里。
 - 模块文件：七个模块写成能直接阅读的整理稿，替换模板并删掉模板标记行；每个产品写一个 `02_产品库/<产品名>.md`，不要改 `_SKU模板.md`。`{kb}` 里除了这些不要新建别的文件或文件夹；原件和 `原始资料解析/` 不改。
 - 每份资料清洗完，把 {names} 在 `geo_kb_source` 的状态改成「已清洗」。
-- 返回：每份资料写了多少条；各模块条数；类型和证据等级分布；看了哪几张图、读出了什么；需要用户补的资料（缺公开来源的宣称、资料冲突、看不清的图）。"""
+- 做完自查：`geo_fact` 条数、七个模块还有没有模板标记、随机挑 5 条对照解析文字里的位置。
+- 汇报：按完成标准逐条说达没达标；每份资料写了多少条；各模块条数；类型和证据等级分布；看了哪几张图、读出了什么；需要用户补的资料（缺公开来源的宣称、资料冲突、看不清的图）。"""
 
 
 def _probes(_project_id: int, _round: str | None) -> str:
@@ -281,9 +279,9 @@ _EXTRA = {
 
 
 # What the root agent is told to do with a stage task. Stage 1 spells out
-# what the click already allows, so the agent doesn't ask again.
+# its own steps and what the click already allows, so it needs no footer.
 _HANDOFF = {
-    "knowledge": "做完按完成标准逐条核对并汇报。",
+    "knowledge": "",
 }
 
 
@@ -325,7 +323,8 @@ def stage_task(
         f"\n{extra}\n\n"
         + _HANDOFF.get(
             key,
-            f"开始前先说计划：哪些自己做，哪些派给 `{stage.subagent_type}`；"
-            "需要我同意的先问我。做完按完成标准逐条核对并汇报。",
+            "这一环你直接做；只有要逐条处理上千条记录时，才拆给子智能体 "
+            f"`{stage.subagent_type}`。需要我同意的先问我（给选项）。"
+            "做完按完成标准逐条核对并汇报。",
         )
     )

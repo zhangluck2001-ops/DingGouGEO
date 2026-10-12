@@ -128,4 +128,6 @@ def test_knowledge_task_lists_the_picked_files_with_their_parsed_text(space):
     assert "不用再问" in text
     assert "需要我同意的先问我" not in text
     assert "不要自己写程序解析原件" in text
-    assert "`geo-knowledge`" in text
+    # Stage work runs in the root agent's own loop.
+    assert "不派子智能体" in text
+    assert "agent_run_subagent" not in text

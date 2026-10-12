@@ -39,7 +39,6 @@ from app.run_policy import ToolSafetyClass
 from app.run_runtime import tool_checkpoint
 from app.run_runtime.tool_checkpoint import (
     ToolCheckpointPersistenceError,
-    UnsafeToolOutcomeError,
     finish_tool_checkpoint,
     prepare_tool_checkpoint,
 )
@@ -295,7 +294,7 @@ def test_duplicate_canonical_user_ids_remain_valid(memory_run):
 
 @pytest.mark.parametrize("mode", ["sync", "async"])
 @pytest.mark.parametrize("exception_type", [PermissionError, TimeoutError])
-def test_error_after_real_write_remains_unknown_and_stops_agent(
+def test_error_after_real_write_stays_unknown_and_reaches_the_model(
     memory_run, mode, exception_type
 ):
     def write_then_fail(**kwargs):
@@ -307,16 +306,20 @@ def test_error_after_real_write_remains_unknown_and_stops_agent(
     memory_run.apply.side_effect = write_then_fail
     agent = _agent(memory_run.tool)
     request = _request(source_event_ids=["user-1"])
-    with pytest.raises(UnsafeToolOutcomeError):
-        if mode == "sync":
-            agent._execute_tool(request)
-        else:
-            asyncio.run(agent._aexecute_tool(request))
+    if mode == "sync":
+        agent._execute_tool(request)
+    else:
+        asyncio.run(agent._aexecute_tool(request))
     memory_run.apply.assert_called_once()
     assert len(memory_run.service.list_entries("project", "project-1")) == 1
     [record] = memory_run.journal.list_tool_calls("run-1")
     assert record.status == "outcome_unknown"
-    agent._record_tool_calling.assert_not_called()
+    # The call gets an output (no orphaned tool call) that warns the model
+    # the write may already have happened.
+    agent._record_tool_calling.assert_called_once()
+    assert "可能已经部分生效" in str(
+        agent._record_tool_calling.call_args.args[2]
+    )
 
 
 def test_schema_explains_conditional_citations(memory_run):
@@ -375,9 +378,12 @@ def test_mock_model_delivery_requires_known_memory_outcome(
             tool_result = next(
                 msg for msg in messages if msg["role"] == "tool"
             )
-            assert "MEMORY_PROVENANCE_REJECTED" in tool_result["content"]
-            assert "search_project_history" in tool_result["content"]
-            assert "continue delivering" in tool_result["content"]
+            if write_fails:
+                assert "可能已经部分生效" in tool_result["content"]
+            else:
+                assert "MEMORY_PROVENANCE_REJECTED" in tool_result["content"]
+                assert "search_project_history" in tool_result["content"]
+                assert "continue delivering" in tool_result["content"]
             message = {
                 "role": "assistant",
                 "content": "Storyboard ready for review. Memory was not saved.",
@@ -420,9 +426,11 @@ def test_mock_model_delivery_requires_known_memory_outcome(
         return asyncio.run(agent.astep("Deliver the finished storyboard."))
 
     if write_fails:
-        with pytest.raises(UnsafeToolOutcomeError):
-            deliver()
-        assert len(requests) == 1
+        response = deliver()
+        assert response.msg.content == (
+            "Storyboard ready for review. Memory was not saved."
+        )
+        assert len(requests) == 2
         memory_run.apply.assert_called_once()
         assert (
             len(memory_run.service.list_entries("project", "project-1")) == 1
@@ -534,8 +542,8 @@ def test_later_write_value_error_cannot_reuse_previous_no_write_proof(
     except ValueError:
         # A later exception may inherit a handled validation as __context__.
         # Its earlier no-write proof cannot classify this new mutation.
-        with pytest.raises(UnsafeToolOutcomeError):
-            agent._execute_tool(_request(source_event_ids=["user-1"]))
+        result = agent._execute_tool(_request(source_event_ids=["user-1"]))
+        assert "可能已经部分生效" in str(result)
     memory_run.apply.assert_called_once()
     assert len(memory_run.service.list_entries("project", "project-1")) == 1
     [record] = memory_run.journal.list_tool_calls("run-1")

@@ -35,7 +35,6 @@ from app.run_context import RunContext, run_context_scope
 from app.run_journal import SQLiteRunJournal
 from app.run_policy import ToolSafetyClass
 from app.run_runtime import tool_checkpoint
-from app.run_runtime.tool_checkpoint import UnsafeToolOutcomeError
 from app.service.task import (
     ActionActivateToolkitData,
     ActionDeactivateToolkitData,
@@ -658,8 +657,8 @@ def test_capture_model_failure_does_not_report_success(
             None,
         )
         if capture_enabled:
-            with pytest.raises(UnsafeToolOutcomeError):
-                execute(agent, request, False)
+            result = execute(agent, request, False)
+            assert "可能已经部分生效" in str(result)
             assert (tmp_path / "capture-fixture.png").exists()
         else:
             result = execute(agent, request, False)
@@ -677,7 +676,7 @@ def test_capture_model_failure_does_not_report_success(
 
 
 @pytest.mark.parametrize("asynchronous", [False, True])
-def test_unknown_write_exception_remains_fail_closed(
+def test_unknown_write_exception_is_journaled_and_returned_to_the_model(
     tool_environment, asynchronous
 ):
     journal, _, agent_for = tool_environment
@@ -690,8 +689,12 @@ def test_unknown_write_exception_remains_fail_closed(
     request = ToolCallRequest(
         tool_name="unregistered_write", args={}, tool_call_id="write-call"
     )
-    with pytest.raises(UnsafeToolOutcomeError):
-        execute(agent, request, asynchronous)
+    # The Run goes on: the model gets the error and a warning that the write
+    # may have happened. The journal still records the unknown outcome so a
+    # later resume stays fail-closed.
+    result = execute(agent, request, asynchronous)
+    assert "outcome cannot be established" in str(result)
+    assert "可能已经部分生效" in str(result)
     [call] = journal.list_tool_calls("run-image")
     assert call.status == "outcome_unknown"
     assert call.safety_class == ToolSafetyClass.UNSAFE_WRITE
