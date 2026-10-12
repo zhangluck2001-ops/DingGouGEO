@@ -109,45 +109,65 @@ class WorkspaceMutationReconciliation:
 logger = logging.getLogger(__name__)
 
 
+# How long a write waits for another in-flight write to the same checkout.
+_ADMISSION_WAIT_SECONDS = 60.0
+_ADMISSION_POLL_SECONDS = 0.2
+
+
 def _serialize_direct_admission(method):
     """Hold only admission under a lock; the durable intent owns execution.
 
     Use a separate lock file from checkpoint/merge so preserving the initial
     user delta can acquire the existing repository checkpoint lock safely.
+
+    A write that finds another write to the same checkout still in flight
+    waits its turn instead of failing: models issue several file writes in
+    one turn, and rejecting all but the first cost a model round trip per
+    file to redo them one by one. A write left needing attention still
+    fails at once, since waiting will not clear it.
     """
 
     @wraps(method)
     def admitted(self, *, binding, **kwargs):
         lock_id = canonical_digest({"checkout_id": binding.checkout_id})
-        with self.content.repository_lock(
-            self.state_root / "writer-admission-locks" / f"{lock_id}.lock"
-        ):
-            change_sets = {
-                item.change_set_id
-                for item in self.journal.list_git_change_sets()
-                if item.repository_id == binding.repository_id
-                and item.worktree_ref == binding.target_ref
-            }
-            if any(
-                intent.change_set_id in change_sets
-                and intent.operation_request_id
-                == kwargs["operation_request_id"]
-                and intent.status == "completed"
-                for intent in self.journal.list_git_mutation_intents()
+        deadline = time.monotonic() + _ADMISSION_WAIT_SECONDS
+        while True:
+            with self.content.repository_lock(
+                self.state_root / "writer-admission-locks" / f"{lock_id}.lock"
             ):
-                raise ContentRepositoryError(
-                    "Workspace operation already completed; do not redispatch it"
-                )
-            if any(
-                intent.change_set_id in change_sets
-                for intent in self.journal.list_git_mutation_intents(
-                    statuses=("prepared", "needs_attention")
-                )
-            ):
-                raise OutboxLeaseLostError(
-                    "Workspace operation is still active or needs attention"
-                )
-            return method(self, binding=binding, **kwargs)
+                change_sets = {
+                    item.change_set_id
+                    for item in self.journal.list_git_change_sets()
+                    if item.repository_id == binding.repository_id
+                    and item.worktree_ref == binding.target_ref
+                }
+                if any(
+                    intent.change_set_id in change_sets
+                    and intent.operation_request_id
+                    == kwargs["operation_request_id"]
+                    and intent.status == "completed"
+                    for intent in self.journal.list_git_mutation_intents()
+                ):
+                    raise ContentRepositoryError(
+                        "Workspace operation already completed; do not redispatch it"
+                    )
+                blocking = {
+                    intent.status
+                    for intent in self.journal.list_git_mutation_intents(
+                        statuses=("prepared", "needs_attention")
+                    )
+                    if intent.change_set_id in change_sets
+                }
+                if not blocking:
+                    return method(self, binding=binding, **kwargs)
+                if (
+                    "needs_attention" in blocking
+                    or time.monotonic() >= deadline
+                ):
+                    raise OutboxLeaseLostError(
+                        "Workspace operation is still active or needs attention"
+                    )
+            time.sleep(_ADMISSION_POLL_SECONDS)
 
     return admitted
 

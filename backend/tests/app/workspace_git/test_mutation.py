@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 import subprocess
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -33,6 +34,7 @@ from app.workspace_git import (
     WorkspaceGitLifecycle,
     WorkspaceMutationService,
     WorkspaceSnapshotService,
+    mutation as mutation_module,
 )
 
 
@@ -127,6 +129,39 @@ def _git(repository: Path, *args: str) -> str:
     ).stdout
 
 
+@pytest.fixture(autouse=True)
+def _short_admission_wait(monkeypatch):
+    """A blocked write gives up after 2s here instead of a minute."""
+    monkeypatch.setattr(mutation_module, "_ADMISSION_WAIT_SECONDS", 2.0)
+
+
+def test_a_write_still_fails_once_the_wait_runs_out(tmp_path, journal):
+    content, coordinator, _, _ = _services(tmp_path, journal)
+    direct = WorkspaceMutationService(
+        journal, state_root=tmp_path / "state", coordinator=coordinator
+    )
+    space = tmp_path / "space"
+    space.mkdir()
+    content.bootstrap(space_id="space-1", space_root=space, allow_init=True)
+    _admit(journal, coordinator)
+    direct.prepare_broad_write(
+        context=_context(space),
+        operation_request_id="first",
+        actor_id="agent-1",
+        trigger="terminal.execute",
+    )
+    started = time.monotonic()
+    with pytest.raises(OutboxLeaseLostError):
+        direct.prepare_file_write(
+            context=_context(space),
+            filename="other.txt",
+            operation_request_id="second",
+            actor_id="agent-2",
+            trigger="filesystem.write",
+        )
+    assert time.monotonic() - started >= 1.5
+
+
 @pytest.mark.parametrize("second_actor", ["agent-1", "agent-2"])
 @pytest.mark.parametrize("second_path", ["download.bin", "references.json"])
 def test_direct_writer_operation_admission_serializes_paths(
@@ -148,6 +183,7 @@ def test_direct_writer_operation_admission_serializes_paths(
     )
     (space / "download.bin").write_text("still downloading")
     with ThreadPoolExecutor() as pool:
+        # The second write waits for the first instead of failing.
         future = pool.submit(
             direct.prepare_broad_write,
             context=_context(space),
@@ -155,21 +191,16 @@ def test_direct_writer_operation_admission_serializes_paths(
             actor_id=second_actor,
             trigger="terminal.execute",
         )
-        with pytest.raises(OutboxLeaseLostError):
-            future.result(timeout=5)
-    assert len(journal.list_git_mutation_intents()) == 1
-    direct.complete_broad_write(
-        first,
-        operation_request_id="first",
-        actor_id="agent-1",
-        trigger="terminal.execute",
-    )
-    second = direct.prepare_broad_write(
-        context=_context(space),
-        operation_request_id="second",
-        actor_id=second_actor,
-        trigger="terminal.execute",
-    )
+        time.sleep(0.6)
+        assert not future.done()
+        assert len(journal.list_git_mutation_intents()) == 1
+        direct.complete_broad_write(
+            first,
+            operation_request_id="first",
+            actor_id="agent-1",
+            trigger="terminal.execute",
+        )
+        second = future.result(timeout=10)
     (space / second_path).write_text("second result")
     direct.complete_broad_write(
         second,

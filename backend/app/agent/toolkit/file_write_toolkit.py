@@ -79,7 +79,10 @@ class FileToolkit(BaseFileToolkit, AbstractToolkit):
         working_directory: str | None = None,
         timeout: float | None = None,
         default_encoding: str = "utf-8",
-        backup_enabled: bool = True,
+        # Writes already go through the Workspace's version checkpoints, so a
+        # side-by-side ``.bak`` copy only clutters the user's folders (eight
+        # of them piled up in a knowledge base after one cleaning run).
+        backup_enabled: bool = False,
     ) -> None:
         if working_directory is None:
             working_directory = env(
