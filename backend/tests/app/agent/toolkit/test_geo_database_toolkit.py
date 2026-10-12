@@ -30,7 +30,9 @@ def geo_db(tmp_path):
     path = tmp_path / "GEO" / "geo.db"
     path.parent.mkdir()
     conn = sqlite3.connect(path)
-    conn.execute("CREATE TABLE geo_fact (id INTEGER PRIMARY KEY, content TEXT)")
+    conn.execute(
+        "CREATE TABLE geo_fact (id INTEGER PRIMARY KEY, content TEXT)"
+    )
     conn.executemany(
         "INSERT INTO geo_fact (content) VALUES (?)",
         [(f"事实 {i}",) for i in range(MAX_ROWS + 5)],
