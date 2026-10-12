@@ -59,6 +59,20 @@ from app.workspace_bundle.runtime import ResolvedRuntimeEnvironment
 logger = logging.getLogger("toolkit_assembler")
 
 
+# Tools that duplicate another tool the agent already has. Every tool's
+# schema is resent on each model call, so a duplicate costs tokens on every
+# call for no capability: shell_ask_user_for_help duplicates
+# ask_human_via_gui, and notebook_edit_cell serves Jupyter notebooks, which
+# no workflow here edits.
+_REDUNDANT_TOOLS = frozenset({"shell_ask_user_for_help", "notebook_edit_cell"})
+
+
+def _function_name(tool: FunctionTool | Callable) -> str:
+    if isinstance(tool, FunctionTool):
+        return tool.get_function_name()
+    return getattr(tool, "__name__", "")
+
+
 def _normalize_toolkit_name(value: str) -> str:
     return "".join(
         character for character in value.casefold() if character.isalnum()
@@ -157,6 +171,11 @@ class ToolkitAssembly:
         tools: list[FunctionTool | Callable],
         toolkit_name: str,
     ) -> None:
+        tools = [
+            tool
+            for tool in tools or []
+            if _function_name(tool) not in _REDUNDANT_TOOLS
+        ]
         if not tools:
             return
         _tag_tools(tools, toolkit_name)

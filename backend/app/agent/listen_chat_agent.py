@@ -16,6 +16,7 @@ import asyncio
 import inspect
 import json
 import logging
+import re
 import threading
 import uuid
 from collections.abc import Callable
@@ -36,7 +37,7 @@ from camel.models import BaseModelBackend, ModelManager, ModelProcessingError
 from camel.responses import ChatAgentResponse
 from camel.terminators import ResponseTerminator
 from camel.toolkits import FunctionTool, RegisteredAgentToolkit
-from camel.types import ModelPlatformType, ModelType
+from camel.types import ModelPlatformType, ModelType, OpenAIBackendRole
 from camel.types.agents import ToolCallingRecord
 from pydantic import BaseModel
 
@@ -114,6 +115,99 @@ _UNKNOWN_OUTCOME_NOTE = (
     "注意：这个操作报错前可能已经部分生效（例如已写入文件或数据，"
     "或子任务仍在运行）。重试前先检查当前状态，不要重复执行同一个写操作。"
 )
+
+
+_CAMEL_CALL_ERROR = re.compile(
+    r"Execution of function \S+ failed with (?:kwargs=.*|no arguments)\. "
+    r"Error: (?P<error>.*)$",
+    re.DOTALL,
+)
+_MAX_TOOL_ERROR_CHARS = 2000
+
+
+def _concise_tool_error(error: BaseException) -> str:
+    """The error text the model sees, without CAMEL's echo of every argument.
+
+    CAMEL wraps tool exceptions as "Execution of function X failed with
+    kwargs={...}. Error: ...". For a file write the kwargs are the whole
+    document, so each failure put the document into the context again and
+    every later model call paid for it. The journal keeps the full error.
+    """
+    text = str(error)
+    match = _CAMEL_CALL_ERROR.search(text)
+    if match:
+        text = match.group("error")
+    if len(text) > _MAX_TOOL_ERROR_CHARS:
+        text = text[:_MAX_TOOL_ERROR_CHARS] + "…（已截断）"
+    return text
+
+
+# Long arguments of these tools are kept short in memory once issued: the
+# file or command already holds them, and memory is resent on every model
+# call. Writing ten articles used to resend all ten on every later call.
+_COMPACTED_TOOL_ARGUMENTS = {
+    "write_to_file": "content",
+    "shell_write_content_to_file": "content",
+    "shell_exec": "command",
+}
+_COMPACT_ARGUMENT_MIN_CHARS = 2000
+_COMPACT_ARGUMENT_KEEP_CHARS = 300
+
+
+def _compact_tool_call_arguments(message: BaseMessage) -> BaseMessage:
+    """The assistant message with long write/command arguments shortened.
+
+    Only the copy kept in memory changes; the tool still ran with the full
+    arguments.
+    """
+    meta = message.meta_dict or {}
+    tool_calls = meta.get("tool_calls")
+    if not isinstance(tool_calls, list):
+        return message
+    changed = False
+    compacted = []
+    for call in tool_calls:
+        function = call.get("function") if isinstance(call, dict) else None
+        key = _COMPACTED_TOOL_ARGUMENTS.get((function or {}).get("name", ""))
+        raw = (function or {}).get("arguments")
+        if key is None or not isinstance(raw, str):
+            compacted.append(call)
+            continue
+        try:
+            args = json.loads(raw)
+        except ValueError:
+            compacted.append(call)
+            continue
+        value = args.get(key) if isinstance(args, dict) else None
+        if (
+            not isinstance(value, str)
+            or len(value) < _COMPACT_ARGUMENT_MIN_CHARS
+        ):
+            compacted.append(call)
+            continue
+        args[key] = (
+            value[:_COMPACT_ARGUMENT_KEEP_CHARS]
+            + f"…［此处省略 {len(value) - _COMPACT_ARGUMENT_KEEP_CHARS} 字：已写入"
+            "文件或已执行，需要时用 read_file 读回］"
+        )
+        compacted.append(
+            {
+                **call,
+                "function": {
+                    **function,
+                    "arguments": json.dumps(args, ensure_ascii=False),
+                },
+            }
+        )
+        changed = True
+    if not changed:
+        return message
+    return BaseMessage(
+        role_name=message.role_name,
+        role_type=message.role_type,
+        meta_dict={**meta, "tool_calls": compacted},
+        content=message.content,
+    )
 
 
 def _finish_failed_tool(
@@ -1267,7 +1361,9 @@ class ListenChatAgent(ChatAgent):
                 ),
             )
             # Capture the error message to prevent framework crash
-            error_msg = f"Error executing tool '{func_name}': {e!s}"
+            error_msg = (
+                f"Error executing tool '{func_name}': {_concise_tool_error(e)}"
+            )
             result = rejection or f"Tool execution failed: {error_msg}"
             if note and isinstance(result, str):
                 result = f"{result}\n{note}"
@@ -1506,7 +1602,10 @@ class ListenChatAgent(ChatAgent):
                 ),
             )
             # Capture the error message to prevent framework crash
-            error_msg = f"Error executing async tool '{func_name}': {e!s}"
+            error_msg = (
+                f"Error executing async tool '{func_name}': "
+                f"{_concise_tool_error(e)}"
+            )
             result = rejection or {"error": error_msg}
             if note and isinstance(result, dict):
                 result = {**result, "note": note}
@@ -1587,6 +1686,11 @@ class ListenChatAgent(ChatAgent):
         except Exception as e:
             logger.error(f"Error processing async streaming tool call: {e}")
             return None
+
+    def update_memory(self, message, role, *args, **kwargs):
+        if role == OpenAIBackendRole.ASSISTANT:
+            message = _compact_tool_call_arguments(message)
+        return super().update_memory(message, role, *args, **kwargs)
 
     def _clone_tools(self):
         """CAMEL's clone, keeping each tool's trusted safety declaration."""

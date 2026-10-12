@@ -1359,3 +1359,72 @@ def test_cloned_tools_keep_their_safety_declaration():
     assert copy is not tool
     safety, _key = declared_tool_safety(copy, "peek", {"path": "a"})
     assert safety is ToolSafetyClass.SAFE_READ
+
+
+def test_tool_errors_shown_to_the_model_drop_the_echoed_arguments():
+    from app.agent.listen_chat_agent import _concise_tool_error
+
+    document = "正文" * 5000
+    error = ValueError(
+        "Execution of function write_to_file failed with kwargs="
+        f"{{'title': 't', 'content': '{document}'}}. Error: File mutation "
+        "was not started"
+    )
+    assert _concise_tool_error(error) == "File mutation was not started"
+    assert _concise_tool_error(RuntimeError("plain")) == "plain"
+    long = _concise_tool_error(RuntimeError("x" * 5000))
+    assert len(long) < 2100 and long.endswith("（已截断）")
+
+
+def test_long_write_arguments_are_kept_short_in_memory():
+    from camel.messages import BaseMessage
+    from camel.types import RoleType
+
+    from app.agent.listen_chat_agent import _compact_tool_call_arguments
+
+    article = "正文" * 3000
+    message = BaseMessage(
+        role_name="agent",
+        role_type=RoleType.ASSISTANT,
+        meta_dict={
+            "tool_calls": [
+                {
+                    "id": "c1",
+                    "type": "function",
+                    "function": {
+                        "name": "write_to_file",
+                        "arguments": json.dumps(
+                            {
+                                "title": "t",
+                                "content": article,
+                                "filename": "a.md",
+                            },
+                            ensure_ascii=False,
+                        ),
+                    },
+                },
+                {
+                    "id": "c2",
+                    "type": "function",
+                    "function": {
+                        "name": "read_file",
+                        "arguments": json.dumps({"file_paths": ["a.md"]}),
+                    },
+                },
+            ]
+        },
+        content="",
+    )
+
+    compacted = _compact_tool_call_arguments(message)
+
+    write, read = compacted.meta_dict["tool_calls"]
+    args = json.loads(write["function"]["arguments"])
+    assert args["filename"] == "a.md"
+    assert len(args["content"]) < 400
+    assert "read_file" in args["content"]
+    assert read == message.meta_dict["tool_calls"][1]
+    # The original message, which the tool runs from, is untouched.
+    assert (
+        article in message.meta_dict["tool_calls"][0]["function"]["arguments"]
+    )
