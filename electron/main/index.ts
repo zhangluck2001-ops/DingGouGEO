@@ -134,6 +134,7 @@ import {
   registerWorkspaceSecretIpcHandlers,
 } from './workspaceSecrets';
 
+const PREWARMED_WEBVIEWS = 2;
 const userData = app.getPath('userData');
 
 // ==================== constants ====================
@@ -3382,11 +3383,14 @@ async function createWindowInternal() {
       installSurfaceContextMenu(contents, ownerWindow, 'automation-view'),
   });
 
-  // create multiple webviews
+  // Pre-create a small pool of hidden webviews for browser automation. Each
+  // is a renderer process (~50MB); eight sat idle on every launch although
+  // most tasks never open a page. The manager adds two more whenever the
+  // pool runs low and creates a missing one on demand.
   log.info(
     `[PROJECT BROWSER] Creating WebViews with partition: persist:user_login`
   );
-  for (let i = 1; i <= 8; i++) {
+  for (let i = 1; i <= PREWARMED_WEBVIEWS; i++) {
     webViewManager.createWebview(i === 1 ? undefined : i.toString());
   }
   log.info('[PROJECT BROWSER] WebViewManager initialized with webviews');

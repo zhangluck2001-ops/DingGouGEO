@@ -3,4 +3,9 @@
 set -o errexit
 set -o nounset
 
-celery -A app.core.celery worker --loglevel=info --queues=celery,poll_trigger_schedules,check_execution_timeouts
+# The worker only polls trigger schedules and execution timeouts every few
+# minutes. Celery's default of one process per CPU core kept ~11 processes
+# (~740MB) resident for that; two are plenty. Override with CELERY_CONCURRENCY.
+celery -A app.core.celery worker --loglevel=info \
+  --concurrency="${CELERY_CONCURRENCY:-2}" \
+  --queues=celery,poll_trigger_schedules,check_execution_timeouts
