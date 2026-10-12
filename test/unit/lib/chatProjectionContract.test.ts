@@ -251,6 +251,21 @@ describe('chat projection presentation contract', () => {
     });
   });
 
+  it('tells the user when an abandoned task was ended to free the Space', () => {
+    const projected = adaptChatProjectionEvent(
+      event(
+        'workspace.writer.reclaimed',
+        { superseded_run_id: 'run-private' },
+        1
+      )
+    );
+    expect(projected).toMatchObject({
+      kind: 'display',
+      node: { kind: 'notice', title: 'Earlier task ended' },
+    });
+    expect(JSON.stringify(projected)).not.toContain('run-private');
+  });
+
   it('keeps canonical transcript, tool outcomes, and safe artifact identity semantic', () => {
     const inputs = [
       event('user.message', { content: 'Create the report' }, 1),

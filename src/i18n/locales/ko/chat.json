@@ -383,6 +383,8 @@
   "worker-model-provider-load-failed": "작업자에 구성된 모델 제공업체를 불러오지 못했습니다.",
   "worker-model-provider-unavailable": "작업자 ‘{{worker}}’에 구성된 모델 제공업체를 더 이상 사용할 수 없습니다. 작업자를 편집하고 다른 모델을 선택하세요.",
   "workspace-available-description": "이 작업에 쓰기 권한이 부여되어 계속 진행합니다.",
+  "workspace-reclaimed-title": "중단된 이전 작업을 종료함",
+  "workspace-reclaimed-description": "중단된 작업이 이 스페이스를 계속 점유하고 있어 종료하고 이 작업을 계속합니다.",
   "workspace-available-title": "스페이스 사용 가능",
   "workspace-queue-position": " 대기열 위치: {{position}}.",
   "workspace-waiting-description": "다른 작업이 이 스페이스를 업데이트하고 있습니다. 스페이스를 사용할 수 있게 되면 이 작업이 자동으로 시작됩니다.{{position}}",

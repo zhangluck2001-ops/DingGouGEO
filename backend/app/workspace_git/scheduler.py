@@ -396,6 +396,43 @@ class WorkspaceWriterScheduler:
         )
 
 
+def record_superseded_holder(
+    journal: SQLiteRunJournal,
+    *,
+    run_id: str,
+    project_id: str,
+    superseded_run_id: str,
+) -> None:
+    """Tell the new task's timeline that an abandoned task was ended."""
+
+    journal.append_event(
+        run_id,
+        RunEventDraft(
+            event_id=f"workspace.writer.reclaimed:{run_id}:{superseded_run_id}",
+            event_type="workspace.writer.reclaimed",
+            payload={
+                **semantic_event_fields(
+                    kind="workspace_writer",
+                    subject_type="writer_request",
+                    subject_id=f"workspace-writer:{run_id}",
+                    phase="started",
+                    status="running",
+                    source="workspace_writer_scheduler",
+                    actor_type="system",
+                    correlation={"project_id": project_id},
+                ),
+                "superseded_run_id": superseded_run_id,
+                "display_title": "Earlier task ended",
+                "display_summary": (
+                    "An interrupted task was still holding this Space; it was "
+                    "ended so this task can continue"
+                ),
+            },
+        ),
+        expected_project_id=project_id,
+    )
+
+
 def get_default_workspace_writer_scheduler() -> WorkspaceWriterScheduler:
     journal = get_default_run_journal()
     if not isinstance(journal, SQLiteRunJournal):

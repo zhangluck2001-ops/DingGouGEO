@@ -403,6 +403,8 @@
   "worker-model-provider-load-failed": "تعذّر تحميل مزوّد النماذج المُعدّ لأحد الوكلاء.",
   "worker-model-provider-unavailable": "لم يعد مزوّد النماذج المُعدّ للوكيل «{{worker}}» متاحًا. عدّل الوكيل واختر نموذجًا آخر.",
   "workspace-available-description": "أصبحت لهذه المهمة الآن صلاحية الكتابة، وهي مستمرة.",
+  "workspace-reclaimed-title": "تم إنهاء المهمة السابقة",
+  "workspace-reclaimed-description": "كانت مهمة متوقفة لا تزال تشغل هذه المساحة، وتم إنهاؤها لتتمكن هذه المهمة من المتابعة.",
   "workspace-available-title": "المساحة متاحة",
   "workspace-queue-position": " موضع قائمة الانتظار: {{position}}.",
   "workspace-waiting-description": "تعمل مهمة أخرى على تحديث هذه المساحة. ستبدأ هذه المهمة تلقائيًا عندما تصبح المساحة متاحة.{{position}}",

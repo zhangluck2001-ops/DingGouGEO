@@ -387,6 +387,8 @@
   "worker-model-provider-load-failed": "Could not load the model provider configured for a worker.",
   "worker-model-provider-unavailable": "The model provider configured for worker \"{{worker}}\" is no longer available. Edit the worker and select another model.",
   "workspace-available-description": "This task now has write access and is continuing.",
+  "workspace-reclaimed-title": "Earlier task ended",
+  "workspace-reclaimed-description": "An interrupted task was still holding this Space. It was ended so this task can continue.",
   "workspace-available-title": "Space available",
   "workspace-queue-position": " Queue position: {{position}}.",
   "workspace-waiting-description": "Another task is updating this Space. This task will start automatically when the Space is available.{{position}}",

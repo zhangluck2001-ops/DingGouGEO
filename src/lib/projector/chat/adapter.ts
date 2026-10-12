@@ -1566,6 +1566,21 @@ function workspaceWriterNotice(
       'info'
     );
   }
+  if (base.eventType === 'workspace.writer.reclaimed') {
+    return noticeNode(
+      base,
+      {
+        title: i18next.t('chat.workspace-reclaimed-title', {
+          defaultValue: 'Earlier task ended',
+        }),
+        content: i18next.t('chat.workspace-reclaimed-description', {
+          defaultValue:
+            'An interrupted task was still holding this Space. It was ended so this task can continue.',
+        }),
+      },
+      'info'
+    );
+  }
   if (
     base.eventType === 'workspace.writer.acquired' &&
     payload.waited === true

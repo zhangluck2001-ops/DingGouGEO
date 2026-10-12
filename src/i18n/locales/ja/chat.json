@@ -383,6 +383,8 @@
   "worker-model-provider-load-failed": "ワーカーに設定されたモデルプロバイダーを読み込めませんでした。",
   "worker-model-provider-unavailable": "ワーカー「{{worker}}」に設定されたモデルプロバイダーは利用できません。ワーカーを編集して別のモデルを選択してください。",
   "workspace-available-description": "このタスクに書き込み権限が付与され、処理を続行しています。",
+  "workspace-reclaimed-title": "中断したタスクを終了しました",
+  "workspace-reclaimed-description": "中断したタスクがこのスペースを使用したままだったため終了し、このタスクを続行します。",
   "workspace-available-title": "スペースを利用できます",
   "workspace-queue-position": " キュー内の位置：{{position}}。",
   "workspace-waiting-description": "別のタスクがこのスペースを更新しています。利用可能になると、このタスクは自動的に開始します。{{position}}",

@@ -387,6 +387,8 @@
   "worker-model-provider-load-failed": "Kann nicht die Modellanbieter für einen Arbeiter laden.",
   "worker-model-provider-unavailable": "Das für den Arbeiter '{{worker}}' konfigurierte Modell-Anbieter ist nicht mehr verfügbar. Bearbeiten Sie den Arbeiter und wählen Sie ein anderes Modell aus.",
   "workspace-available-description": "Diese Aufgabe hat jetzt schreibberechtigten Zugriff und läuft fort.",
+  "workspace-reclaimed-title": "Frühere Aufgabe beendet",
+  "workspace-reclaimed-description": "Eine unterbrochene Aufgabe belegte diesen Space noch. Sie wurde beendet, damit diese Aufgabe fortfahren kann.",
   "workspace-available-title": "Arbeitsplatz verfügbar",
   "workspace-queue-position": " Warteschlangenposition: {{position}}.",
   "workspace-waiting-description": "Eine weitere Aufgabe aktualisiert diesen Arbeitsbereich. Diese Aufgabe wird automatisch starten, sobald der Arbeitsbereich verfügbar ist.{{position}}",

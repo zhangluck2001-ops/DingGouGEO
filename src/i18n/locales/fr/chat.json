@@ -388,6 +388,8 @@
   "worker-model-provider-load-failed": "Impossible de charger le fournisseur de modèles configuré pour un agent collaborateur.",
   "worker-model-provider-unavailable": "Le fournisseur de modèles configuré pour l’agent collaborateur « {{worker}} » n’est plus disponible. Modifiez l’agent et sélectionnez un autre modèle.",
   "workspace-available-description": "Cette tâche dispose désormais d’un accès en écriture et se poursuit.",
+  "workspace-reclaimed-title": "Tâche précédente terminée",
+  "workspace-reclaimed-description": "Une tâche interrompue occupait encore cet espace. Elle a été terminée pour que cette tâche puisse continuer.",
   "workspace-available-title": "Espace disponible",
   "workspace-queue-position": " Position dans la file : {{position}}.",
   "workspace-waiting-description": "Une autre tâche met à jour cet Espace. Cette tâche démarrera automatiquement lorsque l’Espace sera disponible.{{position}}",

@@ -383,6 +383,8 @@
   "worker-model-provider-load-failed": "无法加载为工作智能体配置的模型提供商。",
   "worker-model-provider-unavailable": "为工作智能体“{{worker}}”配置的模型提供商已不可用。请编辑该智能体并选择其他模型。",
   "workspace-available-description": "此任务现已获得写入权限，正在继续执行。",
+  "workspace-reclaimed-title": "已结束之前中断的任务",
+  "workspace-reclaimed-description": "之前有个中断的任务一直占着这个空间，已将它结束，本任务继续。",
   "workspace-available-title": "空间可用",
   "workspace-queue-position": " 队列位置：{{position}}。",
   "workspace-waiting-description": "另一项任务正在更新此空间。空间可用后，此任务将自动开始。{{position}}",

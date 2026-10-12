@@ -391,6 +391,8 @@
   "worker-model-provider-load-failed": "No se pudo cargar el proveedor de modelos configurado para un agente.",
   "worker-model-provider-unavailable": "El proveedor de modelos configurado para el agente «{{worker}}» ya no está disponible. Edita el agente y selecciona otro modelo.",
   "workspace-available-description": "Esta tarea ya tiene acceso de escritura y continúa.",
+  "workspace-reclaimed-title": "Tarea anterior finalizada",
+  "workspace-reclaimed-description": "Una tarea interrumpida seguía ocupando este espacio. Se finalizó para que esta tarea pueda continuar.",
   "workspace-available-title": "Espacio disponible",
   "workspace-queue-position": " Posición en la cola: {{position}}.",
   "workspace-waiting-description": "Otra tarea está actualizando este Espacio. Esta tarea se iniciará automáticamente cuando el Espacio esté disponible.{{position}}",

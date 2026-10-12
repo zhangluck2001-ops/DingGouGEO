@@ -391,6 +391,8 @@
   "worker-model-provider-load-failed": "Impossibile caricare il fornitore del modello configurato per un operatore.",
   "worker-model-provider-unavailable": "Il fornitore del modello configurato per l'operatore '{{worker}}' è più non disponibile. Modifica l'operatore e seleziona un altro modello.",
   "workspace-available-description": "Questa attività ora ha accesso scritto e continua.",
+  "workspace-reclaimed-title": "Attività precedente terminata",
+  "workspace-reclaimed-description": "Un'attività interrotta occupava ancora questo spazio. È stata terminata per permettere a questa attività di continuare.",
   "workspace-available-title": "Spazio disponibile",
   "workspace-queue-position": " Posizione della coda: {{position}}.",
   "workspace-waiting-description": "Un'altra attività è la mappatura di questo spazio. Questa attività si avvierà automaticamente quando lo spazio sarà disponibile.{{position}}",
