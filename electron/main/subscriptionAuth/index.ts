@@ -12,7 +12,7 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
-import { BrowserWindow, shell, type IpcMain } from 'electron';
+import { BrowserWindow, net, shell, type IpcMain } from 'electron';
 import log from 'electron-log';
 import http from 'node:http';
 import {
@@ -384,7 +384,10 @@ async function exchangeCodexOAuthCode(
   body.set('redirect_uri', pending.redirectUri);
   body.set('code_verifier', pending.codeVerifier);
 
-  const response = await fetch(tokenUrl, {
+  // net.fetch goes through the Chromium session, which carries the proxy from
+  // ~/.eigent/.env; Node's fetch connects directly, and auth.openai.com
+  // rejects direct connections from unsupported regions with 403.
+  const response = await net.fetch(tokenUrl, {
     method: 'POST',
     headers: {
       accept: 'application/json',
