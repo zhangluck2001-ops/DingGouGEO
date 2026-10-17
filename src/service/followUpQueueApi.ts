@@ -13,6 +13,7 @@
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
 import { fetchDelete, fetchGet, fetchPost } from '@/api/http';
+import i18next from 'i18next';
 
 const TERMINAL_CONTINUATION_ADMISSION_CODES = new Set([
   'continuation_resume_required',
@@ -28,6 +29,21 @@ const pendingFollowUpCache = new Map<
 
 export function invalidatePendingFollowUps(projectId: string): void {
   pendingFollowUpCache.delete(projectId);
+}
+
+/**
+ * The Brain explains a refused "continue" in English and in Project/Run
+ * terms. Show the localized wording for the codes it uses; anything else keeps
+ * the Brain's own message.
+ */
+export function continuationRejectionMessage(
+  code: string,
+  fallback: string
+): string {
+  if (!TERMINAL_CONTINUATION_ADMISSION_CODES.has(code)) return fallback;
+  return i18next.t(`chat.${code.replace(/_/g, '-')}`, {
+    defaultValue: fallback,
+  });
 }
 
 export interface ContinuationAdmissionRejection {
@@ -51,7 +67,10 @@ export function terminalContinuationAdmissionRejection(
   }
   return {
     code: String(detail.code),
-    message: String(detail.message || detail.code),
+    message: continuationRejectionMessage(
+      String(detail.code),
+      String(detail.message || detail.code)
+    ),
     interaction_type: 'continuation_clarification',
     project_state_version:
       typeof detail.project_state_version === 'number'

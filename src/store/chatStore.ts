@@ -68,7 +68,10 @@ import {
   errorCopy,
 } from '@/lib/usageErrors';
 import { recoverCompletedRunDisplay } from '@/service/completedRunDisplayRecovery';
-import { cancelFollowUpRequest } from '@/service/followUpQueueApi';
+import {
+  cancelFollowUpRequest,
+  continuationRejectionMessage,
+} from '@/service/followUpQueueApi';
 import { reconcileLegacyRunState } from '@/service/reconcileLegacyRunState';
 import { RUN_RECONCILIATION_MARKERS } from '@/service/runStateReconciliation';
 import { readTerminalRunResult } from '@/service/runUsageReconciliation';
@@ -6681,7 +6684,7 @@ const chatStore = (initial?: Partial<ChatStore>) =>
             const content = isContinuationClarification
               ? i18next.t('chat.control-input-required-message', {
                   defaultValue: 'Input required: {{message}}',
-                  message: userMessage,
+                  message: continuationRejectionMessage(err.code, userMessage),
                 })
               : i18next.t('chat.error-message', {
                   defaultValue: '❌ **Error**: {{message}}',
