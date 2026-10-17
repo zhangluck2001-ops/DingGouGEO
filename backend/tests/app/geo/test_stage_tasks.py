@@ -57,7 +57,7 @@ def test_every_stage_has_a_task_built_from_its_contract(space):
         )
         assert f"完成标准：{stage.done}" in text
         assert f"`{stage.subagent_type}`" in text
-        assert "GEO/geo.db" in text
+        assert str(Path("GEO") / "geo.db") in text
 
 
 def test_analysis_task_carries_the_rounds_metrics(space):
