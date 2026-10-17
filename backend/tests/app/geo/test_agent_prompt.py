@@ -91,6 +91,27 @@ def test_system_prompt_tells_the_root_how_to_delegate_each_stage():
     assert "{stage_table}" not in prompt and "{fact_rules}" not in prompt
 
 
+def test_windows_prompts_name_the_cmd_shell(monkeypatch):
+    def root(system):
+        return agent_prompt.build_system_prompt(
+            platform_system=system,
+            platform_machine="AMD64",
+            working_directory="C:\\w",
+            now_str="2026-10-16",
+        )
+
+    assert "cmd.exe" in root("Windows")
+    assert "cmd.exe" not in root("Darwin")
+    monkeypatch.setattr(agent_prompt.platform, "system", lambda: "Windows")
+    assert "cmd.exe" in agent_prompt.build_subagent_prompt(
+        "geo-knowledge", "x"
+    )
+    monkeypatch.setattr(agent_prompt.platform, "system", lambda: "Darwin")
+    assert "cmd.exe" not in agent_prompt.build_subagent_prompt(
+        "geo-knowledge", "x"
+    )
+
+
 def test_stage_sub_agent_gets_its_stage_and_the_shared_rules():
     prompt = agent_prompt.build_subagent_prompt(
         "geo-analysis", "诊断第一轮 {豆包} 回答"
