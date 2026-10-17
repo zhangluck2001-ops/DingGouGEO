@@ -44,6 +44,21 @@ try:
 except ImportError:  # pragma: no cover - Windows fallback
     fcntl = None
 
+# One lock per lock file for the whole process. Every file write builds a fresh
+# service (get_default_workspace_mutation_service), and each has its own
+# instance lock, so those cannot order concurrent writers. POSIX flock does
+# (separate descriptors conflict, even within one process); Windows has no
+# fcntl, so parallel writes all passed the admission check together and all
+# but the first were rejected instead of queueing.
+_PATH_LOCKS: dict[str, threading.RLock] = {}
+_PATH_LOCKS_GUARD = threading.Lock()
+
+
+def _process_path_lock(lock_path: Path) -> threading.RLock:
+    key = os.path.normcase(os.path.realpath(lock_path))
+    with _PATH_LOCKS_GUARD:
+        return _PATH_LOCKS.setdefault(key, threading.RLock())
+
 
 class ContentRepositoryError(RuntimeError):
     """Base error for Content Repository operations."""
@@ -779,7 +794,7 @@ class ContentRepositoryService:
     @contextmanager
     def repository_lock(self, lock_path: Path) -> Iterator[None]:
         lock_path.parent.mkdir(parents=True, exist_ok=True)
-        with self._lock:
+        with _process_path_lock(lock_path), self._lock:
             descriptor = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
             try:
                 if fcntl is not None:

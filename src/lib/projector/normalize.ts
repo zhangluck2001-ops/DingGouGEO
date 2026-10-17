@@ -49,6 +49,7 @@ function timestamp(value: unknown): string {
       value < 10_000_000_000 ? value * 1000 : value
     ).toISOString();
   }
+  // The epoch means "time unknown"; readers that measure durations skip it.
   return new Date(0).toISOString();
 }
 

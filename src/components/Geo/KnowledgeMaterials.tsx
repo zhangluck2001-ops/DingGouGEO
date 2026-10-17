@@ -49,6 +49,11 @@ const SOURCE_STATUSES: GeoKnowledgeSourceStatus[] = [
   '清洗中',
   '已清洗',
 ];
+// 「清洗中」 comes from the backend while the task cleaning a file is running;
+// it is shown but cannot be picked.
+const DERIVED_SOURCE_STATUS: GeoKnowledgeSourceStatus = '清洗中';
+// While files wait, refresh so 「清洗中」 follows the task starting and ending.
+const PENDING_REFRESH_MS = 10_000;
 const SOURCE_FILE_FILTERS = [
   {
     name: 'Documents',
@@ -143,6 +148,17 @@ export default function KnowledgeMaterials({
 
   useEffect(load, [load]);
 
+  const hasPending = Boolean(
+    state?.sources.some((source) => source.status !== '已清洗')
+  );
+  useEffect(() => {
+    if (!hasPending) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') load();
+    }, PENDING_REFRESH_MS);
+    return () => window.clearInterval(timer);
+  }, [hasPending, load]);
+
   const openPath = (path: string, reveal = false) => {
     const action = reveal
       ? electronAPI?.revealLocalPath
@@ -226,17 +242,10 @@ export default function KnowledgeMaterials({
       );
       return;
     }
-    await Promise.all(
-      sources
-        .filter((source) => source.status === '待清洗')
-        .map((source) =>
-          geoApi.setKnowledgeSourceStatus(projectId, source.name, '清洗中')
-        )
-    ).catch(() => undefined);
+    // Nothing is marked here: the task is only in the chat box until sent.
     toast.success(
       t('geo.sent-to-chat', { defaultValue: 'Added to the chat box' })
     );
-    load();
   };
 
   if (loading && !state) {
@@ -404,7 +413,11 @@ export default function KnowledgeMaterials({
                   </SelectTrigger>
                   <SelectContent>
                     {SOURCE_STATUSES.map((status) => (
-                      <SelectItem key={status} value={status}>
+                      <SelectItem
+                        key={status}
+                        value={status}
+                        disabled={status === DERIVED_SOURCE_STATUS}
+                      >
                         {status}
                       </SelectItem>
                     ))}

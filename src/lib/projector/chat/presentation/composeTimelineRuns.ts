@@ -52,7 +52,10 @@ const TERMINAL_RUN_STATUSES = new Set<ChatRunStatus>([
 function timestampValue(value: string | null | undefined): number | null {
   if (!value) return null;
   const parsed = Date.parse(value);
-  return Number.isFinite(parsed) ? parsed : null;
+  // normalizeEvent stamps events that carry no time with the Unix epoch.
+  // Treat it as unknown: as a Run's start it made a stopped Run read
+  // "stopped after 497814h".
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
 function firstText(

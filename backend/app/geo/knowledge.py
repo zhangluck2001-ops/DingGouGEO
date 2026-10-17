@@ -19,6 +19,8 @@ files generated from the team's cleaning template. Cleaned facts are also
 rows in ``geo_fact`` so boards and the agent can query them.
 """
 
+import logging
+import os
 import re
 import shutil
 from datetime import datetime
@@ -27,13 +29,17 @@ from pathlib import Path
 
 from app.geo import source_parse, store
 
+logger = logging.getLogger("geo.knowledge")
+
 KB_FOLDER = "01_品牌知识库"
 LEGACY_KB_FOLDER = "01_品牌资料"
 RAW_FOLDER = "原始资料"
 PRODUCT_FOLDER = "02_产品库"
 RULES_FILE = "清洗规则.md"
 TEMPLATE_MARKER = "<!-- DingGouGEO 模板：按清洗规则填写后删除本行 -->"
-SOURCE_STATUSES = ("待清洗", "清洗中", "已清洗")
+# Stored statuses. 「清洗中」 is derived from the running task instead, so a
+# stopped or failed run can never leave a source stuck in it.
+STORED_SOURCE_STATUSES = ("待清洗", "已清洗")
 
 _TEMPLATE_PATH = (
     Path(__file__).parent / "templates" / "brand_kb_cleaning_rules.md"
@@ -125,6 +131,38 @@ def _iso(timestamp: float) -> str:
     return datetime.fromtimestamp(timestamp).isoformat(timespec="seconds")
 
 
+def _path_key(path: str) -> str:
+    return os.path.normcase(os.path.realpath(os.path.expanduser(path)))
+
+
+def _names_being_cleaned(workspace_root: str, names: list[str]) -> set[str]:
+    """Sources named by the task that is running in this Space right now.
+
+    A running task holds the Space's writer lease and releases it when it
+    completes, fails or is stopped, so 「清洗中」 lasts exactly as long as the
+    task that was asked to clean the source.
+    """
+    if not names:
+        return set()
+    try:
+        from app.run_journal.runtime import get_default_run_journal
+
+        journal = get_default_run_journal()
+        space = _path_key(workspace_root)
+        asked = "".join(
+            str(event.payload.get("content", ""))
+            for task_id, worktree in journal.list_active_writer_lease_paths()
+            if _path_key(worktree) == space
+            for event in journal.list_events(
+                task_id, event_type_prefix="user.message"
+            )
+        )
+    except Exception:
+        logger.warning("Could not read the running task", exc_info=True)
+        return set()
+    return {name for name in names if name in asked}
+
+
 def status(project_id: int) -> dict:
     project = _project(project_id)
     workspace_root = project["workspace_root"]
@@ -179,23 +217,45 @@ def status(project_id: int) -> dict:
         ).fetchone()[0]
     sources = []
     raw = root / RAW_FOLDER
-    if raw.is_dir():
-        for path in sorted(raw.iterdir(), key=lambda p: p.name):
-            if not path.is_file() or path.name.startswith("."):
-                continue
-            record = known.get(path.name, {})
-            sources.append(
-                {
-                    "name": path.name,
-                    "path": str(path),
-                    "size": path.stat().st_size,
-                    "status": record.get("status", "待清洗"),
-                    "imported_at": record.get("imported_at")
-                    or _iso(path.stat().st_mtime),
-                    "cleaned_at": record.get("cleaned_at"),
-                    "parsed": parse_summary(path),
-                }
-            )
+    files = (
+        sorted(
+            (
+                p
+                for p in raw.iterdir()
+                if p.is_file() and not p.name.startswith(".")
+            ),
+            key=lambda p: p.name,
+        )
+        if raw.is_dir()
+        else []
+    )
+    cleaning = _names_being_cleaned(
+        workspace_root,
+        [
+            p.name
+            for p in files
+            if known.get(p.name, {}).get("status") != "已清洗"
+        ],
+    )
+    for path in files:
+        record = known.get(path.name, {})
+        cleaned = record.get("status") == "已清洗"
+        sources.append(
+            {
+                "name": path.name,
+                "path": str(path),
+                "size": path.stat().st_size,
+                "status": "已清洗"
+                if cleaned
+                else "清洗中"
+                if path.name in cleaning
+                else "待清洗",
+                "imported_at": record.get("imported_at")
+                or _iso(path.stat().st_mtime),
+                "cleaned_at": record.get("cleaned_at"),
+                "parsed": parse_summary(path),
+            }
+        )
     return {
         "project_id": project_id,
         "db_path": str(store.project_db_path(project_id)),
@@ -266,8 +326,8 @@ def import_sources(project_id: int, paths: list[str]) -> list[str]:
 
 
 def set_source_status(project_id: int, file_name: str, value: str) -> None:
-    if value not in SOURCE_STATUSES:
-        raise ValueError(f"status must be one of {SOURCE_STATUSES}")
+    if value not in STORED_SOURCE_STATUSES:
+        raise ValueError(f"status must be one of {STORED_SOURCE_STATUSES}")
     with store.connect(project_id) as conn:
         conn.execute(
             "INSERT INTO geo_kb_source (project_id, file_name, status, cleaned_at)"

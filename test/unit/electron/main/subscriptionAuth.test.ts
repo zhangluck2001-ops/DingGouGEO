@@ -26,6 +26,12 @@ vi.mock('electron', () => ({
     encryptString: (s: string) => Buffer.from('enc:' + s, 'utf-8'),
     decryptString: (b: Buffer) => b.toString('utf-8').replace(/^enc:/, ''),
   },
+  // Token requests go through net.fetch; route it to the global fetch so the
+  // tests can intercept it the same way.
+  net: {
+    fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+      globalThis.fetch(input, init),
+  },
 }));
 
 vi.mock('electron-log', () => ({

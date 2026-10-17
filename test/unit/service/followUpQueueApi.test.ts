@@ -13,8 +13,10 @@
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
 import { fetchDelete, fetchGet, fetchPost } from '@/api/http';
+import zhHans from '@/i18n/locales/zh-Hans/index';
 import {
   cancelFollowUpRequest,
+  continuationRejectionMessage,
   createFollowUpRequest,
   getRemoteFollowUpByCommandId,
   invalidatePendingFollowUps,
@@ -24,6 +26,7 @@ import {
   prioritizeFollowUpRequest,
   terminalContinuationAdmissionRejection,
 } from '@/service/followUpQueueApi';
+import i18next from 'i18next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/api/http', () => ({
@@ -125,7 +128,9 @@ describe('followUpQueueApi local Brain routes', () => {
       })
     ).toEqual({
       code: 'continuation_clarification_required',
-      message: 'Say what should continue',
+      // The Brain's English is replaced by the localized copy for its code.
+      message:
+        "There's no unfinished step to continue. Say what you want done next.",
       interaction_type: 'continuation_clarification',
       project_state_version: 4,
     });
@@ -141,6 +146,26 @@ describe('followUpQueueApi local Brain routes', () => {
         },
       })
     ).toBeNull();
+  });
+
+  it('shows refused continues in the user language and keeps unknown codes as sent', async () => {
+    const previous = i18next.language;
+    // The shared setup loads only en-US; add the shipped Chinese bundle.
+    i18next.addResourceBundle('zh-Hans', 'translation', zhHans, true, true);
+    await i18next.changeLanguage('zh-Hans');
+    try {
+      expect(
+        continuationRejectionMessage(
+          'continuation_clarification_required',
+          'The saved Project frontier has no unfinished next action.'
+        )
+      ).toBe('没有未完成的步骤可以继续。请说明接下来要做什么。');
+      expect(
+        continuationRejectionMessage('follow_up_must_queue', 'as sent')
+      ).toBe('as sent');
+    } finally {
+      await i18next.changeLanguage(previous);
+    }
   });
 
   it('deduplicates concurrent pending-list reads without caching failures', async () => {

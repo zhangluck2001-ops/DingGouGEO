@@ -26,7 +26,7 @@ export interface FloatingActionProps {
   // onResume?: () => void;  // Commented out - temporary not needed
   /** Callback when skip to next is clicked */
   onSkip?: () => void;
-  /** Loading state for pause/resume actions */
+  /** True from the Stop click until the task is seen to end. */
   loading?: boolean;
   /** When true, do not show Stop even if status is still "running" (e.g. direct @-agent after AGENT_END). */
   hideStop?: boolean;
@@ -63,10 +63,13 @@ export const FloatingAction = ({
           size="sm"
           onClick={onSkip}
           disabled={loading}
+          aria-busy={loading}
           className="gap-1.5 rounded-full"
         >
           <span className="!text-ds-text-base font-semibold">
-            {t('chat.stop-task', { defaultValue: 'Stop Task' })}
+            {loading
+              ? t('chat.control-stopping', { defaultValue: 'Stopping…' })
+              : t('chat.stop-task', { defaultValue: 'Stop Task' })}
           </span>
         </Button>
 
