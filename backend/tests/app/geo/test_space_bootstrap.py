@@ -113,6 +113,72 @@ def test_knowledge_base_scaffold_status_and_import(tmp_path, monkeypatch):
     assert pdf.read_bytes() == b"%PDF-1.4"
 
 
+class _Event:
+    def __init__(self, content):
+        self.payload = {"content": content}
+
+
+class _Journal:
+    """Run journal with one task holding a Space's writer lease."""
+
+    def __init__(self, worktree, message):
+        self.leases = [("task-1", worktree)] if worktree else []
+        self.message = message
+
+    def list_active_writer_lease_paths(self):
+        return self.leases
+
+    def list_events(self, task_id, *, event_type_prefix=None):
+        assert (task_id, event_type_prefix) == ("task-1", "user.message")
+        return [_Event(self.message)]
+
+
+def test_cleaning_lasts_only_while_its_task_runs(tmp_path, monkeypatch):
+    monkeypatch.setenv("EIGENT_GEO_DB_PATH", str(tmp_path / "geo.db"))
+    workspace = tmp_path / "space"
+    workspace.mkdir()
+    project = space_bootstrap.ensure_space_project(
+        "s", "小安素", str(workspace)
+    )
+    pid = project["project_id"]
+    files = []
+    for name in ("配料表.pdf", "介绍.xlsx", "旧资料.pdf"):
+        path = tmp_path / name
+        path.write_bytes(b"x")
+        files.append(str(path))
+    knowledge.import_sources(pid, files)
+    knowledge.set_source_status(pid, "旧资料.pdf", "已清洗")
+    # A row left 「清洗中」 by an older version must not stick.
+    with store.connect(pid) as conn:
+        conn.execute(
+            "UPDATE geo_kb_source SET status = '清洗中'"
+            " WHERE file_name = '介绍.xlsx'"
+        )
+
+    import app.run_journal.runtime as runtime
+
+    def statuses(journal):
+        monkeypatch.setattr(
+            runtime, "get_default_run_journal", lambda: journal
+        )
+        return {
+            s["name"]: s["status"] for s in knowledge.status(pid)["sources"]
+        }
+
+    asked = "清洗下面的资料：配料表.pdf、旧资料.pdf"
+    assert statuses(_Journal(str(workspace), asked)) == {
+        "介绍.xlsx": "待清洗",
+        "旧资料.pdf": "已清洗",
+        "配料表.pdf": "清洗中",
+    }
+    # Another Space's task does not count.
+    assert statuses(_Journal(str(tmp_path / "other"), asked))[
+        "配料表.pdf"
+    ] == ("待清洗")
+    # Stopped, failed or finished: the lease is gone.
+    assert statuses(_Journal(None, asked))["配料表.pdf"] == "待清洗"
+
+
 def test_space_keeps_its_data_in_its_own_folder(tmp_path, monkeypatch):
     registry = tmp_path / "registry" / "geo.db"
     monkeypatch.setenv("EIGENT_GEO_DB_PATH", str(registry))
