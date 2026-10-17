@@ -69,6 +69,46 @@ def _git(repository: Path, *args: str, check: bool = True) -> str:
     return completed.stdout.strip()
 
 
+def test_separate_services_take_turns_on_one_lock_file(tmp_path, journal):
+    """Each file write builds its own service; their locks must still queue.
+
+    POSIX flock orders them across descriptors. Windows has no fcntl, and the
+    per-instance lock cannot, so parallel writes entered together and all but
+    the first were rejected.
+    """
+    import threading
+    import time
+
+    first, _ = _service(tmp_path, journal)
+    second, _ = _service(tmp_path, journal)
+    lock_file = tmp_path / "locks" / "writer.lock"
+    inside = 0
+    overlaps = 0
+    guard = threading.Lock()
+
+    def worker(service):
+        nonlocal inside, overlaps
+        with service.repository_lock(lock_file):
+            with guard:
+                inside += 1
+                if inside > 1:
+                    overlaps += 1
+            time.sleep(0.15)
+            with guard:
+                inside -= 1
+
+    threads = [
+        threading.Thread(target=worker, args=(service,))
+        for service in (first, second, first, second)
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=10)
+
+    assert overlaps == 0
+
+
 def test_plain_folder_inspection_is_read_only_and_requires_consent(
     tmp_path,
     journal,
