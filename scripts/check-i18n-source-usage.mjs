@@ -137,7 +137,7 @@ const ALLOWLIST = [
   {
     file: 'src/components/Session/PreviewPanel/tabs/TerminalTab.tsx',
     kind: 'jsx-text',
-    text: 'Eigent:~$',
+    text: 'DingGouGEO:~$',
     count: 1,
     reason: 'Terminal prompt is a product/command token, not prose.',
   },
@@ -203,7 +203,10 @@ const ALLOWLIST = [
 function collectSourceFiles(directory, output = []) {
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const absolutePath = path.join(directory, entry.name);
-    const relativePath = path.relative(projectRoot, absolutePath);
+    const relativePath = path
+      .relative(projectRoot, absolutePath)
+      .split(path.sep)
+      .join('/');
     if (EXCLUDED_PATH.test(relativePath)) continue;
     if (entry.isDirectory()) {
       collectSourceFiles(absolutePath, output);
@@ -302,7 +305,10 @@ function expressionTexts(node) {
 }
 
 function scanFile(absolutePath) {
-  const relativePath = path.relative(projectRoot, absolutePath);
+  const relativePath = path
+    .relative(projectRoot, absolutePath)
+    .split(path.sep)
+    .join('/');
   const source = fs.readFileSync(absolutePath, 'utf8');
   const scriptKind = /x$/.test(path.extname(absolutePath))
     ? ts.ScriptKind.TSX
