@@ -12,6 +12,7 @@
 // limitations under the License.
 // ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
+import { net } from 'electron';
 import log from 'electron-log';
 import crypto from 'node:crypto';
 import http from 'node:http';
@@ -95,7 +96,9 @@ async function refreshCodexCredential(
   body.set('client_id', clientId);
   body.set('refresh_token', credential.refresh_token);
 
-  const response = await fetch(tokenUrl, {
+  // Through the Chromium session so the refresh uses the configured proxy
+  // (see exchangeCodexOAuthCode in index.ts).
+  const response = await net.fetch(tokenUrl, {
     method: 'POST',
     headers: {
       accept: 'application/json',

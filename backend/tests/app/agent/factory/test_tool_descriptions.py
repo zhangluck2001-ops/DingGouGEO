@@ -120,6 +120,51 @@ async def test_default_single_agent_tools_have_descriptions(
 
 
 @pytest.mark.asyncio
+async def test_terminal_toolkit_is_built_off_the_event_loop(
+    sample_chat_data, monkeypatch, tmp_path
+):
+    """Its venv clone takes seconds; on the loop it stalled every request."""
+    import threading
+
+    import app.agent.factory.toolkit_assembler as assembler
+
+    built_on: list[int] = []
+
+    class FakeTerminalToolkit:
+        def __init__(self, *args, **kwargs):
+            built_on.append(threading.get_ident())
+
+        @classmethod
+        def toolkit_name(cls):
+            return "TerminalToolkit"
+
+        def get_tools(self):
+            return []
+
+    monkeypatch.setattr(assembler, "TerminalToolkit", FakeTerminalToolkit)
+    toolkit_config = {
+        name: {"enabled": name == "terminal"}
+        for name in assembler.DEFAULT_SINGLE_AGENT_TOOLKIT_CONFIG
+    }
+    options = _bedrock_chat(sample_chat_data).model_copy(
+        update={"toolkit_config": toolkit_config}
+    )
+    _patch_toolkit_creation_side_effects(
+        monkeypatch, tmp_path, options.project_id
+    )
+
+    await assemble_single_agent_toolkits(
+        options,
+        task_id=options.task_id,
+        working_directory=str(tmp_path),
+        hands=None,
+        can_delegate=False,
+    )
+
+    assert built_on and built_on[0] != threading.get_ident()
+
+
+@pytest.mark.asyncio
 async def test_single_agent_ignores_legacy_web_deploy_config(
     sample_chat_data, monkeypatch, tmp_path
 ):

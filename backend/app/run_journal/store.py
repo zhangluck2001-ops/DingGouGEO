@@ -9725,6 +9725,23 @@ class SQLiteRunJournal:
                 else None
             )
 
+    def list_active_writer_lease_paths(self) -> list[tuple[str, str]]:
+        """(task_id, worktree_path) for every writer lease held right now.
+
+        A held lease means that task's Run is executing in that checkout.
+        """
+        with self._lock:
+            rows = self._connection.execute(
+                """
+                SELECT DISTINCT l.task_id, b.worktree_path
+                FROM workspace_writer_leases AS l
+                JOIN project_workspace_bindings AS b
+                  ON b.repository_id = l.repository_id
+                 AND b.checkout_id = l.checkout_id
+                """
+            ).fetchall()
+            return [(row["task_id"], row["worktree_path"]) for row in rows]
+
     def list_workspace_writer_requests(
         self,
         *,

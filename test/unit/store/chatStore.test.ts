@@ -5169,8 +5169,9 @@ describe('ChatStore - Core Functionality', () => {
         messages: expect.arrayContaining([
           expect.objectContaining({
             role: 'agent',
+            // Localized copy for the code, not the Brain's Project wording.
             content:
-              'Input required: The saved Project frontier has no unfinished next action.',
+              "Input required: There's no unfinished step to continue. Say what you want done next.",
           }),
         ]),
       });

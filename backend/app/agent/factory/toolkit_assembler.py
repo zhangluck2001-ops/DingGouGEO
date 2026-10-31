@@ -12,6 +12,7 @@
 # limitations under the License.
 # ========= Copyright 2025-2026 @ Eigent.ai All Rights Reserved. =========
 
+import asyncio
 import inspect
 import logging
 import os
@@ -692,7 +693,12 @@ async def assemble_single_agent_toolkits(
             )
         else:
             terminal_options.setdefault("runtime_env_provider", None)
-        terminal_toolkit = TerminalToolkit(
+        # Construction clones the terminal venv for this run, a copy of
+        # thousands of files (11s on Windows). Doing it on the event loop
+        # stalled every other request meanwhile: queued messages, Stop, the
+        # GEO panel. The worker thread keeps the caller's run context.
+        terminal_toolkit = await asyncio.to_thread(
+            TerminalToolkit,
             options.project_id,
             Agents.single_agent,
             **terminal_options,

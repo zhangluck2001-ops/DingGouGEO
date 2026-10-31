@@ -107,6 +107,8 @@ import { PLAN_OVERLAY_SLOT_ID } from './TaskBox/PlanTaskBox';
 const CHAT_SCROLL_BOTTOM_MIN_PX = 128;
 /** Small gap between last message and BottomBox top. */
 const CHAT_SCROLL_BOTTOM_GAP_PX = 8;
+/** Longest the Stop button stays "Stopping…" if the task's end is missed. */
+const STOPPING_RELEASE_MS = 30_000;
 
 const USAGE_WARNING_RATIO = 0.75;
 const FREE_STARTING_CREDITS = 500;
@@ -593,6 +595,13 @@ export default function ChatBox(): JSX.Element {
 
   const [loading, setLoading] = useState(false);
   const [isPauseResumeLoading, setIsPauseResumeLoading] = useState(false);
+  // The task a Stop click is ending. The backend acknowledges the request at
+  // once but finishes cleanup before the task ends, so the button keeps
+  // saying "Stopping…" until then instead of looking unresponsive.
+  const [stoppingTaskId, setStoppingTaskId] = useState<string | null>(null);
+  // A queued message being saved. Repeat sends meanwhile are dropped: they
+  // once stacked five copies of one reply while the backend was busy.
+  const queueSubmittingRef = useRef(false);
 
   const activeTaskId = chatStore?.activeTaskId;
   const activeAskTask = chatStore?.tasks[activeTaskId as string];
@@ -919,6 +928,27 @@ export default function ChatBox(): JSX.Element {
     );
   }, [chatStore?.activeTaskId, chatStore?.tasks, interruptedRun?.run_id]);
 
+  // Release "Stopping…" once the stopped task is seen to leave RUNNING, when
+  // another task becomes active, or after a bound in case the end is missed.
+  const stoppingTaskStatus = stoppingTaskId
+    ? chatStore?.tasks[stoppingTaskId]?.status
+    : undefined;
+  useEffect(() => {
+    if (!stoppingTaskId) return;
+    if (
+      stoppingTaskStatus !== ChatTaskStatus.RUNNING ||
+      chatStore?.activeTaskId !== stoppingTaskId
+    ) {
+      setStoppingTaskId(null);
+      return;
+    }
+    const timer = window.setTimeout(
+      () => setStoppingTaskId(null),
+      STOPPING_RELEASE_MS
+    );
+    return () => window.clearTimeout(timer);
+  }, [stoppingTaskId, stoppingTaskStatus, chatStore?.activeTaskId]);
+
   const queueExecution = selectQueueExecution({
     snapshot: eventNativeTimelineEnabled ? eventNativeProjectSnapshot : null,
     legacyRunId: chatStore?.activeTaskId,
@@ -1225,10 +1255,15 @@ export default function ChatBox(): JSX.Element {
       !requiresHumanReply &&
       (queueExecution.busy || (isTaskBusy && !isReplayChatStore))
     ) {
+      if (queueSubmittingRef.current) return;
+      queueSubmittingRef.current = true;
       const queuedFiles = JSON.parse(
         JSON.stringify(chatStore.tasks[_taskId]?.attaches || [])
       );
       const requestId = generateUniqueId();
+      // Take the draft at once so the click is visibly accepted.
+      const draft = message;
+      setMessage('');
       try {
         await createFollowUpRequest({
           projectId: targetProjectId,
@@ -1239,8 +1274,11 @@ export default function ChatBox(): JSX.Element {
         });
       } catch (error: any) {
         console.error('[FollowUpQueue] Failed to persist message', error);
+        setMessage(draft);
         notifyError(error?.message || 'Failed to queue message.');
         return;
+      } finally {
+        queueSubmittingRef.current = false;
       }
       projectStore.restoreQueuedMessage(targetProjectId, {
         task_id: requestId,
@@ -1252,7 +1290,6 @@ export default function ChatBox(): JSX.Element {
         reviewHandoffIds,
       });
       chatStore.setAttaches(_taskId, []);
-      setMessage('');
       acknowledgeWorkspaceReviewHandoffs(targetProjectId, reviewHandoffIds);
       setPendingReviewHandoffIds([]);
       toast.success(
@@ -1723,16 +1760,21 @@ export default function ChatBox(): JSX.Element {
               } catch (error: any) {
                 // Keep the failed turn as a traceable receipt instead of
                 // mutating the completed history Run.
+                const reason =
+                  terminalContinuationAdmissionRejection(error)?.message ||
+                  error?.message;
                 nextChatState.setIsPending(nextTaskId, false);
                 nextChatState.setStatus(nextTaskId, ChatTaskStatus.FINISHED);
                 nextChatState.addMessages(nextTaskId, {
                   id: generateUniqueId(),
                   role: 'agent',
                   content:
-                    error?.message ||
+                    reason ||
                     '❌ **Error**: Failed to start the follow-up task.',
                 });
-                notifyError(error?.message || 'Failed to send follow-up.');
+                // A queued send is reported once, by the queue dispatcher.
+                if (!preserveComposer)
+                  notifyError(reason || 'Failed to send follow-up.');
                 if (preserveComposer) throw error;
               }
             }
@@ -2173,9 +2215,13 @@ export default function ChatBox(): JSX.Element {
         console.error('[FollowUpQueue] Failed to admit queued message', error);
         const rejection = terminalContinuationAdmissionRejection(error);
         if (rejection) {
-          // Brain has durably cancelled this queue row. Remove only the
-          // renderer projection and leave the typed explanation visible.
-          projectStore.removeQueuedMessage(projectId, next.task_id);
+          // Brain has durably cancelled this queue row. Mark it handled, not
+          // just removed: the pending list is cached for a few seconds and
+          // restoring the row from it re-sent and re-rejected it seven times.
+          acknowledgeQueuedRequest(projectId, next.task_id);
+          // Hand the text back instead of dropping it, so the user can say
+          // what to continue with.
+          setMessage((current) => (current.trim() ? current : next.content));
           notifyError(rejection.message);
           return;
         }
@@ -2198,6 +2244,7 @@ export default function ChatBox(): JSX.Element {
     queuedMessages,
     queueAction,
     followUpAdmissionRevision,
+    setMessage,
   ]);
 
   useEffect(() => {
@@ -2298,7 +2345,9 @@ export default function ChatBox(): JSX.Element {
   // Stop task handler - triggers Action.skip_task which preserves context
   const handleSkip = async () => {
     const taskId = chatStore.activeTaskId as string;
+    if (isPauseResumeLoading || stoppingTaskId === taskId) return;
     setIsPauseResumeLoading(true);
+    setStoppingTaskId(taskId);
 
     try {
       // Call skip-task endpoint to trigger Action.skip_task
@@ -2324,6 +2373,7 @@ export default function ChatBox(): JSX.Element {
       );
     } catch (error) {
       console.error('[STOP-BUTTON] ❌ Failed to stop task:', error);
+      setStoppingTaskId(null);
 
       // If backend call failed, close SSE connection as fallback
       try {
@@ -2640,12 +2690,14 @@ export default function ChatBox(): JSX.Element {
     if (
       runId !== currentRunId ||
       currentRun?.status !== 'running' ||
-      isPauseResumeLoading
+      isPauseResumeLoading ||
+      stoppingTaskId === runId
     ) {
       return;
     }
 
     setIsPauseResumeLoading(true);
+    setStoppingTaskId(runId);
     try {
       await cancelProjectRun(
         runId,
@@ -2659,6 +2711,7 @@ export default function ChatBox(): JSX.Element {
       });
     } catch (error: any) {
       console.error('[RunControl] Failed to stop Run', error);
+      setStoppingTaskId(null);
       notifyError(
         error?.message ||
           t('chat.run-stop-failed', {
@@ -2885,7 +2938,7 @@ export default function ChatBox(): JSX.Element {
               className="static mt-0 w-auto"
               status={ChatTaskStatus.RUNNING}
               onSkip={handleFloatingStop}
-              loading={isPauseResumeLoading}
+              loading={isPauseResumeLoading || stoppingTaskId !== null}
             />
           </div>
         )}

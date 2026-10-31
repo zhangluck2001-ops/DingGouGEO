@@ -2016,6 +2016,83 @@ describe('ChatBox Component', async () => {
       });
     });
 
+    const runningComposerStore = () => ({
+      ...defaultChatStoreState,
+      tasks: {
+        'test-task-id': {
+          ...defaultChatStoreState.tasks['test-task-id'],
+          messages: [{ id: 'q', role: 'user', content: 'First', attaches: [] }],
+          hasMessages: true,
+          status: 'running',
+        },
+      },
+    });
+
+    it('takes the draft at once and saves one queued copy while the backend is slow', async () => {
+      const user = userEvent.setup();
+      mockUseChatStoreAdapter.mockReturnValue({
+        projectStore: defaultProjectStoreState as any,
+        chatStore: runningComposerStore() as any,
+      });
+      let saved: (value: unknown) => void = () => {};
+      _mockFetchPost.mockImplementationOnce(
+        () => new Promise((resolve) => (saved = resolve))
+      );
+
+      renderChatBox();
+      const input = screen.getByTestId('message-input');
+      await user.type(input, 'Yes');
+      await user.click(screen.getByTestId('send-button'));
+      expect(input).toHaveValue('');
+      await user.type(input, 'Yes');
+      await user.click(screen.getByTestId('send-button'));
+
+      expect(
+        _mockFetchPost.mock.calls.filter(
+          ([url]) => url === '/projects/test-project-id/follow-ups'
+        )
+      ).toHaveLength(1);
+      saved({
+        request_id: 'test-unique-id',
+        project_id: 'test-project-id',
+        content: 'Yes',
+        attachment_paths: [],
+        delivery_mode: 'wait',
+        status: 'pending',
+        source: 'local',
+        created_at: 1,
+        updated_at: 1,
+      });
+      await waitFor(() =>
+        expect(defaultProjectStoreState.restoreQueuedMessage).toHaveBeenCalled()
+      );
+      // The second draft is not wiped by the first one's success.
+      expect(input).toHaveValue('Yes');
+    });
+
+    it('puts the draft back when a queued message cannot be saved', async () => {
+      const user = userEvent.setup();
+      mockUseChatStoreAdapter.mockReturnValue({
+        projectStore: defaultProjectStoreState as any,
+        chatStore: runningComposerStore() as any,
+      });
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
+      _mockFetchPost.mockRejectedValueOnce(new Error('offline'));
+
+      renderChatBox();
+      const input = screen.getByTestId('message-input');
+      await user.type(input, 'Second task');
+      await user.click(screen.getByTestId('send-button'));
+
+      await waitFor(() => expect(input).toHaveValue('Second task'));
+      expect(
+        defaultProjectStoreState.restoreQueuedMessage
+      ).not.toHaveBeenCalled();
+      consoleError.mockRestore();
+    });
+
     it.each([false, true])(
       'keeps restored follow-ups pending after interruption with event-native=%s',
       async (eventNative) => {
@@ -2840,6 +2917,123 @@ describe('ChatBox Component', async () => {
       }
     });
 
+    it('sends a rejected continue once and hands its text back', async () => {
+      // A live queue: removing a row really removes it, as the store does.
+      let queued = [
+        {
+          task_id: 'queued-continue',
+          content: '继续',
+          timestamp: 1,
+          attaches: [],
+        },
+      ];
+      defaultProjectStoreState.getProjectById.mockImplementation(
+        () => ({ queuedMessages: queued }) as any
+      );
+      defaultProjectStoreState.removeQueuedMessage.mockImplementation(
+        (_projectId: string, taskId: string) => {
+          queued = queued.filter((item) => item.task_id !== taskId);
+        }
+      );
+      // The pending list is stale: it still reports the rejected row.
+      defaultProjectStoreState.restoreQueuedMessage.mockImplementation(
+        (_projectId: string, row: any) => {
+          if (!queued.some((item) => item.task_id === row.task_id))
+            queued = [...queued, row];
+        }
+      );
+      mockFetchGet.mockImplementation((url: string) =>
+        Promise.resolve(
+          url.endsWith('/status')
+            ? { has_lock: true, status: 'done', consumer_alive: true }
+            : url === '/projects/test-project-id/follow-ups'
+              ? {
+                  items: [
+                    {
+                      request_id: 'queued-continue',
+                      project_id: 'test-project-id',
+                      content: '继续',
+                      attachment_paths: [],
+                      review_handoff_ids: [],
+                      delivery_mode: 'wait',
+                      status: 'pending',
+                      source: 'local',
+                      created_at: 1,
+                      updated_at: 1,
+                    },
+                  ],
+                }
+              : { items: [] }
+        )
+      );
+      const finishedStore = {
+        ...defaultChatStoreState,
+        tasks: {
+          'test-task-id': {
+            ...defaultChatStoreState.tasks['test-task-id'],
+            status: 'finished',
+          },
+        },
+      };
+      // Like the real store adapter, every render gets a fresh store object,
+      // so the pending-list restore effect runs again on each update.
+      mockUseChatStoreAdapter.mockImplementation(() => ({
+        projectStore: { ...defaultProjectStoreState } as any,
+        chatStore: finishedStore as any,
+      }));
+      eventNativeHarness.enabled = true;
+      eventNativeHarness.snapshot = runningEventNativeSnapshot();
+      eventNativeHarness.snapshot.view.runs['test-task-id'].status =
+        'completed';
+      const rejection: any = new Error(
+        'Say what new work you want to continue.'
+      );
+      rejection.status = 409;
+      rejection.response = {
+        status: 409,
+        data: {
+          detail: {
+            code: 'continuation_clarification_required',
+            message: 'Say what new work you want to continue.',
+            interaction_type: 'continuation_clarification',
+            project_state_version: 3,
+          },
+        },
+      };
+      _mockFetchPost.mockRejectedValue(rejection);
+      const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+      try {
+        const view = renderChatBox();
+        await waitFor(() =>
+          expect(screen.getByTestId('message-input')).toHaveValue('继续')
+        );
+        // Give the queue effects several more turns to (wrongly) re-send it.
+        for (let i = 0; i < 5; i++) {
+          await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 20));
+          });
+          view.rerender(
+            <BrowserRouter>
+              <ChatBox />
+            </BrowserRouter>
+          );
+        }
+        expect(
+          _mockFetchPost.mock.calls.filter(
+            ([url]) => url === '/chat/test-project-id'
+          )
+        ).toHaveLength(1);
+        expect(queued).toEqual([]);
+      } finally {
+        log.mockRestore();
+        defaultProjectStoreState.removeQueuedMessage.mockReset();
+        defaultProjectStoreState.restoreQueuedMessage.mockReset();
+        defaultProjectStoreState.getProjectById.mockImplementation(() => ({
+          queuedMessages: [],
+        }));
+      }
+    });
+
     it('admits queued follow-ups one at a time without writing into the completed Run', async () => {
       const queuedMessages = [
         {
@@ -3087,6 +3281,23 @@ describe('ChatBox Component', async () => {
         expect.stringMatching(/^\/runs\//),
         expect.anything()
       );
+    });
+
+    it('keeps Stop locked as Stopping… until the task is seen to end', async () => {
+      const user = userEvent.setup();
+      setRunningEventNativeStore();
+      renderChatBox();
+      const stopButton = await screen.findByRole('button', {
+        name: 'Stop Task',
+      });
+
+      await user.click(stopButton);
+      await waitFor(() => expect(_mockFetchPost).toHaveBeenCalledTimes(1));
+      // Acknowledged, but the task has not ended yet.
+      expect(stopButton).toHaveTextContent('Stopping…');
+      expect(stopButton).toBeDisabled();
+      await user.click(stopButton);
+      expect(_mockFetchPost).toHaveBeenCalledTimes(1);
     });
 
     it('reuses the request id after failure and never closes the legacy SSE', async () => {

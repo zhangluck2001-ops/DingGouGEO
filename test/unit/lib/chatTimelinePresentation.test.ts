@@ -342,6 +342,27 @@ describe('event-native Timeline Run presentation', () => {
     expect(run?.timestamps.durationMs).toBe(10_000);
   });
 
+  it('ignores an event whose time is unknown when timing a stopped Run', () => {
+    // normalizeEvent stamps an event without a time with the Unix epoch.
+    const untimed = message('untimed', 'run-1', 1, {
+      createdAt: new Date(0).toISOString(),
+    });
+    const question = message('question', 'run-1', 2, {
+      role: 'user',
+      createdAt: '2026-08-19T08:30:00.000Z',
+    });
+    const cancelled: ChatRunStatusNode = {
+      ...base('cancelled', 'run-1', 3, '2026-08-19T08:33:19.000Z'),
+      kind: 'run_status',
+      status: 'cancelled',
+    };
+
+    const run = composeTimelineRun([untimed, question, cancelled], 'run-1');
+
+    expect(run?.timestamps.startedAt).toBe('2026-08-19T08:30:00.000Z');
+    expect(run?.timestamps.durationMs).toBe(199_000);
+  });
+
   it('uses the final assistant receipt when a terminal status slice is absent', () => {
     const started: ChatRunStatusNode = {
       ...base('started', 'run-1', 1, '2026-08-19T08:30:00.000Z'),
