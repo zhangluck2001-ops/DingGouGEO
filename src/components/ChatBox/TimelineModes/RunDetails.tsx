@@ -33,7 +33,7 @@ export function RunDetails() {
         type="button"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex w-fit items-center gap-1 border-0 bg-transparent px-0 py-1 text-left"
+        className="flex w-fit items-center gap-1 border-x-0 border-y-0 border-0 bg-transparent px-0 py-1 text-left"
       >
         <span className="text-ds-text-meta font-medium text-ds-ink-muted-default">
           {t('chat.run-details', { defaultValue: 'Run details' })}
