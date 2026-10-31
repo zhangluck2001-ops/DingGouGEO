@@ -160,7 +160,9 @@ const Layout = () => {
     (isFirstLaunch && !onboardingCompleted);
   const shouldShowMainContent = !actualShouldShowInstallScreen;
   const showTopBar =
-    location.pathname === '/' || isSettingsRoutePath(location.pathname);
+    location.pathname === '/' ||
+    location.pathname === '/studio' ||
+    isSettingsRoutePath(location.pathname);
 
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-ds-neutral-strong-default">

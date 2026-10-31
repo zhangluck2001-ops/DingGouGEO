@@ -62,6 +62,7 @@ import {
 import { useRightPanelOpen, useWorkbenchStore } from '@/store/workbenchStore';
 import {
   ChevronsUpDown,
+  FlaskConical,
   Folder,
   Minus,
   PanelLeft,
@@ -120,6 +121,10 @@ function HeaderWin() {
   }, [host]);
 
   const isWorkspacePage = location.pathname === '/';
+  const isStudioPage = location.pathname === '/studio';
+  const studioEntryLabel = t('geo.studio-topbar-entry', {
+    defaultValue: '工作台（预览）',
+  });
   const workbenchOpen = useRightPanelOpen();
   const toggleWorkbench = useWorkbenchStore((state) => state.toggleOpen);
   const workbenchToggleLabel = workbenchOpen
@@ -711,6 +716,26 @@ function HeaderWin() {
               </Button>
             </TooltipSimple>
           ) : null}
+          <TooltipSimple
+            content={studioEntryLabel}
+            side="bottom"
+            align="center"
+            variant="instant"
+          >
+            <button
+              type="button"
+              className={cn(
+                'no-drag rounded-full',
+                TOP_BAR_PILL_CLASS,
+                isStudioPage && TOP_BAR_CONTROL_SELECTED_CLASS,
+              )}
+              aria-current={isStudioPage ? 'page' : undefined}
+              onClick={() => navigate('/studio')}
+            >
+              <FlaskConical className="h-4 w-4" aria-hidden />
+              <span>{studioEntryLabel}</span>
+            </button>
+          </TooltipSimple>
           <UserMenu />
         </div>
       </div>

@@ -37,6 +37,7 @@ const Signup = lazy(() => import('@/pages/SignUp'));
 const Workspace = lazy(() => import('@/pages/Workspace'));
 const Settings = lazy(() => import('@/pages/Settings'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
+const Studio = lazy(() => import('@/pages/Studio'));
 
 const IS_LOCAL_MODE = import.meta.env.VITE_USE_LOCAL_PROXY === 'true';
 
@@ -255,6 +256,7 @@ const AppRoutes = () => (
           path="/setting/*"
           element={<Navigate to="/home?section=settings" replace />}
         />
+        <Route path="/studio" element={<Studio />} />
       </Route>
     </Route>
     <Route path="*" element={<NotFound />} />
