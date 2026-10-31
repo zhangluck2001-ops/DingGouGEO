@@ -22,8 +22,7 @@ export function BrandCardDialog({
   const { t } = useTranslation();
   const title = t('geo.studio-card-title', { defaultValue: '品牌名片' });
   const desc = t('geo.studio-card-desc', {
-    defaultValue:
-      '固定三栏，所有产品档案自动带上。其他资料一律放进各自产品。',
+    defaultValue: '固定三栏，所有产品档案自动带上。其他资料一律放进各自产品。',
   });
   const companyLabel = t('geo.studio-card-company', {
     defaultValue: '公司名称',

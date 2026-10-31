@@ -727,7 +727,7 @@ function HeaderWin() {
               className={cn(
                 'no-drag rounded-full',
                 TOP_BAR_PILL_CLASS,
-                isStudioPage && TOP_BAR_CONTROL_SELECTED_CLASS,
+                isStudioPage && TOP_BAR_CONTROL_SELECTED_CLASS
               )}
               aria-current={isStudioPage ? 'page' : undefined}
               onClick={() => navigate('/studio')}

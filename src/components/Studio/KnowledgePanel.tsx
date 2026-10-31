@@ -43,7 +43,7 @@ export function KnowledgePanel() {
           return (
             <div
               key={mod.key}
-              className="flex items-center justify-between gap-ds-8 rounded-ds-card border-x border-y border border-solid border-ds-hairline-subtle-default px-ds-12 py-ds-10"
+              className="flex items-center justify-between gap-ds-8 rounded-ds-card border border-x border-y border-solid border-ds-hairline-subtle-default px-ds-12 py-ds-10"
             >
               <div className="flex items-center gap-ds-6">
                 <DsText as="span" role="base">
@@ -51,11 +51,17 @@ export function KnowledgePanel() {
                 </DsText>
                 {mod.fromCard ? (
                   <Tag variant="outline" tone="information" size="xs">
-                    {t('geo.studio-kb-from-card', { defaultValue: '来自品牌名片' })}
+                    {t('geo.studio-kb-from-card', {
+                      defaultValue: '来自品牌名片',
+                    })}
                   </Tag>
                 ) : null}
               </div>
-              <DsText as="span" role="meta" className="text-ds-ink-muted-default">
+              <DsText
+                as="span"
+                role="meta"
+                className="text-ds-ink-muted-default"
+              >
                 {t('geo.studio-kb-count', {
                   defaultValue: '{{count}} 条',
                   count: mod.count,
@@ -65,7 +71,7 @@ export function KnowledgePanel() {
           );
         })}
       </div>
-      <div className="flex flex-col gap-ds-8 border-x-0 border-b-0 border-t border-solid border-ds-hairline-subtle-default pt-ds-12">
+      <div className="flex flex-col gap-ds-8 border-x-0 border-t border-b-0 border-solid border-ds-hairline-subtle-default pt-ds-12">
         <DsText as="h3" role="base" weight="semibold">
           {t('geo.studio-kb-grade-title', {
             defaultValue: '证据等级分布',
@@ -75,7 +81,12 @@ export function KnowledgePanel() {
           const pct = total > 0 ? Math.round((g.count / total) * 100) : 0;
           return (
             <div key={g.grade} className="flex items-center gap-ds-8">
-              <DsText as="span" role="base" weight="semibold" className="w-ds-16">
+              <DsText
+                as="span"
+                role="base"
+                weight="semibold"
+                className="w-ds-16"
+              >
                 {g.grade}
               </DsText>
               <div className="h-2 flex-1 overflow-hidden rounded-full bg-ds-neutral-subtle-default">
@@ -84,7 +95,11 @@ export function KnowledgePanel() {
                   style={{ width: `${pct}%` }}
                 />
               </div>
-              <DsText as="span" role="meta" className="w-ds-16 text-right tabular-nums">
+              <DsText
+                as="span"
+                role="meta"
+                className="w-ds-16 text-right tabular-nums"
+              >
                 {g.count}
               </DsText>
             </div>

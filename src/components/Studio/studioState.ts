@@ -26,10 +26,7 @@ import {
 export type { StudioMode };
 
 export type OnboardStage =
-  | 'asking-intro'
-  | 'asking-competitors'
-  | 'guided'
-  | 'none';
+  'asking-intro' | 'asking-competitors' | 'guided' | 'none';
 
 export interface StudioState {
   products: StudioProduct[];
@@ -107,7 +104,7 @@ export const STUDIO_DEFAULT_TAB: Record<StudioMode, string> = {
  */
 export function parseProductIntro(
   raw: string,
-  fallbackIndex: number,
+  fallbackIndex: number
 ): { name: string; desc: string } {
   const text = raw.trim().replace(/^(我们?的?产品(名字)?(叫|是)|叫)/, '');
   const firstChunk = (text.split(/[，,。\s]|是一款|是/)[0] ?? '').trim();
@@ -128,12 +125,14 @@ export function parseProductIntro(
  * Separators: 、（顿号） ，（中文逗号） ,（英文逗号） 空白
  */
 export function parseCompetitors(raw: string): string[] {
-  return raw
-    // The real product lets the model read the reply; the skeleton also
-    // treats 和/及/与 as list separators.
-    .split(/[、，,\s]+|和|及|与/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+  return (
+    raw
+      // The real product lets the model read the reply; the skeleton also
+      // treats 和/及/与 as list separators.
+      .split(/[、，,\s]+|和|及|与/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+  );
 }
 
 export interface ChatDayGroup {
@@ -161,7 +160,7 @@ export const RECENT_DAYS_KEPT = 2;
 
 export function splitFoldedHistory(
   groups: ChatDayGroup[],
-  keepDays = RECENT_DAYS_KEPT,
+  keepDays = RECENT_DAYS_KEPT
 ): { folded: ChatDayGroup[]; recent: ChatDayGroup[] } {
   const cut = Math.max(0, groups.length - keepDays);
   return { folded: groups.slice(0, cut), recent: groups.slice(cut) };
@@ -194,17 +193,19 @@ export function hasData(state: StudioState): boolean {
 }
 
 export function createInitialStudioState(
-  overrides?: Partial<StudioState>,
+  overrides?: Partial<StudioState>
 ): StudioState {
   const products = overrides?.products ?? mockProducts;
   const hasProducts = products.length > 0;
   return {
     products,
-    currentProductId: overrides?.currentProductId ?? (hasProducts ? products[0].id : null),
+    currentProductId:
+      overrides?.currentProductId ?? (hasProducts ? products[0].id : null),
     mode: 'diag',
     tab: { data: '清洗', run: '采集进度', diag: '动态' },
     chatByMode: overrides?.chatByMode ?? mockChatByMode,
-    onboardChat: overrides?.onboardChat ?? (hasProducts ? [] : [mockOnboardGreetEmpty]),
+    onboardChat:
+      overrides?.onboardChat ?? (hasProducts ? [] : [mockOnboardGreetEmpty]),
     isAsking: !hasProducts,
     onboardStage: hasProducts ? 'none' : 'asking-intro',
     brandCardOpen: false,
@@ -249,7 +250,7 @@ function appendToday(
 function closeProposal(
   chat: ChatMessage[],
   messageId: string,
-  answer: string,
+  answer: string
 ): ChatMessage[] {
   return chat.map((m) =>
     m.id === messageId
@@ -258,7 +259,7 @@ function closeProposal(
           options: undefined,
           steps: [...(m.steps ?? []), { symbol: '→', text: answer }],
         }
-      : m,
+      : m
   );
 }
 
@@ -288,7 +289,7 @@ function guideOptions(): ChatOption[] {
 
 export function studioReducer(
   state: StudioState,
-  action: StudioAction,
+  action: StudioAction
 ): StudioState {
   switch (action.type) {
     case 'SET_MODE': {
@@ -341,7 +342,7 @@ export function studioReducer(
     case 'SUBMIT_PRODUCT_INTRO': {
       const { name, desc } = parseProductIntro(
         action.raw,
-        state.products.length + 1,
+        state.products.length + 1
       );
       const newProduct: StudioProduct = {
         id: `prod-${Date.now()}`,
@@ -392,7 +393,7 @@ export function studioReducer(
       if (!product) return state;
       const competitors = parseCompetitors(action.raw);
       const updatedProducts = state.products.map((p) =>
-        p.id === product.id ? { ...p, competitors } : p,
+        p.id === product.id ? { ...p, competitors } : p
       );
       const newTags: FocusTag[] = competitors.map((c, idx) => ({
         id: `tag-comp-${Date.now()}-${idx}`,
@@ -479,7 +480,7 @@ export function studioReducer(
           [action.mode]: appendToday(
             state.chatByMode[action.mode],
             userMessage,
-            ...proposal,
+            ...proposal
           ),
         },
       };
@@ -497,7 +498,7 @@ export function studioReducer(
       const chat = closeProposal(
         state.chatByMode[action.mode],
         action.messageId,
-        '已记住',
+        '已记住'
       );
       return {
         ...state,
@@ -524,7 +525,7 @@ export function studioReducer(
       const chat = closeProposal(
         state.chatByMode[action.mode],
         action.messageId,
-        '不记',
+        '不记'
       );
       return {
         ...state,
@@ -569,7 +570,7 @@ export function studioReducer(
         memoriesByProduct: {
           ...state.memoriesByProduct,
           [productId]: (state.memoriesByProduct[productId] ?? []).filter(
-            (m) => m.id !== action.id,
+            (m) => m.id !== action.id
           ),
         },
       };
@@ -620,8 +621,7 @@ export function studioReducer(
       return { ...state, pendingInput: null };
     case 'ADD_FRESH_FEED': {
       if (state.freshFeed.length > 0) return state;
-      const isViewingFeed =
-        state.mode === 'diag' && state.tab.diag === '动态';
+      const isViewingFeed = state.mode === 'diag' && state.tab.diag === '动态';
       return {
         ...state,
         freshFeed: [mockFreshFeed],

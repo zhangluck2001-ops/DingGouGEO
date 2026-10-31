@@ -51,9 +51,11 @@ function MemoryRow({
           }),
           date: memory.source.date,
         });
-  const removeLabel = t('geo.studio-memory-remove', { defaultValue: '删掉这条' });
+  const removeLabel = t('geo.studio-memory-remove', {
+    defaultValue: '删掉这条',
+  });
   return (
-    <li className="flex items-start gap-ds-8 rounded-ds-card border-x border-y border border-solid border-ds-hairline-subtle-default px-ds-12 py-ds-8">
+    <li className="flex items-start gap-ds-8 rounded-ds-card border border-x border-y border-solid border-ds-hairline-subtle-default px-ds-12 py-ds-8">
       <div className="flex min-w-0 flex-1 flex-col gap-ds-2">
         <div className="flex items-center gap-ds-6">
           <Tag
@@ -106,7 +108,8 @@ export function MemoryDialog({
       '助手每次回答前都会先读这份清单，三个模式共用。聊天里说过的规则，你同意后才会记进来；这里可以随时删掉或补一条。',
   });
   const emptyLabel = t('geo.studio-memory-empty', {
-    defaultValue: '还没有记住的事。聊天时说「以后……」「别再……」，助手会问你要不要记下。',
+    defaultValue:
+      '还没有记住的事。聊天时说「以后……」「别再……」，助手会问你要不要记下。',
   });
   const placeholder = t('geo.studio-memory-add-placeholder', {
     defaultValue: '例如：稿子里不提价格',

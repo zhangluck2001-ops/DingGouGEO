@@ -16,7 +16,7 @@ export function PublishPanel() {
         {mockPublishRecords.map((rec) => (
           <div
             key={rec.id}
-            className="flex items-center justify-between gap-ds-8 rounded-ds-card border-x border-y border border-solid border-ds-hairline-subtle-default px-ds-12 py-ds-10"
+            className="flex items-center justify-between gap-ds-8 rounded-ds-card border border-x border-y border-solid border-ds-hairline-subtle-default px-ds-12 py-ds-10"
           >
             <DsText as="p" role="base" className="flex-1">
               {rec.title}
@@ -24,7 +24,11 @@ export function PublishPanel() {
             <Tag variant="secondary" tone="information" size="xs">
               {rec.platform}
             </Tag>
-            <DsText as="span" role="meta" className="text-ds-ink-muted-default tabular-nums">
+            <DsText
+              as="span"
+              role="meta"
+              className="text-ds-ink-muted-default tabular-nums"
+            >
               {rec.date}
             </DsText>
           </div>

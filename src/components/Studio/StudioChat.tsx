@@ -5,7 +5,13 @@ import { Tag } from '@/components/ui/tag';
 import { Textarea } from '@/components/ui/textarea';
 import { TooltipSimple } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { BookMarked, ChevronDown, ChevronUp, PanelRight, Send } from 'lucide-react';
+import {
+  BookMarked,
+  ChevronDown,
+  ChevronUp,
+  PanelRight,
+  Send,
+} from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -55,13 +61,18 @@ function OptionCard({
       type="button"
       onClick={() => onPick(option)}
       className={cn(
-        'flex w-full flex-col items-start gap-ds-2 rounded-ds-field-media border-x border-y border border-solid px-ds-12 py-ds-8 text-left transition-colors',
+        'rounded-ds-field-media flex w-full flex-col items-start gap-ds-2 border border-x border-y border-solid px-ds-12 py-ds-8 text-left transition-colors',
         'border-ds-hairline-default-default hover:bg-ds-neutral-subtle-default',
-        option.rec && 'border-ds-hairline-strong-default bg-ds-neutral-subtle-default',
+        option.rec &&
+          'border-ds-hairline-strong-default bg-ds-neutral-subtle-default'
       )}
     >
       {option.text ? (
-        <DsText as="span" role="base" weight={option.rec ? 'semibold' : 'regular'}>
+        <DsText
+          as="span"
+          role="base"
+          weight={option.rec ? 'semibold' : 'regular'}
+        >
           {option.text}
         </DsText>
       ) : null}
@@ -79,7 +90,10 @@ function DayDivider({ date }: { date: string }) {
   if (!date) return null;
   const label =
     date === STUDIO_TODAY
-      ? t('geo.studio-chat-day-today', { defaultValue: '今天 · {{date}}', date })
+      ? t('geo.studio-chat-day-today', {
+          defaultValue: '今天 · {{date}}',
+          date,
+        })
       : date === STUDIO_YESTERDAY
         ? t('geo.studio-chat-day-yesterday', {
             defaultValue: '昨天 · {{date}}',
@@ -87,12 +101,16 @@ function DayDivider({ date }: { date: string }) {
           })
         : date;
   return (
-    <div className="flex items-center gap-ds-8" role="separator" aria-label={label}>
-      <div className="flex-1 border-x-0 border-b-0 border-t border-solid border-ds-hairline-subtle-default" />
+    <div
+      className="flex items-center gap-ds-8"
+      role="separator"
+      aria-label={label}
+    >
+      <div className="flex-1 border-x-0 border-t border-b-0 border-solid border-ds-hairline-subtle-default" />
       <DsText as="span" role="meta" className="text-ds-ink-muted-default">
         {label}
       </DsText>
-      <div className="flex-1 border-x-0 border-b-0 border-t border-solid border-ds-hairline-subtle-default" />
+      <div className="flex-1 border-x-0 border-t border-b-0 border-solid border-ds-hairline-subtle-default" />
     </div>
   );
 }
@@ -128,7 +146,7 @@ function HistoryFold({
     defaultValue: '收起',
   });
   return (
-    <div className="flex flex-col gap-ds-6 rounded-ds-card border-x border-y border border-dashed border-ds-hairline-default-default px-ds-12 py-ds-10">
+    <div className="flex flex-col gap-ds-6 rounded-ds-card border border-x border-y border-dashed border-ds-hairline-default-default px-ds-12 py-ds-10">
       <div className="flex items-center justify-between gap-ds-8">
         <DsText as="span" role="meta" weight="semibold">
           {title}
@@ -149,7 +167,11 @@ function HistoryFold({
       <ul className="m-0 flex list-none flex-col gap-ds-2 p-0">
         {mockHistoryDigest[mode].points.map((point) => (
           <li key={point} className="flex items-start gap-ds-6">
-            <DsText as="span" role="base" className="shrink-0 text-ds-ink-muted-default">
+            <DsText
+              as="span"
+              role="base"
+              className="shrink-0 text-ds-ink-muted-default"
+            >
               ·
             </DsText>
             <DsText as="span" role="base">
@@ -193,7 +215,7 @@ function MessageItem({
       <DsText as="span" role="meta" weight="semibold">
         {whoLabel}
       </DsText>
-      <div className="flex w-full max-w-[88%] flex-col gap-ds-8 rounded-ds-card border-x border-y border border-solid border-ds-hairline-default-default bg-ds-neutral-default-default px-ds-12 py-ds-10">
+      <div className="flex w-full max-w-[88%] flex-col gap-ds-8 rounded-ds-card border border-x border-y border-solid border-ds-hairline-default-default bg-ds-neutral-default-default px-ds-12 py-ds-10">
         {message.text ? (
           <DsText as="p" role="base">
             {message.text}
@@ -203,7 +225,12 @@ function MessageItem({
           <ul className="flex flex-col gap-ds-4">
             {message.steps.map((step, idx) => (
               <li key={idx} className="flex items-start gap-ds-6">
-                <DsText as="span" role="base" weight="semibold" className="shrink-0">
+                <DsText
+                  as="span"
+                  role="base"
+                  weight="semibold"
+                  className="shrink-0"
+                >
                   {step.symbol}
                 </DsText>
                 <DsText as="span" role="base">
@@ -309,7 +336,9 @@ export function StudioChat({
   });
   const toggleWorkPanelLabel = showWorkPanel
     ? t('geo.studio-chat-toggle-workpanel-hide', { defaultValue: '隐藏工作区' })
-    : t('geo.studio-chat-toggle-workpanel-show', { defaultValue: '显示工作区' });
+    : t('geo.studio-chat-toggle-workpanel-show', {
+        defaultValue: '显示工作区',
+      });
 
   const handlePickOption = (option: ChatOption, messageId: string) => {
     if (option.remember) {
@@ -327,7 +356,11 @@ export function StudioChat({
     }
     if (option.switch) {
       dispatch({ type: 'SET_MODE', mode: option.switch.mode });
-      dispatch({ type: 'SET_TAB', mode: option.switch.mode, tab: option.switch.tab });
+      dispatch({
+        type: 'SET_TAB',
+        mode: option.switch.mode,
+        tab: option.switch.tab,
+      });
       return;
     }
     if (option.ask) {
@@ -404,7 +437,11 @@ export function StudioChat({
               {memoryLabel}
             </Button>
           )}
-          <TooltipSimple content={toggleWorkPanelLabel} side="bottom" variant="instant">
+          <TooltipSimple
+            content={toggleWorkPanelLabel}
+            side="bottom"
+            variant="instant"
+          >
             <Button
               variant="ghost"
               size="sm"
@@ -436,19 +473,21 @@ export function StudioChat({
                 }
               />
             ) : null}
-            {(historyExpanded ? [...folded, ...recent] : recent).map((group) => (
-              <div key={group.date} className="flex flex-col gap-ds-14">
-                <DayDivider date={group.date} />
-                {group.messages.map(renderMessage)}
-              </div>
-            ))}
+            {(historyExpanded ? [...folded, ...recent] : recent).map(
+              (group) => (
+                <div key={group.date} className="flex flex-col gap-ds-14">
+                  <DayDivider date={group.date} />
+                  {group.messages.map(renderMessage)}
+                </div>
+              )
+            )}
           </>
         ) : (
           messages.map(renderMessage)
         )}
         <div ref={bottomRef} />
       </div>
-      <div className="flex shrink-0 flex-col gap-ds-4 border-x-0 border-b-0 border-t border-solid border-ds-hairline-subtle-default p-ds-12">
+      <div className="flex shrink-0 flex-col gap-ds-4 border-x-0 border-t border-b-0 border-solid border-ds-hairline-subtle-default p-ds-12">
         <Textarea
           ref={textareaRef}
           variant="none"
@@ -457,14 +496,19 @@ export function StudioChat({
           onEnter={handleSend}
           placeholder={placeholder}
           disabled={inputDisabled}
-          className="min-h-[40px] resize-none rounded-ds-card bg-ds-neutral-subtle-default px-ds-12 py-ds-8 text-ds-text-base text-ds-ink-default-default placeholder:text-ds-ink-muted-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ds-ring-focus focus-visible:ring-offset-2"
+          className="min-h-[40px] resize-none rounded-ds-card bg-ds-neutral-subtle-default px-ds-12 py-ds-8 text-ds-text-base text-ds-ink-default-default placeholder:text-ds-ink-muted-default focus-visible:ring-2 focus-visible:ring-ds-ring-focus focus-visible:ring-offset-2 focus-visible:outline-none"
           aria-label={title}
         />
         <div className="flex items-center justify-between gap-ds-8">
           <DsText as="span" role="meta" className="text-ds-ink-muted-default">
             {hint}
           </DsText>
-          <Button variant="primary" size="sm" onClick={handleSend} disabled={inputDisabled}>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={handleSend}
+            disabled={inputDisabled}
+          >
             <Send className="h-4 w-4" aria-hidden />
             {sendLabel}
           </Button>
@@ -478,12 +522,15 @@ function EmptyChatHint({ state }: { state: StudioState }) {
   const { t } = useTranslation();
   const product = currentProduct(state);
   if (state.mode === 'data') {
-    const cta = t('geo.studio-chat-empty-data-cta', { defaultValue: '上传原件' });
+    const cta = t('geo.studio-chat-empty-data-cta', {
+      defaultValue: '上传原件',
+    });
     return (
       <div className="flex flex-col gap-ds-8 px-ds-12 py-ds-20 text-center">
         <DsText as="p" role="base" className="text-ds-ink-muted-default">
           {t('geo.studio-chat-empty-data', {
-            defaultValue: '把「{{product}}」的原件拖进来，或点上传。清洗流程会在右侧展开。',
+            defaultValue:
+              '把「{{product}}」的原件拖进来，或点上传。清洗流程会在右侧展开。',
             product: product?.name ?? '',
           })}
         </DsText>
@@ -499,7 +546,8 @@ function EmptyChatHint({ state }: { state: StudioState }) {
     <div className="flex flex-col gap-ds-8 px-ds-12 py-ds-20 text-center">
       <DsText as="p" role="base" className="text-ds-ink-muted-default">
         {t('geo.studio-chat-empty-run', {
-          defaultValue: '探针问题还没准备好。先到资料模式出题，再回来开始第一轮采集。',
+          defaultValue:
+            '探针问题还没准备好。先到资料模式出题，再回来开始第一轮采集。',
         })}
       </DsText>
     </div>

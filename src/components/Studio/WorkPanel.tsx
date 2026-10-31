@@ -39,7 +39,7 @@ const TAB_KEY: Record<string, string> = {
 function renderTab(
   tab: string,
   state: StudioState,
-  dispatch: React.Dispatch<StudioAction>,
+  dispatch: React.Dispatch<StudioAction>
 ) {
   switch (tab) {
     case '清洗':
@@ -73,7 +73,8 @@ function AskingEmpty() {
     defaultValue: '正在建档',
   });
   const desc = t('geo.studio-empty-asking-desc', {
-    defaultValue: '建好档案后，这里会为这个产品收集品牌新闻、竞品动态、行业政策和 AI 平台变化。',
+    defaultValue:
+      '建好档案后，这里会为这个产品收集品牌新闻、竞品动态、行业政策和 AI 平台变化。',
   });
   const chips = [
     { key: 'studio-feed-type-brand', default: '品牌新闻' },
@@ -91,7 +92,12 @@ function AskingEmpty() {
       </DsText>
       <div className="flex flex-wrap justify-center gap-ds-6">
         {chips.map((chip) => (
-          <Badge key={chip.key} variant="secondary" tone="information" size="sm">
+          <Badge
+            key={chip.key}
+            variant="secondary"
+            tone="information"
+            size="sm"
+          >
             {t(`geo.${chip.key}`, { defaultValue: chip.default })}
           </Badge>
         ))}
@@ -133,7 +139,7 @@ export function WorkPanel({
 
   if (asking) {
     return (
-      <aside className="flex min-h-0 w-[400px] shrink-0 flex-col overflow-y-auto border-r-0 border-y-0 border-l border-solid border-ds-hairline-subtle-default">
+      <aside className="flex min-h-0 w-[400px] shrink-0 flex-col overflow-y-auto border-y-0 border-r-0 border-l border-solid border-ds-hairline-subtle-default">
         <AskingEmpty />
       </aside>
     );
@@ -142,30 +148,30 @@ export function WorkPanel({
   const tabs = STUDIO_TABS[mode];
 
   return (
-    <aside className="flex min-h-0 w-[400px] shrink-0 flex-col overflow-hidden border-r-0 border-y-0 border-l border-solid border-ds-hairline-subtle-default">
+    <aside className="flex min-h-0 w-[400px] shrink-0 flex-col overflow-hidden border-y-0 border-r-0 border-l border-solid border-ds-hairline-subtle-default">
       <Tabs
         value={currentTab}
-        onValueChange={(v) =>
-          dispatch({ type: 'SET_TAB', mode, tab: v })
-        }
+        onValueChange={(v) => dispatch({ type: 'SET_TAB', mode, tab: v })}
         className="flex flex-1 flex-col"
       >
-        <TabsList appearance="ghost" className="flex shrink-0 gap-ds-4 overflow-x-auto whitespace-nowrap px-ds-12 py-ds-10">
+        <TabsList
+          appearance="ghost"
+          className="flex shrink-0 gap-ds-4 overflow-x-auto px-ds-12 py-ds-10 whitespace-nowrap"
+        >
           {tabs.map((tab) => {
             const label = t(`geo.studio-tab-${TAB_KEY[tab] ?? ''}`, {
               defaultValue: tab,
             });
-            const showUnread =
-              tab === '动态' && state.unreadFeed > 0;
+            const showUnread = tab === '动态' && state.unreadFeed > 0;
             return (
-              <TabsTrigger key={tab} value={tab} className="relative w-auto shrink-0 whitespace-nowrap">
+              <TabsTrigger
+                key={tab}
+                value={tab}
+                className="relative w-auto shrink-0 whitespace-nowrap"
+              >
                 {label}
                 {showUnread ? (
-                  <Badge
-                    variant="destructive"
-                    size="xs"
-                    className="ml-ds-4"
-                  >
+                  <Badge variant="destructive" size="xs" className="ml-ds-4">
                     {state.unreadFeed}
                   </Badge>
                 ) : null}
@@ -174,11 +180,18 @@ export function WorkPanel({
           })}
         </TabsList>
         {tabs.map((tab) => {
-          const empty =
-            !dataReady && !(mode === 'diag' && tab === '动态');
+          const empty = !dataReady && !(mode === 'diag' && tab === '动态');
           return (
-            <TabsContent key={tab} value={tab} className="flex-1 overflow-y-auto">
-              {empty ? <EmptyTab modeKey={mode} /> : renderTab(tab, state, dispatch)}
+            <TabsContent
+              key={tab}
+              value={tab}
+              className="flex-1 overflow-y-auto"
+            >
+              {empty ? (
+                <EmptyTab modeKey={mode} />
+              ) : (
+                renderTab(tab, state, dispatch)
+              )}
             </TabsContent>
           );
         })}

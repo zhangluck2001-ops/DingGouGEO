@@ -15,7 +15,12 @@ import { TooltipSimple } from '@/components/ui/tooltip';
 import { Award, Plus, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
-import { currentProduct, isAskingState, type StudioAction, type StudioState } from './studioState';
+import {
+  currentProduct,
+  isAskingState,
+  type StudioAction,
+  type StudioState,
+} from './studioState';
 
 const NEW_PRODUCT_VALUE = '__new__';
 
@@ -63,7 +68,12 @@ export function StudioTopBar({
 
   return (
     <div className="flex h-ds-layout-row-header shrink-0 items-center gap-ds-8 border-x-0 border-t-0 border-b border-solid border-ds-hairline-subtle-default px-ds-12">
-      <DsText as="span" role="title" weight="bold" className="text-ds-ink-default-default">
+      <DsText
+        as="span"
+        role="title"
+        weight="bold"
+        className="text-ds-ink-default-default"
+      >
         DingGouGEO
       </DsText>
       <TooltipSimple content={productTooltip} side="bottom" variant="instant">
@@ -81,7 +91,11 @@ export function StudioTopBar({
               }
             }}
           >
-            <SelectTrigger size="sm" wrapperClassName="w-[180px]" aria-label={productLabel}>
+            <SelectTrigger
+              size="sm"
+              wrapperClassName="w-[180px]"
+              aria-label={productLabel}
+            >
               <SelectValue placeholder={noProductLabel} />
             </SelectTrigger>
             <SelectContent>

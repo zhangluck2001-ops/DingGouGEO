@@ -33,7 +33,7 @@ export function ProbesPanel() {
         {mockProbes.map((probe) => (
           <div
             key={probe.id}
-            className="flex items-start justify-between gap-ds-8 rounded-ds-card border-x border-y border border-solid border-ds-hairline-subtle-default px-ds-12 py-ds-10"
+            className="flex items-start justify-between gap-ds-8 rounded-ds-card border border-x border-y border-solid border-ds-hairline-subtle-default px-ds-12 py-ds-10"
           >
             <DsText as="p" role="base" className="flex-1">
               {probe.text}

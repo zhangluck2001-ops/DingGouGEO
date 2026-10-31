@@ -9,9 +9,9 @@ import {
   hasData,
   isAskingState,
   isRememberIntent,
-  splitFoldedHistory,
   parseCompetitors,
   parseProductIntro,
+  splitFoldedHistory,
   studioReducer,
 } from './studioState';
 
@@ -274,10 +274,7 @@ describe('parseCompetitors', () => {
     expect(parseCompetitors('')).toEqual([]);
   });
   it('trims and drops empty segments', () => {
-    expect(parseCompetitors('竞品甲， ，竞品乙')).toEqual([
-      '竞品甲',
-      '竞品乙',
-    ]);
+    expect(parseCompetitors('竞品甲， ，竞品乙')).toEqual(['竞品甲', '竞品乙']);
   });
 });
 
@@ -353,7 +350,7 @@ describe('chat history by day', () => {
       groupChatByDay([
         { id: 'a', kind: 'date', date: '10-30' },
         { id: 'b', kind: 'date', date: '10-31' },
-      ]),
+      ])
     );
     expect(folded).toHaveLength(0);
   });
@@ -361,7 +358,11 @@ describe('chat history by day', () => {
   it('toggles the folded history per mode', () => {
     const state = createInitialStudioState();
     const next = studioReducer(state, { type: 'TOGGLE_HISTORY', mode: 'diag' });
-    expect(next.historyExpanded).toEqual({ data: false, run: false, diag: true });
+    expect(next.historyExpanded).toEqual({
+      data: false,
+      run: false,
+      diag: true,
+    });
   });
 });
 
@@ -413,7 +414,9 @@ describe('assistant memory', () => {
     const memories = currentMemories(next);
     expect(memories[0].text).toBe('以后稿子里别提价格');
     expect(memories[0].source).toEqual({ mode: 'diag', date: '10-31' });
-    expect(next.chatByMode.diag.find((m) => m.id === proposal.id)?.options).toBeUndefined();
+    expect(
+      next.chatByMode.diag.find((m) => m.id === proposal.id)?.options
+    ).toBeUndefined();
   });
 
   it('does not duplicate a memory picked twice', () => {
@@ -441,7 +444,10 @@ describe('assistant memory', () => {
 
   it('adds and removes items by hand', () => {
     const state = createInitialStudioState();
-    const added = studioReducer(state, { type: 'ADD_MEMORY', text: ' 稿子里不提价格 ' });
+    const added = studioReducer(state, {
+      type: 'ADD_MEMORY',
+      text: ' 稿子里不提价格 ',
+    });
     expect(currentMemories(added)[0]).toMatchObject({
       text: '稿子里不提价格',
       source: 'manual',

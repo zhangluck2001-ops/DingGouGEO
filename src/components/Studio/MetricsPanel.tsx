@@ -37,7 +37,11 @@ export function MetricsPanel() {
               key={kpi.label}
               className="flex flex-col gap-ds-4 rounded-ds-card bg-ds-neutral-default-default px-ds-12 py-ds-10"
             >
-              <DsText as="span" role="meta" className="text-ds-ink-muted-default">
+              <DsText
+                as="span"
+                role="meta"
+                className="text-ds-ink-muted-default"
+              >
                 {kpi.label}
               </DsText>
               <DsText as="span" role="title" weight="semibold">
@@ -54,7 +58,7 @@ export function MetricsPanel() {
           );
         })}
       </div>
-      <div className="flex flex-col gap-ds-6 border-x-0 border-b-0 border-t border-solid border-ds-hairline-subtle-default pt-ds-12">
+      <div className="flex flex-col gap-ds-6 border-x-0 border-t border-b-0 border-solid border-ds-hairline-subtle-default pt-ds-12">
         <DsText as="h3" role="base" weight="semibold">
           {t('geo.studio-metrics-platform-title', { defaultValue: '分平台' })}
         </DsText>
@@ -63,20 +67,35 @@ export function MetricsPanel() {
             <DsText as="span" role="meta" weight="semibold">
               {t('geo.studio-metrics-platform', { defaultValue: '平台' })}
             </DsText>
-            <DsText as="span" role="meta" weight="semibold" className="text-right tabular-nums">
+            <DsText
+              as="span"
+              role="meta"
+              weight="semibold"
+              className="text-right tabular-nums"
+            >
               {t('geo.studio-metrics-mention-col', { defaultValue: '提及' })}
             </DsText>
-            <DsText as="span" role="meta" weight="semibold" className="text-right tabular-nums">
+            <DsText
+              as="span"
+              role="meta"
+              weight="semibold"
+              className="text-right tabular-nums"
+            >
               {t('geo.studio-metrics-first-col', { defaultValue: '首提' })}
             </DsText>
-            <DsText as="span" role="meta" weight="semibold" className="text-right tabular-nums">
+            <DsText
+              as="span"
+              role="meta"
+              weight="semibold"
+              className="text-right tabular-nums"
+            >
               {t('geo.studio-metrics-top3-col', { defaultValue: 'TOP3' })}
             </DsText>
           </div>
           {mockPlatformMetrics.map((row) => (
             <div
               key={row.platform}
-              className="grid grid-cols-4 gap-ds-8 rounded-ds-field-media px-ds-4 py-ds-6 odd:bg-ds-neutral-subtle-default"
+              className="rounded-ds-field-media grid grid-cols-4 gap-ds-8 px-ds-4 py-ds-6 odd:bg-ds-neutral-subtle-default"
             >
               <DsText as="span" role="base">
                 {row.platform}

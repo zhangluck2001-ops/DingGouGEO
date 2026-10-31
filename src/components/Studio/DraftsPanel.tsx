@@ -38,21 +38,29 @@ export function DraftsPanel() {
           return (
             <div
               key={draft.id}
-              className="flex items-center justify-between gap-ds-8 rounded-ds-card border-x border-y border border-solid border-ds-hairline-subtle-default px-ds-12 py-ds-10"
+              className="flex items-center justify-between gap-ds-8 rounded-ds-card border border-x border-y border-solid border-ds-hairline-subtle-default px-ds-12 py-ds-10"
             >
               <DsText as="p" role="base" className="flex-1">
                 {draft.title}
               </DsText>
               <div className="flex items-center gap-ds-4">
                 {draft.failDetail ? (
-                  <DsText as="span" role="meta" className="text-ds-ink-muted-default">
+                  <DsText
+                    as="span"
+                    role="meta"
+                    className="text-ds-ink-muted-default"
+                  >
                     {t('geo.studio-drafts-status-failed-detail', {
                       defaultValue: '{{detail}}',
                       detail: draft.failDetail,
                     })}
                   </DsText>
                 ) : null}
-                <Tag variant="secondary" tone={STATUS_TONE[draft.status]} size="xs">
+                <Tag
+                  variant="secondary"
+                  tone={STATUS_TONE[draft.status]}
+                  size="xs"
+                >
                   {statusLabel}
                 </Tag>
               </div>

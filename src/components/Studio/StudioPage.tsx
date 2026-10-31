@@ -13,7 +13,7 @@ export default function StudioPage() {
   const [state, dispatch] = useReducer(
     studioReducer,
     undefined,
-    createInitialStudioState,
+    createInitialStudioState
   );
   const [showWorkPanel, setShowWorkPanel] = useState(true);
 
@@ -30,7 +30,7 @@ export default function StudioPage() {
   useEffect(() => {
     const handle = setTimeout(
       () => dispatch({ type: 'ADD_FRESH_FEED' }),
-      20000,
+      20000
     );
     return () => clearTimeout(handle);
   }, [state.currentProductId, dispatch]);
@@ -50,9 +50,7 @@ export default function StudioPage() {
           showWorkPanel={showWorkPanel}
           onToggleWorkPanel={() => setShowWorkPanel((v) => !v)}
         />
-        {showWorkPanel ? (
-          <WorkPanel state={state} dispatch={dispatch} />
-        ) : null}
+        {showWorkPanel ? <WorkPanel state={state} dispatch={dispatch} /> : null}
       </div>
       <BrandCardDialog
         open={state.brandCardOpen}

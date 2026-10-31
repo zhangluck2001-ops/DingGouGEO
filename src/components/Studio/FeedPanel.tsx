@@ -26,7 +26,11 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 
 import type { FeedItem, FeedType } from './mocks/mockData';
-import { currentProduct, type StudioAction, type StudioState } from './studioState';
+import {
+  currentProduct,
+  type StudioAction,
+  type StudioState,
+} from './studioState';
 
 const FEED_TYPE_KEY: Record<FeedType, string> = {
   competitor: 'studio-feed-type-competitor',
@@ -35,7 +39,10 @@ const FEED_TYPE_KEY: Record<FeedType, string> = {
   brand: 'studio-feed-type-brand',
 };
 
-const FEED_TYPE_TONE: Record<FeedType, 'information' | 'warning' | 'neutral' | 'success'> = {
+const FEED_TYPE_TONE: Record<
+  FeedType,
+  'information' | 'warning' | 'neutral' | 'success'
+> = {
   competitor: 'information',
   policy: 'warning',
   ai: 'neutral',
@@ -74,8 +81,8 @@ function FeedRow({
   return (
     <article
       className={cn(
-        'flex flex-col gap-ds-6 rounded-ds-card border-x border-y border border-solid border-ds-hairline-default-default bg-ds-neutral-default-default p-ds-12',
-        item.id.includes('fresh') && 'border-ds-hairline-strong-default',
+        'flex flex-col gap-ds-6 rounded-ds-card border border-x border-y border-solid border-ds-hairline-default-default bg-ds-neutral-default-default p-ds-12',
+        item.id.includes('fresh') && 'border-ds-hairline-strong-default'
       )}
     >
       <div className="flex flex-wrap items-center gap-ds-4">
@@ -212,7 +219,7 @@ export function FeedPanel({
   const freqHigh = t('geo.studio-feed-freq-high', { defaultValue: '多' });
 
   const visibleFeed = [...state.freshFeed, ...state.feed].filter(
-    (item) => !state.hiddenFeedIds.includes(item.id),
+    (item) => !state.hiddenFeedIds.includes(item.id)
   );
 
   const handleFocusSubmit = () => {
@@ -249,7 +256,7 @@ export function FeedPanel({
         </div>
       </div>
 
-      <div className="flex flex-col gap-ds-8 rounded-ds-card border-x border-y border border-solid border-ds-hairline-subtle-default p-ds-12">
+      <div className="flex flex-col gap-ds-8 rounded-ds-card border border-x border-y border-solid border-ds-hairline-subtle-default p-ds-12">
         <DsText as="span" role="meta" weight="semibold">
           {focusLabel}
         </DsText>
@@ -299,7 +306,11 @@ export function FeedPanel({
               })
             }
           >
-            <SelectTrigger size="xs" wrapperClassName="w-[120px]" aria-label={freqLabel}>
+            <SelectTrigger
+              size="xs"
+              wrapperClassName="w-[120px]"
+              aria-label={freqLabel}
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

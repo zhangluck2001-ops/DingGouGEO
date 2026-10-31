@@ -91,7 +91,7 @@ export function CleanPanel() {
               <span
                 className={cn(
                   'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-ds-text-meta font-bold',
-                  STATUS_DOT[step.status],
+                  STATUS_DOT[step.status]
                 )}
               >
                 {step.seq}
@@ -105,7 +105,11 @@ export function CleanPanel() {
                     {actorLabel}
                   </Tag>
                 </div>
-                <DsText as="span" role="meta" className="text-ds-ink-muted-default">
+                <DsText
+                  as="span"
+                  role="meta"
+                  className="text-ds-ink-muted-default"
+                >
                   {step.detail}
                 </DsText>
                 {showBackend && step.backend ? (
@@ -123,7 +127,7 @@ export function CleanPanel() {
         })}
       </ol>
 
-      <div className="flex flex-col gap-ds-10 border-x-0 border-b-0 border-t border-solid border-ds-hairline-subtle-default pt-ds-12">
+      <div className="flex flex-col gap-ds-10 border-x-0 border-t border-b-0 border-solid border-ds-hairline-subtle-default pt-ds-12">
         <DsText as="h3" role="base" weight="semibold">
           {t('geo.studio-clean-confirm-title', {
             defaultValue: '等你确认（{{count}}）',
@@ -133,7 +137,7 @@ export function CleanPanel() {
         {mockPendingFacts.map((fact) => (
           <div
             key={fact.id}
-            className="flex flex-col gap-ds-6 rounded-ds-card border-x border-y border border-solid border-ds-hairline-default-default p-ds-12"
+            className="flex flex-col gap-ds-6 rounded-ds-card border border-x border-y border-solid border-ds-hairline-default-default p-ds-12"
           >
             <div className="flex items-start gap-ds-8">
               <Tag variant="primary" tone={GRADE_TONE[fact.grade]} size="sm">
@@ -159,24 +163,40 @@ export function CleanPanel() {
               </Tag>
             ) : null}
             <div className="flex items-center gap-ds-6">
-              <Button variant="primary" size="xs" onClick={() => toast.success(confirmLabel)}>
+              <Button
+                variant="primary"
+                size="xs"
+                onClick={() => toast.success(confirmLabel)}
+              >
                 {confirmLabel}
               </Button>
-              <Button variant="ghost" size="xs" onClick={() => toast.info(rejectLabel)}>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => toast.info(rejectLabel)}
+              >
                 {rejectLabel}
               </Button>
-              <Button variant="ghost" size="xs" onClick={() => toast.info(sourceLabel)}>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => toast.info(sourceLabel)}
+              >
                 {sourceLabel}
               </Button>
             </div>
           </div>
         ))}
-        <Button variant="secondary" size="sm" onClick={() => toast.success(batchCta)}>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => toast.success(batchCta)}
+        >
           {batchCta}
         </Button>
       </div>
 
-      <div className="flex flex-col gap-ds-4 border-x-0 border-b-0 border-t border-solid border-ds-hairline-subtle-default pt-ds-12">
+      <div className="flex flex-col gap-ds-4 border-x-0 border-t border-b-0 border-solid border-ds-hairline-subtle-default pt-ds-12">
         <DsText as="h3" role="base" weight="semibold">
           {t('geo.studio-clean-usage-title', { defaultValue: '本次用量' })}
         </DsText>

@@ -10,7 +10,8 @@ export function CapturePanel() {
     <div className="flex flex-col gap-ds-16 p-ds-16">
       <DsText as="h2" role="body-large" weight="semibold">
         {t('geo.studio-capture-title', {
-          defaultValue: '第 {{round}} 轮 · {{count}} 个问题 × {{platforms}} 个平台',
+          defaultValue:
+            '第 {{round}} 轮 · {{count}} 个问题 × {{platforms}} 个平台',
           round: 3,
           count: 30,
           platforms: 4,

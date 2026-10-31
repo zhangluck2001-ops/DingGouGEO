@@ -83,7 +83,7 @@ export function ModeRail({
   });
 
   return (
-    <nav className="flex w-[232px] shrink-0 flex-col gap-ds-4 overflow-y-auto border-l-0 border-y-0 border-r border-solid border-ds-hairline-subtle-default p-ds-12">
+    <nav className="flex w-[232px] shrink-0 flex-col gap-ds-4 overflow-y-auto border-y-0 border-r border-l-0 border-solid border-ds-hairline-subtle-default p-ds-12">
       {MODE_DEFS.map((def) => {
         const selected = state.mode === def.mode;
         const disabled = asking && def.mode !== 'diag';
@@ -99,8 +99,9 @@ export function ModeRail({
             className={cn(
               'flex min-w-0 flex-col gap-ds-4 rounded-ds-card p-ds-12 text-left transition-colors',
               'hover:bg-ds-neutral-subtle-default',
-              selected && 'bg-ds-neutral-default-default shadow-ds-elevation-card',
-              disabled && 'pointer-events-none opacity-45',
+              selected &&
+                'bg-ds-neutral-default-default shadow-ds-elevation-card',
+              disabled && 'pointer-events-none opacity-45'
             )}
             aria-current={selected ? 'true' : undefined}
           >
@@ -126,11 +127,14 @@ export function ModeRail({
                     });
                     const effectiveStatus = dataReady ? ring.status : null;
                     return (
-                      <div key={ring.ringKey} className="flex items-center gap-ds-6">
+                      <div
+                        key={ring.ringKey}
+                        className="flex items-center gap-ds-6"
+                      >
                         <span
                           className={cn(
                             'h-2 w-2 shrink-0 rounded-full',
-                            ringDotClass(effectiveStatus),
+                            ringDotClass(effectiveStatus)
                           )}
                           aria-hidden
                         />
@@ -153,7 +157,11 @@ export function ModeRail({
           </button>
         );
       })}
-      <DsText as="span" role="meta" className="mt-auto text-ds-ink-muted-default">
+      <DsText
+        as="span"
+        role="meta"
+        className="mt-auto text-ds-ink-muted-default"
+      >
         {footnote}
       </DsText>
     </nav>
