@@ -5,15 +5,24 @@ import { Tag } from '@/components/ui/tag';
 import { Textarea } from '@/components/ui/textarea';
 import { TooltipSimple } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import { PanelRight, Send } from 'lucide-react';
+import { BookMarked, ChevronDown, ChevronUp, PanelRight, Send } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { ChatMessage, ChatOption, StudioMode } from './mocks/mockData';
 import {
+  mockHistoryDigest,
+  STUDIO_TODAY,
+  STUDIO_YESTERDAY,
+} from './mocks/mockData';
+import {
+  type ChatDayGroup,
+  currentMemories,
   currentProduct,
+  groupChatByDay,
   hasData,
   isAskingState,
+  splitFoldedHistory,
   type StudioAction,
   type StudioState,
 } from './studioState';
@@ -65,27 +74,107 @@ function OptionCard({
   );
 }
 
+function DayDivider({ date }: { date: string }) {
+  const { t } = useTranslation();
+  if (!date) return null;
+  const label =
+    date === STUDIO_TODAY
+      ? t('geo.studio-chat-day-today', { defaultValue: '今天 · {{date}}', date })
+      : date === STUDIO_YESTERDAY
+        ? t('geo.studio-chat-day-yesterday', {
+            defaultValue: '昨天 · {{date}}',
+            date,
+          })
+        : date;
+  return (
+    <div className="flex items-center gap-ds-8" role="separator" aria-label={label}>
+      <div className="flex-1 border-x-0 border-b-0 border-t border-solid border-ds-hairline-subtle-default" />
+      <DsText as="span" role="meta" className="text-ds-ink-muted-default">
+        {label}
+      </DsText>
+      <div className="flex-1 border-x-0 border-b-0 border-t border-solid border-ds-hairline-subtle-default" />
+    </div>
+  );
+}
+
+function HistoryFold({
+  mode,
+  folded,
+  expanded,
+  onToggle,
+}: {
+  mode: StudioMode;
+  folded: ChatDayGroup[];
+  expanded: boolean;
+  onToggle: () => void;
+}) {
+  const { t } = useTranslation();
+  const count = folded.reduce((n, g) => n + g.messages.length, 0);
+  const from = folded[0]?.date ?? '';
+  const to = folded[folded.length - 1]?.date ?? '';
+  const range = from === to ? from : `${from} – ${to}`;
+  const title = t('geo.studio-chat-fold-title', {
+    defaultValue: '更早 · {{range}} · {{count}} 条消息',
+    range,
+    count,
+  });
+  const note = t('geo.studio-chat-fold-note', {
+    defaultValue: '助手按下面的要点记事，原话随时能展开查看。',
+  });
+  const expandLabel = t('geo.studio-chat-fold-expand', {
+    defaultValue: '展开原话',
+  });
+  const collapseLabel = t('geo.studio-chat-fold-collapse', {
+    defaultValue: '收起',
+  });
+  return (
+    <div className="flex flex-col gap-ds-6 rounded-ds-card border-x border-y border border-dashed border-ds-hairline-default-default px-ds-12 py-ds-10">
+      <div className="flex items-center justify-between gap-ds-8">
+        <DsText as="span" role="meta" weight="semibold">
+          {title}
+        </DsText>
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={onToggle}
+          aria-expanded={expanded}
+        >
+          {expanded ? <ChevronUp aria-hidden /> : <ChevronDown aria-hidden />}
+          {expanded ? collapseLabel : expandLabel}
+        </Button>
+      </div>
+      <DsText as="span" role="meta" className="text-ds-ink-muted-default">
+        {note}
+      </DsText>
+      <ul className="m-0 flex list-none flex-col gap-ds-2 p-0">
+        {mockHistoryDigest[mode].points.map((point) => (
+          <li key={point} className="flex items-start gap-ds-6">
+            <DsText as="span" role="base" className="shrink-0 text-ds-ink-muted-default">
+              ·
+            </DsText>
+            <DsText as="span" role="base">
+              {point}
+            </DsText>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function MessageItem({
   message,
   onPickOption,
   noneLabel,
-  todayLabel,
   whoLabel,
 }: {
   message: ChatMessage;
-  onPickOption: (option: ChatOption) => void;
+  onPickOption: (option: ChatOption, messageId: string) => void;
   noneLabel: string;
-  todayLabel: (date: string) => string;
   whoLabel: string;
 }) {
   if (message.kind === 'date') {
-    return (
-      <div className="flex items-center justify-center">
-        <DsText as="span" role="meta" className="text-ds-ink-muted-default">
-          — {todayLabel(message.date ?? '')} —
-        </DsText>
-      </div>
-    );
+    return <DayDivider date={message.date ?? ''} />;
   }
   if (message.kind === 'user') {
     return (
@@ -127,14 +216,20 @@ function MessageItem({
         {message.options?.length ? (
           <div className="flex flex-col gap-ds-4">
             {message.options.map((opt, idx) => (
-              <OptionCard key={idx} option={opt} onPick={onPickOption} />
+              <OptionCard
+                key={idx}
+                option={opt}
+                onPick={(o) => onPickOption(o, message.id)}
+              />
             ))}
-            <OptionCard
-              option={{ text: '', sub: noneLabel }}
-              onPick={() => {
-                onPickOption({ text: '', sub: noneLabel });
-              }}
-            />
+            {message.hideNone ? null : (
+              <OptionCard
+                option={{ text: '', sub: noneLabel }}
+                onPick={() => {
+                  onPickOption({ text: '', sub: noneLabel }, message.id);
+                }}
+              />
+            )}
           </div>
         ) : null}
       </div>
@@ -207,16 +302,29 @@ export function StudioChat({
     defaultValue: '都不是，我自己说……',
   });
   const whoLabel = t('geo.studio-chat-who', { defaultValue: 'GEO 助手' });
-  const todayLabel = (date: string) =>
-    t('geo.studio-chat-day-today', {
-      defaultValue: '今天 · {{date}}',
-      date,
-    });
+  const memoryCount = currentMemories(state).length;
+  const memoryLabel = t('geo.studio-chat-memory', {
+    defaultValue: '助手记住的事 · {{count}}',
+    count: memoryCount,
+  });
   const toggleWorkPanelLabel = showWorkPanel
     ? t('geo.studio-chat-toggle-workpanel-hide', { defaultValue: '隐藏工作区' })
     : t('geo.studio-chat-toggle-workpanel-show', { defaultValue: '显示工作区' });
 
-  const handlePickOption = (option: ChatOption) => {
+  const handlePickOption = (option: ChatOption, messageId: string) => {
+    if (option.remember) {
+      dispatch({
+        type: 'REMEMBER',
+        mode: state.mode,
+        messageId,
+        text: option.remember,
+      });
+      return;
+    }
+    if (option.forget) {
+      dispatch({ type: 'FORGET', mode: state.mode, messageId });
+      return;
+    }
     if (option.switch) {
       dispatch({ type: 'SET_MODE', mode: option.switch.mode });
       dispatch({ type: 'SET_TAB', mode: option.switch.mode, tab: option.switch.tab });
@@ -255,6 +363,21 @@ export function StudioChat({
 
   const inputDisabled = !asking && !dataReady && state.mode !== 'diag';
 
+  // A product with data shows its mode chat by day: the latest days in full,
+  // older days folded into the assistant's digest. Onboarding stays flat.
+  const showHistory = !asking && dataReady;
+  const { folded, recent } = splitFoldedHistory(groupChatByDay(messages));
+  const historyExpanded = state.historyExpanded[state.mode];
+  const renderMessage = (m: ChatMessage) => (
+    <MessageItem
+      key={m.id}
+      message={m}
+      onPickOption={handlePickOption}
+      noneLabel={noneLabel}
+      whoLabel={whoLabel}
+    />
+  );
+
   return (
     <section className="flex min-h-0 min-w-0 flex-col overflow-hidden">
       <div className="flex h-ds-layout-row-header shrink-0 items-center gap-ds-6 border-x-0 border-t-0 border-b border-solid border-ds-hairline-subtle-default px-ds-16">
@@ -270,7 +393,17 @@ export function StudioChat({
             {permLabel}
           </Tag>
         ) : null}
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-ds-4">
+          {asking ? null : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => dispatch({ type: 'OPEN_MEMORY' })}
+            >
+              <BookMarked aria-hidden />
+              {memoryLabel}
+            </Button>
+          )}
           <TooltipSimple content={toggleWorkPanelLabel} side="bottom" variant="instant">
             <Button
               variant="ghost"
@@ -291,17 +424,27 @@ export function StudioChat({
       >
         {messages.length === 0 && !asking && !dataReady ? (
           <EmptyChatHint state={state} />
+        ) : showHistory ? (
+          <>
+            {folded.length > 0 ? (
+              <HistoryFold
+                mode={state.mode}
+                folded={folded}
+                expanded={historyExpanded}
+                onToggle={() =>
+                  dispatch({ type: 'TOGGLE_HISTORY', mode: state.mode })
+                }
+              />
+            ) : null}
+            {(historyExpanded ? [...folded, ...recent] : recent).map((group) => (
+              <div key={group.date} className="flex flex-col gap-ds-14">
+                <DayDivider date={group.date} />
+                {group.messages.map(renderMessage)}
+              </div>
+            ))}
+          </>
         ) : (
-          messages.map((m) => (
-            <MessageItem
-              key={m.id}
-              message={m}
-              onPickOption={handlePickOption}
-              noneLabel={noneLabel}
-              todayLabel={todayLabel}
-              whoLabel={whoLabel}
-            />
-          ))
+          messages.map(renderMessage)
         )}
         <div ref={bottomRef} />
       </div>

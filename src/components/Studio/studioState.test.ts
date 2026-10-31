@@ -3,9 +3,13 @@ import { describe, expect, it } from 'vitest';
 
 import {
   createInitialStudioState,
+  currentMemories,
   currentProduct,
+  groupChatByDay,
   hasData,
   isAskingState,
+  isRememberIntent,
+  splitFoldedHistory,
   parseCompetitors,
   parseProductIntro,
   studioReducer,
@@ -320,5 +324,163 @@ describe('studioReducer — RESET_TO_EMPTY', () => {
     expect(next.isAsking).toBe(true);
     expect(next.onboardStage).toBe('asking-intro');
     expect(next.onboardChat).toHaveLength(1);
+  });
+});
+
+describe('chat history by day', () => {
+  it('groups messages under their date markers', () => {
+    const groups = groupChatByDay([
+      { id: 'a', kind: 'date', date: '10-24' },
+      { id: 'b', kind: 'ai', text: '一' },
+      { id: 'c', kind: 'date', date: '10-31' },
+      { id: 'd', kind: 'user', text: '二' },
+      { id: 'e', kind: 'ai', text: '三' },
+    ]);
+    expect(groups.map((g) => g.date)).toEqual(['10-24', '10-31']);
+    expect(groups[1].messages.map((m) => m.id)).toEqual(['d', 'e']);
+  });
+
+  it('keeps the latest two days and folds the rest', () => {
+    const state = createInitialStudioState();
+    const groups = groupChatByDay(state.chatByMode.diag);
+    const { folded, recent } = splitFoldedHistory(groups);
+    expect(folded.map((g) => g.date)).toEqual(['10-24', '10-27']);
+    expect(recent.map((g) => g.date)).toEqual(['10-30', '10-31']);
+  });
+
+  it('folds nothing when there are only two days', () => {
+    const { folded } = splitFoldedHistory(
+      groupChatByDay([
+        { id: 'a', kind: 'date', date: '10-30' },
+        { id: 'b', kind: 'date', date: '10-31' },
+      ]),
+    );
+    expect(folded).toHaveLength(0);
+  });
+
+  it('toggles the folded history per mode', () => {
+    const state = createInitialStudioState();
+    const next = studioReducer(state, { type: 'TOGGLE_HISTORY', mode: 'diag' });
+    expect(next.historyExpanded).toEqual({ data: false, run: false, diag: true });
+  });
+});
+
+describe('assistant memory', () => {
+  it('recognises standing instructions', () => {
+    expect(isRememberIntent('以后稿子里别提价格')).toBe(true);
+    expect(isRememberIntent('别再拿竞品丙做对比')).toBe(true);
+    expect(isRememberIntent('豆包这周有变化吗？')).toBe(false);
+  });
+
+  it('asks before remembering instead of saving silently', () => {
+    const state = createInitialStudioState();
+    const before = currentMemories(state).length;
+    const next = studioReducer(state, {
+      type: 'APPEND_USER_MESSAGE',
+      mode: 'diag',
+      text: '以后稿子里别提价格',
+    });
+    const last = next.chatByMode.diag[next.chatByMode.diag.length - 1];
+    expect(last.options?.[0].remember).toBe('以后稿子里别提价格');
+    expect(last.hideNone).toBe(true);
+    expect(currentMemories(next)).toHaveLength(before);
+  });
+
+  it('adds no proposal for an ordinary question', () => {
+    const state = createInitialStudioState();
+    const next = studioReducer(state, {
+      type: 'APPEND_USER_MESSAGE',
+      mode: 'diag',
+      text: '豆包这周有变化吗？',
+    });
+    expect(next.chatByMode.diag).toHaveLength(state.chatByMode.diag.length + 1);
+  });
+
+  it('remembers on yes and closes the proposal', () => {
+    const state = createInitialStudioState();
+    const asked = studioReducer(state, {
+      type: 'APPEND_USER_MESSAGE',
+      mode: 'diag',
+      text: '以后稿子里别提价格',
+    });
+    const proposal = asked.chatByMode.diag[asked.chatByMode.diag.length - 1];
+    const next = studioReducer(asked, {
+      type: 'REMEMBER',
+      mode: 'diag',
+      messageId: proposal.id,
+      text: '以后稿子里别提价格',
+    });
+    const memories = currentMemories(next);
+    expect(memories[0].text).toBe('以后稿子里别提价格');
+    expect(memories[0].source).toEqual({ mode: 'diag', date: '10-31' });
+    expect(next.chatByMode.diag.find((m) => m.id === proposal.id)?.options).toBeUndefined();
+  });
+
+  it('does not duplicate a memory picked twice', () => {
+    const state = createInitialStudioState();
+    const action = {
+      type: 'REMEMBER' as const,
+      mode: 'diag' as const,
+      messageId: 'x',
+      text: '以后稿子里别提价格',
+    };
+    const once = studioReducer(state, action);
+    const twice = studioReducer(once, action);
+    expect(currentMemories(twice)).toHaveLength(currentMemories(once).length);
+  });
+
+  it('keeps the list unchanged on no', () => {
+    const state = createInitialStudioState();
+    const next = studioReducer(state, {
+      type: 'FORGET',
+      mode: 'diag',
+      messageId: 'x',
+    });
+    expect(currentMemories(next)).toEqual(currentMemories(state));
+  });
+
+  it('adds and removes items by hand', () => {
+    const state = createInitialStudioState();
+    const added = studioReducer(state, { type: 'ADD_MEMORY', text: ' 稿子里不提价格 ' });
+    expect(currentMemories(added)[0]).toMatchObject({
+      text: '稿子里不提价格',
+      source: 'manual',
+    });
+    const removed = studioReducer(added, {
+      type: 'REMOVE_MEMORY',
+      id: currentMemories(added)[0].id,
+    });
+    expect(currentMemories(removed)).toEqual(currentMemories(state));
+  });
+
+  it('keeps each product its own list', () => {
+    const state = createInitialStudioState();
+    const switched = studioReducer(state, {
+      type: 'SWITCH_PRODUCT',
+      productId: state.products[1].id,
+    });
+    expect(currentMemories(state).length).toBeGreaterThan(0);
+    expect(currentMemories(switched)).toHaveLength(0);
+  });
+
+  it('clears all memories on the first-open demo', () => {
+    const state = createInitialStudioState();
+    const next = studioReducer(state, { type: 'RESET_TO_EMPTY' });
+    expect(next.memoriesByProduct).toEqual({});
+  });
+});
+
+describe('assistant memory — ids', () => {
+  it('deleting a new item leaves the sample items alone', () => {
+    const state = createInitialStudioState();
+    const before = currentMemories(state).length;
+    let next = state;
+    for (let i = 0; i < 6; i += 1) {
+      next = studioReducer(next, { type: 'ADD_MEMORY', text: `规则${i}` });
+    }
+    const ids = currentMemories(next).map((m) => m.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    const removed = studioReducer(next, { type: 'REMOVE_MEMORY', id: ids[0] });
+    expect(currentMemories(removed)).toHaveLength(before + 5);
   });
 });

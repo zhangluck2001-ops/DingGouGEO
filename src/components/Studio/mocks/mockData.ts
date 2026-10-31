@@ -29,6 +29,10 @@ export interface ChatOption {
   ask?: string;
   openCard?: boolean;
   skip?: boolean;
+  /** Save this text to the assistant memory list. */
+  remember?: string;
+  /** Decline a memory proposal; the text stays in this conversation only. */
+  forget?: boolean;
 }
 
 export interface ChatMessage {
@@ -38,6 +42,24 @@ export interface ChatMessage {
   steps?: ChatStep[];
   options?: ChatOption[];
   date?: string;
+  /** Hide the trailing 「都不是，我自己说……」 option. */
+  hideNone?: boolean;
+}
+
+export type MemoryKind = 'rule' | 'preference';
+
+/** One entry in 「助手记住的事」: read by the assistant before every reply. */
+export interface MemoryItem {
+  id: string;
+  text: string;
+  kind: MemoryKind;
+  /** Where it came from: a mode's chat on a given day, or typed into the list. */
+  source: { mode: StudioMode; date: string } | 'manual';
+}
+
+/** The assistant's digest of folded older days, one per mode. */
+export interface HistoryDigest {
+  points: string[];
 }
 
 export type FeedType = 'competitor' | 'policy' | 'ai' | 'brand';
@@ -197,8 +219,31 @@ export const mockBrandCard: BrandCard = {
 // Chat — per-mode sample conversations for 全安素.
 // ---------------------------------------------------------------------------
 
+// The sample conversation's "today" and "yesterday"; real dates come from the
+// backend once chats are stored.
+export const STUDIO_TODAY = '10-31';
+export const STUDIO_YESTERDAY = '10-30';
+
 export const mockChatByMode: Record<StudioMode, ChatMessage[]> = {
   data: [
+    { id: 'd-date-1025', kind: 'date', date: '10-25' },
+    { id: 'd-u-1025', kind: 'user', text: '传了新版说明书，帮我清洗进知识库' },
+    {
+      id: 'd-ai-1025',
+      kind: 'ai',
+      text: '说明书清洗完了：拆出 32 条事实，30 条进了知识库，2 条和旧标签对不上，已经标成冲突。',
+    },
+    { id: 'd-date-1029', kind: 'date', date: '10-29' },
+    {
+      id: 'd-u-1029',
+      kind: 'user',
+      text: '稿子里统一用「术后恢复期」，以后别写「术后康复」',
+    },
+    {
+      id: 'd-ai-1029',
+      kind: 'ai',
+      text: '记住了，已写进「助手记住的事」。3 篇待发稿里的 5 处说法也一起改好了。',
+    },
     {
       id: 'd-date',
       kind: 'date',
@@ -218,6 +263,19 @@ export const mockChatByMode: Record<StudioMode, ChatMessage[]> = {
     },
   ],
   run: [
+    { id: 'r-date-1021', kind: 'date', date: '10-21' },
+    {
+      id: 'r-ai-1021',
+      kind: 'ai',
+      text: '第 2 轮采集完成：4 个平台、30 个问题，共收回 120 个 AI 回答。',
+    },
+    { id: 'r-date-1028', kind: 'date', date: '10-28' },
+    { id: 'r-u-1028', kind: 'user', text: '开第 3 轮，先跑豆包和 DeepSeek' },
+    {
+      id: 'r-ai-1028',
+      kind: 'ai',
+      text: '好，第 3 轮已排上：豆包和 DeepSeek 先跑，千问和元宝排在后面。',
+    },
     {
       id: 'r-date',
       kind: 'date',
@@ -248,6 +306,40 @@ export const mockChatByMode: Record<StudioMode, ChatMessage[]> = {
     },
   ],
   diag: [
+    { id: 'g-date-1024', kind: 'date', date: '10-24' },
+    {
+      id: 'g-ai-1024',
+      kind: 'ai',
+      text: '第 2 轮诊断：豆包里排第 4，DeepSeek 的回答没提到全安素。',
+    },
+    {
+      id: 'g-u-1024',
+      kind: 'user',
+      text: '以后重点盯豆包和 DeepSeek，汇报先说结论',
+    },
+    {
+      id: 'g-ai-1024b',
+      kind: 'ai',
+      text: '记住了，已写进「助手记住的事」。以后诊断先看这两个平台，开头一句话给结论。',
+    },
+    { id: 'g-date-1027', kind: 'date', date: '10-27' },
+    {
+      id: 'g-u-1027',
+      kind: 'user',
+      text: '别再拿竞品丙做对比了，它跟我们不是一个人群',
+    },
+    {
+      id: 'g-ai-1027',
+      kind: 'ai',
+      text: '记住了，已写进「助手记住的事」。竞品丙还留在动态的关注范围里，要不要一起去掉，你说了算。',
+    },
+    { id: 'g-date-1030', kind: 'date', date: '10-30' },
+    { id: 'g-u-1030', kind: 'user', text: '豆包这周有变化吗？' },
+    {
+      id: 'g-ai-1030',
+      kind: 'ai',
+      text: '有一点：豆包的回答开始引用一个新的健康科普站，那个站还没有我们的内容，已经记进缺口。',
+    },
     {
       id: 'g-date',
       kind: 'date',
@@ -279,6 +371,54 @@ export const mockChatByMode: Record<StudioMode, ChatMessage[]> = {
           sub: '本轮 30 个问题的逐条分析',
         },
       ],
+    },
+  ],
+};
+
+// What the assistant keeps from folded older days. The real product has the
+// model write these; the original chat stays readable by expanding.
+export const mockHistoryDigest: Record<StudioMode, HistoryDigest> = {
+  data: {
+    points: ['10-25 清洗新版说明书：30 条事实入库，2 条与旧标签冲突待处理'],
+  },
+  run: {
+    points: ['10-21 第 2 轮采集完成：4 个平台、30 个问题、120 个回答'],
+  },
+  diag: {
+    points: [
+      '10-24 第 2 轮诊断：豆包排第 4，DeepSeek 未提及',
+      '10-24 你定了：重点盯豆包和 DeepSeek，汇报先说结论（已记住）',
+      '10-27 你定了：不再拿竞品丙做对比（已记住）',
+    ],
+  },
+};
+
+// 「助手记住的事」 per product id. A fresh profile starts empty.
+export const mockMemoriesByProduct: Record<string, MemoryItem[]> = {
+  'quan-ansu': [
+    {
+      id: 'mem-1',
+      text: '不拿竞品丙做对比，它和我们不是一个人群',
+      kind: 'rule',
+      source: { mode: 'diag', date: '10-27' },
+    },
+    {
+      id: 'mem-2',
+      text: '稿子统一写「术后恢复期」，不写「术后康复」',
+      kind: 'rule',
+      source: { mode: 'data', date: '10-29' },
+    },
+    {
+      id: 'mem-3',
+      text: '诊断重点看豆包和 DeepSeek',
+      kind: 'preference',
+      source: { mode: 'diag', date: '10-24' },
+    },
+    {
+      id: 'mem-4',
+      text: '汇报先一句话说结论，再说细节',
+      kind: 'preference',
+      source: { mode: 'diag', date: '10-24' },
     },
   ],
 };

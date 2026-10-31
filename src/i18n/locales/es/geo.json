@@ -416,5 +416,21 @@
   "studio-chat-day-today": "Today · {{date}}",
   "studio-top-demo-first": "Demo: first open",
   "studio-chat-toggle-workpanel-hide": "Hide work panel",
-  "studio-chat-toggle-workpanel-show": "Show work panel"
+  "studio-chat-toggle-workpanel-show": "Show work panel",
+  "studio-chat-day-yesterday": "Yesterday · {{date}}",
+  "studio-chat-fold-title": "Earlier · {{range}} · {{count}} messages",
+  "studio-chat-fold-note": "The assistant keeps these points; expand to read the original chat.",
+  "studio-chat-fold-expand": "Show original",
+  "studio-chat-fold-collapse": "Collapse",
+  "studio-chat-memory": "Assistant memory · {{count}}",
+  "studio-memory-title": "Assistant memory · {{product}}",
+  "studio-memory-desc": "The assistant reads this list before every reply, in all three modes. Rules from the chat are added only after you agree; you can delete or add items here at any time.",
+  "studio-memory-empty": "Nothing remembered yet. Say \"from now on…\" or \"stop…\" in the chat and the assistant will ask whether to remember it.",
+  "studio-memory-kind-rule": "Rule",
+  "studio-memory-kind-preference": "Preference",
+  "studio-memory-source-manual": "Added by you in this list",
+  "studio-memory-source-chat": "{{mode}} · {{date}} · from the chat",
+  "studio-memory-remove": "Delete this item",
+  "studio-memory-add-placeholder": "e.g. Do not mention prices in drafts",
+  "studio-memory-add": "Add"
 }

@@ -8,6 +8,7 @@ import type {
   ChatStep,
   FeedItem,
   FocusTag,
+  MemoryItem,
   StudioMode,
   StudioProduct,
 } from './mocks/mockData';
@@ -16,8 +17,10 @@ import {
   mockFeed,
   mockFocusTags,
   mockFreshFeed,
+  mockMemoriesByProduct,
   mockOnboardGreetEmpty,
   mockProducts,
+  STUDIO_TODAY,
 } from './mocks/mockData';
 
 export type { StudioMode };
@@ -46,6 +49,11 @@ export interface StudioState {
   focusNotice: string | null;
   focusFreq: 'low' | 'medium' | 'high';
   pendingInput: string | null;
+  /** 「助手记住的事」 keyed by product id; follows the product, not the mode. */
+  memoriesByProduct: Record<string, MemoryItem[]>;
+  memoryOpen: boolean;
+  /** Whether each mode's folded older days are expanded to the original chat. */
+  historyExpanded: Record<StudioMode, boolean>;
 }
 
 export type StudioAction =
@@ -68,7 +76,14 @@ export type StudioAction =
   | { type: 'CONSUME_PENDING_INPUT' }
   | { type: 'ADD_FRESH_FEED' }
   | { type: 'CLEAR_FEED_UNREAD' }
-  | { type: 'RESET_TO_EMPTY' };
+  | { type: 'RESET_TO_EMPTY' }
+  | { type: 'TOGGLE_HISTORY'; mode: StudioMode }
+  | { type: 'OPEN_MEMORY' }
+  | { type: 'CLOSE_MEMORY' }
+  | { type: 'REMEMBER'; mode: StudioMode; messageId: string; text: string }
+  | { type: 'FORGET'; mode: StudioMode; messageId: string }
+  | { type: 'ADD_MEMORY'; text: string }
+  | { type: 'REMOVE_MEMORY'; id: string };
 
 export const STUDIO_TABS: Record<StudioMode, string[]> = {
   data: ['清洗', '知识库', '探针', '稿子'],
@@ -121,6 +136,50 @@ export function parseCompetitors(raw: string): string[] {
     .filter((s) => s.length > 0);
 }
 
+export interface ChatDayGroup {
+  /** MM-DD from the date marker; '' for messages before any marker. */
+  date: string;
+  messages: ChatMessage[];
+}
+
+/** Group a mode's chat into days using its date marker messages. */
+export function groupChatByDay(messages: ChatMessage[]): ChatDayGroup[] {
+  const groups: ChatDayGroup[] = [];
+  for (const m of messages) {
+    if (m.kind === 'date') {
+      groups.push({ date: m.date ?? '', messages: [] });
+      continue;
+    }
+    if (groups.length === 0) groups.push({ date: '', messages: [] });
+    groups[groups.length - 1].messages.push(m);
+  }
+  return groups;
+}
+
+/** How many of the latest days stay expanded; earlier days fold into a digest. */
+export const RECENT_DAYS_KEPT = 2;
+
+export function splitFoldedHistory(
+  groups: ChatDayGroup[],
+  keepDays = RECENT_DAYS_KEPT,
+): { folded: ChatDayGroup[]; recent: ChatDayGroup[] } {
+  const cut = Math.max(0, groups.length - keepDays);
+  return { folded: groups.slice(0, cut), recent: groups.slice(cut) };
+}
+
+/**
+ * Whether a message reads like a standing instruction worth remembering.
+ * The real product lets the model judge this; the skeleton matches keywords.
+ */
+export function isRememberIntent(text: string): boolean {
+  return /以后|今后|往后|别再|不要再|不许|记住|统一用|一律/.test(text);
+}
+
+export function currentMemories(state: StudioState): MemoryItem[] {
+  if (!state.currentProductId) return [];
+  return state.memoriesByProduct[state.currentProductId] ?? [];
+}
+
 export function currentProduct(state: StudioState): StudioProduct | null {
   return state.products.find((p) => p.id === state.currentProductId) ?? null;
 }
@@ -157,6 +216,9 @@ export function createInitialStudioState(
     focusNotice: null,
     focusFreq: 'low',
     pendingInput: null,
+    memoriesByProduct: mockMemoriesByProduct,
+    memoryOpen: false,
+    historyExpanded: { data: false, run: false, diag: false },
     ...overrides,
   };
 }
@@ -165,6 +227,39 @@ let messageCounter = 0;
 function nextId(prefix: string): string {
   messageCounter += 1;
   return `${prefix}-${messageCounter}`;
+}
+
+/** Append messages to a mode's chat, opening today's day first if needed. */
+function appendToday(
+  chat: ChatMessage[],
+  ...messages: ChatMessage[]
+): ChatMessage[] {
+  const lastDate = [...chat].reverse().find((m) => m.kind === 'date');
+  const needsDay = lastDate?.date !== STUDIO_TODAY;
+  return [
+    ...chat,
+    ...(needsDay
+      ? [{ id: nextId('chat-date'), kind: 'date' as const, date: STUDIO_TODAY }]
+      : []),
+    ...messages,
+  ];
+}
+
+/** Drop the options from an answered memory proposal so it can't be re-picked. */
+function closeProposal(
+  chat: ChatMessage[],
+  messageId: string,
+  answer: string,
+): ChatMessage[] {
+  return chat.map((m) =>
+    m.id === messageId
+      ? {
+          ...m,
+          options: undefined,
+          steps: [...(m.steps ?? []), { symbol: '→', text: answer }],
+        }
+      : m,
+  );
 }
 
 function guideSteps(): ChatStep[] {
@@ -222,6 +317,8 @@ export function studioReducer(
         hiddenFeedIds: [],
         unreadFeed: 0,
         onboardChat: [],
+        memoryOpen: false,
+        historyExpanded: { data: false, run: false, diag: false },
       };
     }
     case 'NEW_PRODUCT_FROM_SELECTOR': {
@@ -353,17 +450,142 @@ export function studioReducer(
       };
     }
     case 'APPEND_USER_MESSAGE': {
+      const userMessage: ChatMessage = {
+        id: nextId('chat-user'),
+        kind: 'user',
+        text: action.text,
+      };
+      // A standing instruction is never saved silently: the assistant asks
+      // first, so the list only holds what the user agreed to.
+      const proposal: ChatMessage[] = isRememberIntent(action.text)
+        ? [
+            {
+              id: nextId('chat-remember'),
+              kind: 'ai',
+              text: '这句话像是一条长期规则。要我记进「助手记住的事」吗？记住后，三个模式每次回答前都会先读它。',
+              steps: [{ symbol: '✦', text: action.text }],
+              options: [
+                { text: '记住这条', rec: true, remember: action.text },
+                { text: '不用记', sub: '只在这次对话里用', forget: true },
+              ],
+              hideNone: true,
+            },
+          ]
+        : [];
+      return {
+        ...state,
+        chatByMode: {
+          ...state.chatByMode,
+          [action.mode]: appendToday(
+            state.chatByMode[action.mode],
+            userMessage,
+            ...proposal,
+          ),
+        },
+      };
+    }
+    case 'REMEMBER': {
+      const productId = state.currentProductId;
+      if (!productId) return state;
+      const existing = state.memoriesByProduct[productId] ?? [];
+      const memory: MemoryItem = {
+        id: nextId('memory-new'),
+        text: action.text,
+        kind: 'rule',
+        source: { mode: action.mode, date: STUDIO_TODAY },
+      };
+      const chat = closeProposal(
+        state.chatByMode[action.mode],
+        action.messageId,
+        '已记住',
+      );
+      return {
+        ...state,
+        memoriesByProduct: {
+          ...state.memoriesByProduct,
+          [productId]: existing.some((m) => m.text === action.text)
+            ? existing
+            : [memory, ...existing],
+        },
+        chatByMode: {
+          ...state.chatByMode,
+          [action.mode]: [
+            ...chat,
+            {
+              id: nextId('chat-ai'),
+              kind: 'ai',
+              text: '记住了 ✓ 已写进「助手记住的事」，随时可以在清单里改掉或删掉。',
+            },
+          ],
+        },
+      };
+    }
+    case 'FORGET': {
+      const chat = closeProposal(
+        state.chatByMode[action.mode],
+        action.messageId,
+        '不记',
+      );
       return {
         ...state,
         chatByMode: {
           ...state.chatByMode,
           [action.mode]: [
-            ...state.chatByMode[action.mode],
-            { id: nextId('chat-user'), kind: 'user', text: action.text },
+            ...chat,
+            {
+              id: nextId('chat-ai'),
+              kind: 'ai',
+              text: '好，这条不记，只在这次对话里用。',
+            },
           ],
         },
       };
     }
+    case 'ADD_MEMORY': {
+      const productId = state.currentProductId;
+      const text = action.text.trim();
+      if (!productId || !text) return state;
+      const existing = state.memoriesByProduct[productId] ?? [];
+      if (existing.some((m) => m.text === text)) return state;
+      const memory: MemoryItem = {
+        id: nextId('memory-new'),
+        text,
+        kind: 'rule',
+        source: 'manual',
+      };
+      return {
+        ...state,
+        memoriesByProduct: {
+          ...state.memoriesByProduct,
+          [productId]: [memory, ...existing],
+        },
+      };
+    }
+    case 'REMOVE_MEMORY': {
+      const productId = state.currentProductId;
+      if (!productId) return state;
+      return {
+        ...state,
+        memoriesByProduct: {
+          ...state.memoriesByProduct,
+          [productId]: (state.memoriesByProduct[productId] ?? []).filter(
+            (m) => m.id !== action.id,
+          ),
+        },
+      };
+    }
+    case 'OPEN_MEMORY':
+      return { ...state, memoryOpen: true };
+    case 'CLOSE_MEMORY':
+      return { ...state, memoryOpen: false };
+    case 'TOGGLE_HISTORY':
+      return {
+        ...state,
+        historyExpanded: {
+          ...state.historyExpanded,
+          [action.mode]: !state.historyExpanded[action.mode],
+        },
+      };
     case 'OPEN_BRAND_CARD':
       return { ...state, brandCardOpen: true };
     case 'CLOSE_BRAND_CARD':
@@ -427,6 +649,9 @@ export function studioReducer(
         focusNotice: null,
         brandCardOpen: false,
         pendingInput: null,
+        memoriesByProduct: {},
+        memoryOpen: false,
+        historyExpanded: { data: false, run: false, diag: false },
       };
     }
     default:

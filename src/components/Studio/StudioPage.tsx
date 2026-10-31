@@ -2,6 +2,7 @@
 import { useEffect, useReducer, useState } from 'react';
 
 import { BrandCardDialog } from './BrandCardDialog';
+import { MemoryDialog } from './MemoryDialog';
 import { ModeRail } from './ModeRail';
 import { StudioChat } from './StudioChat';
 import { StudioTopBar } from './StudioTopBar';
@@ -57,6 +58,7 @@ export default function StudioPage() {
         open={state.brandCardOpen}
         onClose={() => dispatch({ type: 'CLOSE_BRAND_CARD' })}
       />
+      <MemoryDialog state={state} dispatch={dispatch} />
     </div>
   );
 }

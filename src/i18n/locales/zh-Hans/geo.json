@@ -416,5 +416,21 @@
   "studio-chat-day-today": "今天 · {{date}}",
   "studio-top-demo-first": "演示：首次打开",
   "studio-chat-toggle-workpanel-hide": "隐藏工作区",
-  "studio-chat-toggle-workpanel-show": "显示工作区"
+  "studio-chat-toggle-workpanel-show": "显示工作区",
+  "studio-chat-day-yesterday": "昨天 · {{date}}",
+  "studio-chat-fold-title": "更早 · {{range}} · {{count}} 条消息",
+  "studio-chat-fold-note": "助手按下面的要点记事，原话随时能展开查看。",
+  "studio-chat-fold-expand": "展开原话",
+  "studio-chat-fold-collapse": "收起",
+  "studio-chat-memory": "助手记住的事 · {{count}}",
+  "studio-memory-title": "助手记住的事 · {{product}}",
+  "studio-memory-desc": "助手每次回答前都会先读这份清单，三个模式共用。聊天里说过的规则，你同意后才会记进来；这里可以随时删掉或补一条。",
+  "studio-memory-empty": "还没有记住的事。聊天时说「以后……」「别再……」，助手会问你要不要记下。",
+  "studio-memory-kind-rule": "规则",
+  "studio-memory-kind-preference": "偏好",
+  "studio-memory-source-manual": "你在清单里加的",
+  "studio-memory-source-chat": "{{mode}}模式 · {{date}} · 从聊天记下",
+  "studio-memory-remove": "删掉这条",
+  "studio-memory-add-placeholder": "例如：稿子里不提价格",
+  "studio-memory-add": "加一条"
 }
